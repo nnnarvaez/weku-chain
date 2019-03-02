@@ -71,7 +71,7 @@ will build out of the box without further effort:
         libreadline-dev \
         perl
 
-    git clone https://github.com/wekuio/weku-chain
+    git clone https://github.com/wekuio/weku-chain.git
     cd weku_chain
     git submodule update --init --recursive
     mkdir build
@@ -114,7 +114,7 @@ Install Homebrew by following the instructions here: http://brew.sh/
         python3-jinja2
 
 Note: brew recently updated to boost 1.61.0, which is not yet supported by
-steem. Until then, this will allow you to install boost 1.60.0.
+weku. Until then, this will allow you to install boost 1.60.0.
 
 *Optional.* To use TCMalloc in LevelDB:
 
