@@ -1,0 +1,5 @@
+#ifndef STEEMIT_HARDFORK_0_21
+#define STEEMIT_HARDFORK_0_21 21
+#define STEEMIT_HARDFORK_0_21_TIME 1556637573 // Tuesday, April 30, 2019 3:19:33 PM
+#define STEEMIT_HARDFORK_0_20_VERSION hardfork_version( 0, 21 )
+#endif

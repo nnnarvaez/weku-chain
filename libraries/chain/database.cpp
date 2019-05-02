@@ -3574,6 +3574,9 @@ void database::init_hardforks()
    FC_ASSERT( STEEMIT_HARDFORK_0_20 == 20, "Invalid hardfork configuration" );
    _hardfork_times[ STEEMIT_HARDFORK_0_20 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_20_TIME );
    _hardfork_versions[ STEEMIT_HARDFORK_0_20 ] = STEEMIT_HARDFORK_0_20_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_21 == 21, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_21 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_21_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_21 ] = STEEMIT_HARDFORK_0_21_VERSION;
 
 
    const auto& hardforks = get_hardfork_property_object();
@@ -3906,6 +3909,35 @@ void database::apply_hardfork( uint32_t hardfork )
          }
          break;
       case STEEMIT_HARDFORK_0_20:
+         break;
+      case STEEMIT_HARDFORK_0_21:
+         {
+            const auto& aidx = get_index< account_index, by_name >();
+            auto current = aidx.begin();
+            share_type totalv = 0;
+            share_type totalp = 0;
+
+            while( current != aidx.end() )
+            {
+               const auto& account = *current;
+               share_type new_vesting = account->vesting_shares.amount/1000
+               share_type new_pending = account->reward_vesting_balance.amount/1000
+               modify( account , [&]( account_object& a )
+               {
+                  a.vesting_shares.amount = new_vesting;
+                  a.reward_vesting_balance = new_pending;
+               });
+               totalv += new_vesting;
+               totalp += new_pending;
+               ++current;
+            }
+
+            modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+            {
+               gpo.total_vesting_shares.amount = totalv;
+               gpo.pending_rewarded_vesting_shares = totalp;
+            });
+         }
          break;
       default:
          break;
