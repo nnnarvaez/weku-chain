@@ -3925,7 +3925,7 @@ void database::apply_hardfork( uint32_t hardfork )
                modify( account , [&]( account_object& a )
                {
                   a.vesting_shares.amount = new_vesting;
-                  a.reward_vesting_balance = new_pending;
+                  a.reward_vesting_balance.amount = new_pending;
                });
                totalv += new_vesting;
                totalp += new_pending;
@@ -3935,7 +3935,7 @@ void database::apply_hardfork( uint32_t hardfork )
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
             {
                gpo.total_vesting_shares.amount = totalv;
-               gpo.pending_rewarded_vesting_shares = totalp;
+               gpo.pending_rewarded_vesting_shares.amount = totalp;
             });
          }
          break;
