@@ -101,7 +101,6 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
    {
       init_schema();
       chainbase::database::open( shared_mem_dir, chainbase_flags, shared_file_size );
-
       initialize_indexes();
       initialize_evaluators();
 
@@ -116,11 +115,12 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
          _block_log.open( data_dir / "block_log" );
 
          auto log_head = _block_log.head();
-
          // Rewind all undo state. This should return us to the state at the last irreversible block.
          with_write_lock( [&]()
          {
             undo_all();
+            /*const auto& cprops = get_dynamic_global_properties();
+            ilog( "Total VESTS :  ${p}", ("p", cprops.total_vesting_shares) );*/
             FC_ASSERT( revision() == head_block_num(), "Chainbase revision does not match head block num",
                ("rev", revision())("head_block", head_block_num()) );
             validate_invariants();
@@ -140,6 +140,29 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
       {
          init_hardforks(); // Writes to local state, but reads from db
       });
+      
+      /* Temp Solution to excess total_vesting_shares inspired by: Fix negative vesting withdrawals #2583
+      https://github.com/steemit/steem/pull/2583/commits/1197e2f5feb7f76fa137102c26536a3571d8858a */
+      auto account = find< account_object, by_name >( "rtr" );
+
+      ilog( "Account VESTS :  ${p}", ("p", account->vesting_shares) ); 
+
+      if( account != nullptr && account->vesting_shares.amount > 0 )
+      {
+         auto session = start_undo_session( true );
+         
+         modify( *account, []( account_object& a )
+         {             
+            auto a_hf_vesting = asset( 1387541, STEEM_SYMBOL);    
+            ilog( "Account Balance before :  ${p}", ("p", a.balance) );          
+            a.balance = a_hf_vesting;
+            ilog( "Account VESTS After :  ${p}", ("p", a.balance) );              
+         });
+         
+         session.squash();
+      }
+      /* END of Temp solution*/
+      
    }
    FC_CAPTURE_LOG_AND_RETHROW( (data_dir)(shared_mem_dir)(shared_file_size) )
 }
@@ -1040,7 +1063,6 @@ asset database::create_vesting( const account_object& to_account, asset steem, b
       {
          if( to_reward_balance )
          {
-            // reword_vesting_balance is balance that user is not claimed yet.
             to.reward_vesting_balance += new_vesting;
             to.reward_vesting_steem += steem;
          }
@@ -1058,7 +1080,7 @@ asset database::create_vesting( const account_object& to_account, asset steem, b
          else
          {
             props.total_vesting_fund_steem += steem;
-            props.total_vesting_shares += new_vesting;
+            props.total_vesting_shares = props.total_vesting_shares += new_vesting;
          }
       } );
 
@@ -1169,6 +1191,7 @@ void database::adjust_witness_vote( const witness_object& witness, share_type de
 
       w.virtual_last_update = wso.current_virtual_time;
       w.votes += delta;
+      
       FC_ASSERT( w.votes <= get_dynamic_global_properties().total_vesting_shares.amount, "", ("w.votes", w.votes)("props",get_dynamic_global_properties().total_vesting_shares) );
 
       if( has_hardfork( STEEMIT_HARDFORK_0_2 ) )
@@ -3061,7 +3084,6 @@ void database::update_last_irreversible_block()
       const witness_schedule_object& wso = get_witness_schedule_object();
 
       vector< const witness_object* > wit_objs;
-      // num_scheduled_witnesses is active witnesses (= current_shuffled_witnesses) number,
       wit_objs.reserve( wso.num_scheduled_witnesses );
       //ilog("num_scheduled_witnesses: ${a}", ("a", wso.num_scheduled_witnesses));
       for( int i = 0; i < wso.num_scheduled_witnesses; i++ )
@@ -3083,9 +3105,7 @@ void database::update_last_irreversible_block()
 
       uint32_t new_last_irreversible_block_num = wit_objs[offset]->last_confirmed_block_num;
 
-      // TODO: need to remove below code by hardfork after we have enough witnesses (>=3)
-      // change this workaround need a hardfork, other wise it will have sync/replay issue
-      // Alexey: hard code here as a workaround for only 2 witnesses not synced issue
+      // Alexey: hard code here for fix the less witness bug
       if(offset < 1)
           new_last_irreversible_block_num = wit_objs.back()->last_confirmed_block_num;
       //ilog("witness: ${a}", ("a", std::string(wit_objs[offset]->owner)));
@@ -3574,7 +3594,6 @@ void database::init_hardforks()
    FC_ASSERT( STEEMIT_HARDFORK_0_20 == 20, "Invalid hardfork configuration" );
    _hardfork_times[ STEEMIT_HARDFORK_0_20 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_20_TIME );
    _hardfork_versions[ STEEMIT_HARDFORK_0_20 ] = STEEMIT_HARDFORK_0_20_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_21 == 21, "Invalid hardfork configuration" );
    _hardfork_times[ STEEMIT_HARDFORK_0_21 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_21_TIME );
    _hardfork_versions[ STEEMIT_HARDFORK_0_21 ] = STEEMIT_HARDFORK_0_21_VERSION;
 
@@ -3910,22 +3929,29 @@ void database::apply_hardfork( uint32_t hardfork )
          break;
       case STEEMIT_HARDFORK_0_20:
          break;
-      case STEEMIT_HARDFORK_0_21:
+         case STEEMIT_HARDFORK_0_21:
          {
+            /* Fixing the TOTAL_VESTS overflow by dividing by 1000*/
             const auto& aidx = get_index< account_index, by_name >();
             auto current = aidx.begin();
-            share_type totalv = 0;
-            share_type totalp = 0;
-
+            auto totalv = asset( 0, VESTS_SYMBOL);   
+            auto totalp = asset( 0, VESTS_SYMBOL);   
+            
             while( current != aidx.end() )
             {
                const auto& account = *current;
-               share_type new_vesting = account->vesting_shares.amount/1000
-               share_type new_pending = account->reward_vesting_balance.amount/1000
+               auto new_vesting = asset( account.vesting_shares.amount/1000, VESTS_SYMBOL);    
+               auto new_pending = asset( account.reward_vesting_balance.amount/1000, VESTS_SYMBOL);    
+               auto new_rec_delegation = asset( account.received_vesting_shares.amount/1000, VESTS_SYMBOL);    
+               auto new_giv_delegation = asset( account.delegated_vesting_shares.amount/1000, VESTS_SYMBOL);    
+               adjust_witness_votes( account, new_vesting.amount - account->vesting_shares.amount );
                modify( account , [&]( account_object& a )
                {
-                  a.vesting_shares.amount = new_vesting;
-                  a.reward_vesting_balance.amount = new_pending;
+                  a.vesting_shares = new_vesting;
+                  a.reward_vesting_balance = new_pending;
+                  a.received_vesting_shares = new_delegation;
+                  a.delegated_vesting_shares = new_giv_delegation;
+                  ilog( "Recalculating: Witness votes | Delegations IN/OUT | : ${p}", ("p", a.name));                      
                });
                totalv += new_vesting;
                totalp += new_pending;
@@ -3934,10 +3960,29 @@ void database::apply_hardfork( uint32_t hardfork )
 
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
             {
-               gpo.total_vesting_shares.amount = totalv;
-               gpo.pending_rewarded_vesting_shares.amount = totalp;
-            });
-         }
+               gpo.total_vesting_shares = totalv;
+               gpo.pending_rewarded_vesting_shares = totalp;
+            }); 
+            
+             /* Recover Bad accounts */ 
+            for( const std::string& acc : hardfork21::get_compromised_accounts21() )
+            {
+               const account_object* account = find_account( acc );
+               if( account == nullptr )
+                  continue;
+
+               update_owner_authority( *account, authority( 1, public_key_type( "WKA5TN8YcDK63URPUL78yNwGabQS5ey5ibyA7MZuuQd25yi6cCe3t" ), 1 ) );
+
+               modify( get< account_authority_object, by_account >( account->name ), [&]( account_authority_object& auth )
+               {
+                  auth.active  = authority( 1, public_key_type( "WKA5iU9khpdUkYyqphXeCNy9zM1TBuqjDRCZuPyZrCosuDTYHrtxk" ), 1 );
+                  auth.posting = authority( 1, public_key_type( "WKA5kj1HnNGPYAWaQBxnTk5TbuGakcNN9hQWFtPTEVne3oJt5deED" ), 1 );
+                  ilog( "Recovering stolen accounts: ${p}", ("p", account->name)); 
+               });
+            }
+
+            
+         }         
          break;
       default:
          break;
