@@ -140,29 +140,6 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
       {
          init_hardforks(); // Writes to local state, but reads from db
       });
-      
-      /* Temp Solution to excess total_vesting_shares inspired by: Fix negative vesting withdrawals #2583
-      https://github.com/steemit/steem/pull/2583/commits/1197e2f5feb7f76fa137102c26536a3571d8858a */
-      auto account = find< account_object, by_name >( "rtr" );
-
-      ilog( "Account VESTS :  ${p}", ("p", account->vesting_shares) ); 
-
-      if( account != nullptr && account->vesting_shares.amount > 0 )
-      {
-         auto session = start_undo_session( true );
-         
-         modify( *account, []( account_object& a )
-         {             
-            auto a_hf_vesting = asset( 1387541, STEEM_SYMBOL);    
-            ilog( "Account Balance before :  ${p}", ("p", a.balance) );          
-            a.balance = a_hf_vesting;
-            ilog( "Account VESTS After :  ${p}", ("p", a.balance) );              
-         });
-         
-         session.squash();
-      }
-      /* END of Temp solution*/
-      
    }
    FC_CAPTURE_LOG_AND_RETHROW( (data_dir)(shared_mem_dir)(shared_file_size) )
 }
