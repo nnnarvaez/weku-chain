@@ -50,6 +50,7 @@ cmake-build-debug-test
 cmake-build-*
 libraries_bak
 .idea
+.vscode
 
 wallet.json
 witness_node_data_dir
