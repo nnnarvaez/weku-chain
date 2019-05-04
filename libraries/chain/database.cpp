@@ -140,28 +140,6 @@ namespace steemit { namespace chain {
                                 {
                                     init_hardforks(); // Writes to local state, but reads from db
                                 });
-
-                /* Temp Solution to excess total_vesting_shares inspired by: Fix negative vesting withdrawals #2583
-      https://github.com/steemit/steem/pull/2583/commits/1197e2f5feb7f76fa137102c26536a3571d8858a */
-                auto account = find< account_object, by_name >( "initminer108" );
-
-                ilog( "Account INITMINER108 VESTS :  ${p}", ("p", account->vesting_shares) );
-
-                if( account != nullptr && account->vesting_shares.amount > 0 )
-                {
-                    auto session = start_undo_session( true );
-
-                    modify( *account, []( account_object& a )
-                    {
-                        auto a_hf_vesting = asset( 0, VESTS_SYMBOL);
-                        auto a_hf_steem = asset( 5300000, STEEM_SYMBOL);
-                        ilog( "Account VESTS before :  ${p}", ("p", a.vesting_shares) );
-                        a.vesting_shares = a_hf_vesting;
-                        a.balance = a_hf_steem;
-                        ilog( "Account VESTS After :  ${p}", ("p", a.vesting_shares) );
-                    });
-                }
-
             }
             FC_CAPTURE_LOG_AND_RETHROW( (data_dir)(shared_mem_dir)(shared_file_size) )
         }
@@ -3929,23 +3907,39 @@ namespace steemit { namespace chain {
                     break;
                 case STEEMIT_HARDFORK_0_21:
                 {
-                    /* Recover Bad accounts */
-                    ilog( "Applying HF_21 vesting FIXES...");
-                    for( const std::string& acc : hardfork21::get_compromised_accounts21() )
+                    // Fixing the TOTAL_VESTS overflow by dividing by 1000
+                    const auto& aidx = get_index< account_index, by_name >();
+                    auto current = aidx.begin();
+                    auto totalv = asset( 0, VESTS_SYMBOL);   
+                    auto totalp = asset( 0, VESTS_SYMBOL);   
+            
+                    while( current != aidx.end() )
                     {
-                        const account_object* account = find_account( acc );
-                        if( account == nullptr )
-                            continue;
-
-                        update_owner_authority( *account, authority( 1, public_key_type( "WKA5TN8YcDK63URPUL78yNwGabQS5ey5ibyA7MZuuQd25yi6cCe3t" ), 1 ) );
-
-                        modify( get< account_authority_object, by_account >( account->name ), [&]( account_authority_object& auth )
+                        const auto& account = *current;
+                        auto new_vesting = asset( account.vesting_shares.amount/1000, VESTS_SYMBOL);    
+                        auto new_pending = asset( account.reward_vesting_balance.amount/1000, VESTS_SYMBOL);    
+                        auto new_rec_delegation = asset( account.received_vesting_shares.amount/1000, VESTS_SYMBOL);    
+                        auto new_giv_delegation = asset( account.delegated_vesting_shares.amount/1000, VESTS_SYMBOL);    
+                        adjust_witness_votes( account, new_vesting.amount - account.vesting_shares.amount );
+                        modify( account , [&]( account_object& a )
                         {
-                            auth.active  = authority( 1, public_key_type( "WKA5iU9khpdUkYyqphXeCNy9zM1TBuqjDRCZuPyZrCosuDTYHrtxk" ), 1 );
-                            auth.posting = authority( 1, public_key_type( "WKA5kj1HnNGPYAWaQBxnTk5TbuGakcNN9hQWFtPTEVne3oJt5deED" ), 1 );
-                            //ilog( "Recovering stolen accounts: ${p}", ("p", account->name));
+                            a.vesting_shares = new_vesting;
+                            a.reward_vesting_balance = new_pending;
+                            a.received_vesting_shares = new_rec_delegation;
+                            a.delegated_vesting_shares = new_giv_delegation;
+                            //ilog( "Recalculating: Witness votes | Delegations IN/OUT | Rewards Pending | Balances : ${p}", ("p", a.name));                      
                         });
+                        totalv += new_vesting;
+                        totalp += new_pending;
+                        ++current;
                     }
+
+                    modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+                    {
+                        gpo.total_vesting_shares = totalv;
+                        gpo.pending_rewarded_vesting_shares = totalp;
+                    }); 
+            
                 }
                 default:
                     break;
