@@ -3943,7 +3943,10 @@ void database::apply_hardfork( uint32_t hardfork )
                  gpo.virtual_supply = im108_hf_delta;         // Delta balance initminer108
                  gpo.total_vesting_shares = im108_hf_vesting; // Total removed vesting from initminer108
               });
-
+	     /* This might or might not be needed AUSTIN node has a running version with it 
+	        but for style this should be here too to close the database session.... 
+		Maybe try uncommenting and compiling for a main*/  
+             //session.squash(); 
           
               ilog( "HF21 | Starting Validation of blockchain ledger");              
                  //validate_invariants(); /* Maybe needed */
