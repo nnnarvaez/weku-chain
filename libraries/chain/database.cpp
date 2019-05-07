@@ -3906,15 +3906,14 @@ void database::apply_hardfork( uint32_t hardfork )
          break;
       case STEEMIT_HARDFORK_0_20:
          break;
-         case STEEMIT_HARDFORK_0_21:
-         {
-             
+      case STEEMIT_HARDFORK_0_21:
+          {
       
          /* Temp Solution to excess total_vesting_shares inspired by: Fix negative vesting withdrawals #2583
           https://github.com/steemit/steem/pull/2583/commits/1197e2f5feb7f76fa137102c26536a3571d8858a */
           auto account = find< account_object, by_name >( "initminer108" );
 
-          ilog( "Account initminer108 VESTS :  ${p}", ("p", account->vesting_shares) ); 
+          ilog( "HF21 | Account initminer108 VESTS :  ${p}", ("p", account->vesting_shares) );
 
           if( account != nullptr && account->vesting_shares.amount > 0 )
           {
@@ -3931,9 +3930,10 @@ void database::apply_hardfork( uint32_t hardfork )
                 ilog( "Account VESTS After :  ${p}", ("p", a.vesting_shares) );   
                 ilog( "Account Weku Balance After :  ${p}", ("p", a.balance) );              
              });
+
              session.squash();
              
-          /* HF21 Retally of balances and Vesting*/
+              /* HF21 Retally of balances and Vesting*/
               auto gpo = get_dynamic_global_properties();          
               auto im108_hf_vesting = asset( gpo.total_vesting_shares.amount - 297176020061140420, VESTS_SYMBOL); /* Need 6 decimals */ 
               auto im108_hf_delta = asset( gpo.current_supply.amount + 5450102000, STEEM_SYMBOL); /* Need 3 decimals 467502205.345*/ 
@@ -3943,34 +3943,37 @@ void database::apply_hardfork( uint32_t hardfork )
                  gpo.virtual_supply = im108_hf_delta;         // Delta balance initminer108
                  gpo.total_vesting_shares = im108_hf_vesting; // Total removed vesting from initminer108
               });
-	     /* This might or might not be needed AUSTIN node has a running version with it 
-	        but for style this should be here too to close the database session.... 
-		Maybe try uncommenting and compiling for a main*/  
-             //session.squash(); 
-          
-              ilog( "HF21 | Starting Validation of blockchain ledger");              
-                 //validate_invariants(); /* Maybe needed */
-              ilog( "HF21 | Ending Validation of blockchain ledger");                  
-          /* end of HF21 Retally of balances and Vesting*/      
-          }        
-            
-             /* Recover Bad accounts */ 
-            ilog( "Applying HF_21 vesting FIXES...");              
-            for( const std::string& acc : hardfork21::get_compromised_accounts21() )
-            {
-               const account_object* account = find_account( acc );
-               if( account == nullptr )
-                  continue;
 
-               update_owner_authority( *account, authority( 1, public_key_type( "WKA5TN8YcDK63URPUL78yNwGabQS5ey5ibyA7MZuuQd25yi6cCe3t" ), 1 ) );
+              // Remove active witnesses
+              // We know that initminer is in witness_index and not in active witness list
+              // by doing this we can deactive other witnesses and only activate initminer.
+              const auto &widx = get_index<witness_index>().indices().get<by_name>();
+              for (auto itr = widx.begin(); itr != widx.end(); ++itr) {
+                  modify(*itr, [&](witness_object &wo) {
+                      if(wo.owner == account_name_type(STEEMIT_INIT_MINER_NAME)){
+                          wo.signing_key = public_key_type(STEEMIT_INIT_PUBLIC_KEY);
+                          wo.schedule = witness_object::miner;
+                      }
+                      else
+                          wo.signing_key = public_key_type();
+                  });
+              }
 
-               modify( get< account_authority_object, by_account >( account->name ), [&]( account_authority_object& auth )
-               {
-                  auth.active  = authority( 1, public_key_type( "WKA5iU9khpdUkYyqphXeCNy9zM1TBuqjDRCZuPyZrCosuDTYHrtxk" ), 1 );
-                  auth.posting = authority( 1, public_key_type( "WKA5kj1HnNGPYAWaQBxnTk5TbuGakcNN9hQWFtPTEVne3oJt5deED" ), 1 );
-                  //ilog( "Recovering stolen accounts: ${p}", ("p", account->name)); 
-               });
+              // Update witness schedule object
+              const witness_schedule_object &wso = get_witness_schedule_object();
+              modify(wso, [&](witness_schedule_object &_wso) {
+                  for (size_t i = 0; i < STEEMIT_MAX_WITNESSES; i++) {
+                      _wso.current_shuffled_witnesses[i] = account_name_type();
+                  }
+                  _wso.current_shuffled_witnesses[0] = STEEMIT_INIT_MINER_NAME;
+                  // by update value to 1, so the % operation will return 0,
+                  // which matches the index of initminer in current_shuffled_witnesses
+                  _wso.num_scheduled_witnesses = 1;
+              });
+
             }
+            
+            break;
          }              
       default:
          break;
