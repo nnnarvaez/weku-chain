@@ -99,7 +99,14 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
 {
    try
    {
+      // TODO: this function is deprecated.
       init_schema();
+
+      // open memory database files, if not exist, will create them.
+      // shared_mem.bin will contains all data, and the first object at the offset 0 of the database
+      // is the object named environment_check which is used to check if the memory file is
+      // created from same OS/compiler version/release or debug mode.
+      // shared_mem.meta will only contains one rw_manager object which is used to file lock.
       chainbase::database::open( shared_mem_dir, chainbase_flags, shared_file_size );
 
       initialize_indexes();
@@ -107,14 +114,18 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
 
       if( chainbase_flags & chainbase::database::read_write )
       {
+         // if the "condition" is true, means it's at begining, need init_genesis.
          if( !find< dynamic_global_property_object >() )
             with_write_lock( [&]()
             {
+               // after init_genesis, the head_block_number of gpo is set to 0;
                init_genesis( initial_supply );
             });
 
+         // if just after init_genesis, at this point, the block_log file will be empty.
          _block_log.open( data_dir / "block_log" );
 
+         // TODO: remove below line
          auto log_head = _block_log.head();
 
          // Rewind all undo state. This should return us to the state at the last irreversible block.
@@ -126,6 +137,8 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
             validate_invariants();
          });
 
+         // if it's first time open, means the init_genesis is just ran,
+         // at this point, the head_block_num() will return 0
          if( head_block_num() )
          {
             auto head_block = _block_log.read_block_by_num( head_block_num() );
@@ -138,6 +151,7 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
 
       with_read_lock( [&]()
       {
+         // init hardforks, genesis will be inited as hardfork "0"
          init_hardforks(); // Writes to local state, but reads from db
       });
    }
@@ -1168,6 +1182,7 @@ void database::adjust_witness_vote( const witness_object& witness, share_type de
 
       w.virtual_last_update = wso.current_virtual_time;
       w.votes += delta;
+      // TODO: need update votes type to match total_vesting_shares type
       FC_ASSERT( w.votes <= get_dynamic_global_properties().total_vesting_shares.amount, "", ("w.votes", w.votes)("props",get_dynamic_global_properties().total_vesting_shares) );
 
       if( has_hardfork( STEEMIT_HARDFORK_0_2 ) )
@@ -2393,6 +2408,7 @@ void database::init_genesis( uint64_t init_supply )
 
       for( int i = 0; i < STEEMIT_NUM_INIT_MINERS; ++i )
       {
+         // QUESTION: Does this create initminer twice? since above code already created one.
          create< account_object >( [&]( account_object& a )
          {
             a.name = STEEMIT_INIT_MINER_NAME + ( i ? fc::to_string( i ) : std::string() );
@@ -2429,7 +2445,9 @@ void database::init_genesis( uint64_t init_supply )
       } );
 
       // Nothing to do
+      // QUESTION: Does this actually save and empty feed_history_object into index/container?
       create< feed_history_object >( [&]( feed_history_object& o ) {});
+      // QUESTION: Does it necessary to create all these empty objects?
       for( int i = 0; i < 0x10000; i++ )
          create< block_summary_object >( [&]( block_summary_object& ) {});
       create< hardfork_property_object >( [&](hardfork_property_object& hpo )
@@ -3511,12 +3529,15 @@ void database::init_hardforks()
 {
    _hardfork_times[ 0 ] = fc::time_point_sec( STEEMIT_GENESIS_TIME );
    _hardfork_versions[ 0 ] = hardfork_version( 0, 0 );
+
    FC_ASSERT( STEEMIT_HARDFORK_0_1 == 1, "Invalid hardfork configuration" );
    _hardfork_times[ STEEMIT_HARDFORK_0_1 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_1_TIME );
    _hardfork_versions[ STEEMIT_HARDFORK_0_1 ] = STEEMIT_HARDFORK_0_1_VERSION;
+
    FC_ASSERT( STEEMIT_HARDFORK_0_2 == 2, "Invlaid hardfork configuration" );
    _hardfork_times[ STEEMIT_HARDFORK_0_2 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_2_TIME );
    _hardfork_versions[ STEEMIT_HARDFORK_0_2 ] = STEEMIT_HARDFORK_0_2_VERSION;
+
    FC_ASSERT( STEEMIT_HARDFORK_0_3 == 3, "Invalid hardfork configuration" );
    _hardfork_times[ STEEMIT_HARDFORK_0_3 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_3_TIME );
    _hardfork_versions[ STEEMIT_HARDFORK_0_3 ] = STEEMIT_HARDFORK_0_3_VERSION;
