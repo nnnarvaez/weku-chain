@@ -59,6 +59,17 @@ sudo apt-get install -y \
 
 # Clone and Compile
 
+Example: (non rpc node)
+```
+# git clone https://github.com/wekuio/weku-chain
+# git submodule update --init --recursive
+# mkdir build
+# cd build
+# cmake -DCMAKE_BUILD_TYPE=Release -DLOW_MEMORY_NODE=ON -DSKIP_BY_TX_ID=ON -DCLEAR_VOTES=ON ..
+# make -j$(sysctl -n hw.logicalcpu)
+```
+
+Example: (full rpc node needs 128 GB server)
 ```
 # git clone https://github.com/wekuio/weku-chain
 # git submodule update --init --recursive
@@ -104,10 +115,6 @@ By default this is off. Enabling will prevent the account history plugin queryin
 by id, but saving around 65% of CPU time when reindexing. Enabling this option is a
 huge gain if you do not need this
 
-Example: (non rpc node)
-```
-# cmake -DCMAKE_BUILD_TYPE=Release -DLOW_MEMORY_NODE=ON -SKIP_BY_TX_ID=ON -CLEAR_VOTES=ON ..
-```
 
 # Speeding up replay
 (For linux gurus)
@@ -121,3 +128,10 @@ echo 30000 | sudo tee /proc/sys/vm/dirty_writeback_centisec
 ``` 
 
 Revert to default values once your replay is done. 
+default
+```
+echo    10 | sudo tee /proc/sys/vm/dirty_background_ratio
+sudo rm -fr sudo tee /proc/sys/vm/dirty_expire_centisec
+echo    20 | sudo tee /proc/sys/vm/dirty_ratio
+sudo rm -fr /proc/sys/vm/dirty_writeback_centisec
+```
