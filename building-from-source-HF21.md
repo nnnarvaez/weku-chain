@@ -79,3 +79,45 @@ the important thing is to have the `config.ini` file with your witness settings 
 ```
 # ./wekud
 ```
+
+
+# Advanced build options
+(For those who know what they are doing)
+
+### LOW_MEMORY_NODE=[OFF/ON]
+
+Builds wekud to be a consensus-only low memory node. Data and fields not
+needed for consensus are not stored in the object database. This option is
+recommended for witnesses and seed-nodes.
+
+### CLEAR_VOTES=[ON/OFF]
+
+Clears old votes from memory that are no longer required for consensus.
+
+### BUILD_STEEM_TESTNET=[OFF/ON]
+
+Builds weku for use in a private testnet. Also required for building unit tests.
+
+### SKIP_BY_TX_ID=[OFF/ON]
+
+By default this is off. Enabling will prevent the account history plugin querying transactions
+by id, but saving around 65% of CPU time when reindexing. Enabling this option is a
+huge gain if you do not need this
+
+Example: (non rpc node)
+```
+# cmake -DCMAKE_BUILD_TYPE=Release -DLOW_MEMORY_NODE=ON -SKIP_BY_TX_ID=ON -CLEAR_VOTES=ON ..
+```
+
+# Speeding up replay
+(For linux gurus)
+
+On Linux use the following Virtual Memory configuration for the initial sync and subsequent replays. It is not needed for normal operation.
+```
+echo    75 | sudo tee /proc/sys/vm/dirty_background_ratio
+echo  1000 | sudo tee /proc/sys/vm/dirty_expire_centisec
+echo    80 | sudo tee /proc/sys/vm/dirty_ratio
+echo 30000 | sudo tee /proc/sys/vm/dirty_writeback_centisec
+``` 
+
+Revert to default values once your replay is done. 
