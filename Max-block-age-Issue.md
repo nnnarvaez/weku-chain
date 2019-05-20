@@ -12,7 +12,7 @@ This instructions do not apply but are a good start for a how-to.
 ### Open cli_wallet and unlock it.
 Then issue the enabling command
 ```
-update_witness "Your-Witness-Name" "https://main.weku.io/@alexey05" WKA6XT9cBahMxC6t3PunG3jWkPrHWiCV1cHLyuCsLjahav14L5v2h {"account_creation_fee”:"1.000 WEKU", "maximum_block_size":131072,"sbd_interest_rate":0} true
+update_witness "Your-Witness-Name" "https://main.weku.io/@alexey05" WKA6XT9cBahMxC6t3PunG3jWkPrHWiCV1cHLyuCsLjahav14L5v2h {"account_creation_fee”:"1.000 WEKU", "maximum_block_size":65536,"sbd_interest_rate":1000} true
 ```
 
 replace _Your-Witness-Name_ with your account name, and replace the _public key_ with your public key above is the register command in cli_wallet
@@ -22,7 +22,7 @@ replace _Your-Witness-Name_ with your account name, and replace the _public key_
 Then issue the disabling command
 
 ```
-update_witness "Your-Witness-Name" "https://main.weku.io/@alexey05"  WKA1111111111111111111111111111111114T1Anm  {"account_creation_fee”:"1.000 WEKU", "maximum_block_size":131072,"sbd_interest_rate":0} true
+update_witness "Your-Witness-Name" "https://main.weku.io/@alexey05"  WKA1111111111111111111111111111111114T1Anm  {"account_creation_fee”:"1.000 WEKU", "maximum_block_size":65536,"sbd_interest_rate":1000} true
 ```
 replace _Your-Witness-Name_ with your account name in cli_wallet
 
