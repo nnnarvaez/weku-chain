@@ -9,7 +9,9 @@ namespace steemit { namespace protocol {
 
    struct transaction
    {
+       // QUESTION: does this ref_block_num mean the transaction belongs to it?
       uint16_t           ref_block_num    = 0;
+      // ref_block_prefix is the second byte of the block_id array (block id is just a uint32_t _hash[5])
       uint32_t           ref_block_prefix = 0;
 
       fc::time_point_sec expiration;

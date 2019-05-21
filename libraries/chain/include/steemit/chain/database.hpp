@@ -37,6 +37,12 @@ namespace steemit { namespace chain {
    /**
     *   @class database
     *   @brief tracks the blockchain state in an extensible manner
+    *
+    *   database is child class of chainbase::database,
+    *   plus _block_log, _fork_db and some other fields.
+    *
+    *   database is an object database in memory, db has multiple containers (named index here, kind of table)
+    *   each container(index) has many same type objects.
     */
    class database : public chainbase::database
    {
@@ -363,6 +369,7 @@ namespace steemit { namespace chain {
 
          /// Reset the object graph in-memory
          void initialize_indexes();
+         // TODO: init_schema is deprecated.
          void init_schema();
          void init_genesis(uint64_t initial_supply = STEEMIT_INIT_SUPPLY );
 
@@ -468,10 +475,12 @@ namespace steemit { namespace chain {
          uint16_t                      _current_op_in_trx    = 0;
          uint16_t                      _current_virtual_op   = 0;
 
+         // key: value is block_num: block_id
          flat_map<uint32_t,block_id_type>  _checkpoints;
 
          node_property_object              _node_property_object;
 
+         // QUESTION: what is the _flush_blocks for?
          uint32_t                      _flush_blocks = 0;
          uint32_t                      _next_flush_block = 0;
 

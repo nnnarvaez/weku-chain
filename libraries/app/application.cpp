@@ -109,6 +109,7 @@ namespace detail {
                   for (const fc::ip::endpoint& endpoint : endpoints)
                   {
                      ilog("Adding seed node ${endpoint}", ("endpoint", endpoint));
+                     // add seed node to potential peers database
                      _p2p_network->add_node(endpoint);
                      _p2p_network->connect_to_endpoint(endpoint);
                   }
@@ -141,6 +142,7 @@ namespace detail {
          _p2p_network->listen_to_p2p_network();
          ilog("Configured p2p node to listen on ${ip}", ("ip", _p2p_network->get_actual_listening_endpoint()));
 
+            // connect events to network.
          _p2p_network->connect_to_p2p_network();
          block_id_type head_block_id;
          _chain_db->with_read_lock( [&]()
