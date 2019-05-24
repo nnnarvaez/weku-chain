@@ -86,6 +86,7 @@ namespace steemit {
 
             auto num_elected = active_witnesses.size();
 
+            // TODO: looks like mining is disabled after hardfork 17, we might need to remove below logic
             /// Add miners from the top of the mining queue
             flat_set<witness_id_type> selected_miners;
             selected_miners.reserve(wso.max_miner_witnesses);
@@ -161,9 +162,9 @@ namespace steemit {
             }
 
             size_t expected_active_witnesses = std::min(size_t(STEEMIT_MAX_WITNESSES), widx.size());
-            //alexey: remove this check, which cause chain stuck if one of witness is not running
-            //FC_ASSERT( active_witnesses.size() == expected_active_witnesses, "number of active witnesses does not equal expected_active_witnesses=${expected_active_witnesses}",
-            //                                    ("active_witnesses.size()",active_witnesses.size()) ("STEEMIT_MAX_WITNESSES",STEEMIT_MAX_WITNESSES) ("expected_active_witnesses", expected_active_witnesses) );
+
+            FC_ASSERT( active_witnesses.size() == expected_active_witnesses, "number of active witnesses does not equal expected_active_witnesses=${expected_active_witnesses}",
+                                                ("active_witnesses.size()",active_witnesses.size()) ("STEEMIT_MAX_WITNESSES",STEEMIT_MAX_WITNESSES) ("expected_active_witnesses", expected_active_witnesses) );
 
             auto majority_version = wso.majority_version;
 
@@ -185,6 +186,12 @@ namespace steemit {
                         hardfork_version_votes[version_vote] += 1;
                 }
 
+                // major_version is initialized with wso.majority_version above.
+                // for example:
+                // witness_versions is: {"1.5": 15, "1.4":1, "1.2": 2, "1.1": 3}
+                // wso.hardfork_required_witnesses = 17 (set in config)
+                // so after the while loop, the majority_version will be: "1.2"
+                // QUESTION: majority_version is only used to display info, doesn't involve in any concensus algorithm?
                 int witnesses_on_version = 0;
                 auto ver_itr = witness_versions.begin();
 
@@ -220,6 +227,8 @@ namespace steemit {
                 }
 
                 // We no longer have a majority
+                // QUESTION: what is the consequences of not having a majority hardfork version?
+                // looks like next_harfork field is only useful for debug_node?
                 if (hf_itr == hardfork_version_votes.end()) {
                     db.modify(db.get_hardfork_property_object(), [&](hardfork_property_object &hpo) {
                         hpo.next_hardfork = hpo.current_hardfork_version;
@@ -238,6 +247,9 @@ namespace steemit {
                     _wso.current_shuffled_witnesses[i] = account_name_type();
                 }
 
+                // for example:
+                // if you have 21 witness, then the witness_pay_normalization_factor will be equal to
+                // 1 * 19 + 1 * 1 + 5 * 1 = 25
                 _wso.num_scheduled_witnesses = std::max<uint8_t>(active_witnesses.size(), 1);
                 _wso.witness_pay_normalization_factor =
                         _wso.top19_weight * num_elected
@@ -262,6 +274,7 @@ namespace steemit {
                 }
 
                 _wso.current_virtual_time = new_virtual_time;
+                // looks like this next_shuffle_block_num is not used after STEEMIT_HARDFORK_0_4
                 _wso.next_shuffle_block_num = db.head_block_num() + _wso.num_scheduled_witnesses;
                 _wso.majority_version = majority_version;
             });
