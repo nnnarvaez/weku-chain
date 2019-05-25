@@ -72,7 +72,7 @@ namespace steemit { namespace chain {
          /// TRENDING = UNCLAIMED + PENDING
          share_type        net_rshares; // reward is proportional to rshares^2, this is the sum of all votes (positive and negative)
          share_type        abs_rshares; /// this is used to track the total abs(weight) of votes for the purpose of calculating cashout_time
-         share_type        vote_rshares; /// Total positive rshares from all votes. Used to calculate delta weights. Needed to handle vote changing and removal.
+         share_type        vote_rshares; /// Total positive rshares (negative rshares are ignored here) from all votes. Used to calculate delta weights. Needed to handle vote changing and removal.
 
          share_type        children_abs_rshares; /// this is used to calculate cashout time of a discussion.
          time_point_sec    cashout_time; /// 24 hours from the weighted average of vote time
@@ -88,7 +88,7 @@ namespace steemit { namespace chain {
 
          share_type        author_rewards = 0;
 
-         int32_t           net_votes = 0;
+         int32_t           net_votes = 0; // sum of positive vote count and negative vote count.
 
          id_type           root_comment;
 
