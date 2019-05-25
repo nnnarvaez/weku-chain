@@ -935,6 +935,9 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
 
       _db.modify( account, [&]( account_object& a )
       {
+         // for example:
+         // you want to withdraw 1300 vests, and the interval is 13,
+         // then the new_vesting_withdraw_rate will be 100 VESTS (type is asset).
          auto new_vesting_withdraw_rate = asset( o.vesting_shares.amount / vesting_withdraw_intervals, VESTS_SYMBOL );
 
          if( new_vesting_withdraw_rate.amount == 0 )
@@ -944,6 +947,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
             FC_ASSERT( account.vesting_withdraw_rate  != new_vesting_withdraw_rate, "This operation would not change the vesting withdraw rate." );
 
          a.vesting_withdraw_rate = new_vesting_withdraw_rate;
+         // the next vesting withdraw time is set to next week
          a.next_vesting_withdrawal = _db.head_block_time() + fc::seconds(STEEMIT_VESTING_WITHDRAW_INTERVAL_SECONDS);
          a.to_withdraw = o.vesting_shares.amount;
          a.withdrawn = 0;
@@ -1296,6 +1300,8 @@ void vote_evaluator::do_apply( const vote_operation& o )
       fc::uint128_t new_rshares = std::max( comment.net_rshares.value, int64_t(0));
 
       /// calculate rshares2 value
+      // new_rshares is new net_rshares
+      // old_rshares is old net_rshares
       new_rshares = util::evaluate_reward_curve( new_rshares );
       old_rshares = util::evaluate_reward_curve( old_rshares );
 
@@ -1322,7 +1328,7 @@ void vote_evaluator::do_apply( const vote_operation& o )
       _db.create<comment_vote_object>( [&]( comment_vote_object& cv ){
          cv.voter   = voter.id;
          cv.comment = comment.id;
-         cv.rshares = rshares;
+         cv.rshares = rshares; // means net_rshares here
          cv.vote_percent = o.weight;
          cv.last_update = _db.head_block_time();
 
@@ -2030,6 +2036,9 @@ void transfer_to_savings_evaluator::do_apply( const transfer_to_savings_operatio
    _db.adjust_savings_balance( to, op.amount );
 }
 
+// QUSTION: only minus the amount from account
+// didn't see any amount deposit to any account?
+// should it be pair of out and in?
 void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_operation& op )
 {
    const auto& from = _db.get_account( op.from );
