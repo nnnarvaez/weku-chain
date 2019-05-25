@@ -99,9 +99,6 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
 {
    try
    {
-      // TODO: this function is deprecated.
-      init_schema();
-
       // open memory database files, if not exist, will create them.
       // shared_mem.bin will contains all data, and the first object at the offset 0 of the database
       // is the object named environment_check which is used to check if the memory file is
@@ -119,6 +116,7 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
             with_write_lock( [&]()
             {
                // after init_genesis, the head_block_number of gpo is set to 0;
+               // init_genesis will not trigger apply_block()
                init_genesis( initial_supply );
             });
 
@@ -158,11 +156,14 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
    FC_CAPTURE_LOG_AND_RETHROW( (data_dir)(shared_mem_dir)(shared_file_size) )
 }
 
+// it's been called when user run: wekud --replay
 void database::reindex( const fc::path& data_dir, const fc::path& shared_mem_dir, uint64_t shared_file_size )
 {
    try
    {
       ilog( "Reindexing Blockchain" );
+      // wipe here is delete two files: shared_memory.bin and shared_memory.meta
+      // but keep block_log and block_log.index file.
       wipe( data_dir, shared_mem_dir, false );
       // fix reindex bug here
       //open( data_dir, shared_mem_dir, 0, shared_file_size, chainbase::database::read_write );
@@ -173,7 +174,6 @@ void database::reindex( const fc::path& data_dir, const fc::path& shared_mem_dir
       STEEMIT_ASSERT( _block_log.head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
 
       ilog( "Replaying blocks..." );
-
 
       uint64_t skip_flags =
          skip_witness_signature |
@@ -195,7 +195,7 @@ void database::reindex( const fc::path& data_dir, const fc::path& shared_mem_dir
          while( itr.first.block_num() != last_block_num )
          {
             auto cur_block_num = itr.first.block_num();
-            if( cur_block_num % 100000 == 0 )
+            if( cur_block_num % 100000 == 0 ) // the free memory here means free disk space of mapping file, not physical memory.
                std::cerr << "   " << double( cur_block_num * 100 ) / last_block_num << "%   " << cur_block_num << " of " << last_block_num <<
                "   (" << (get_free_memory() / (1024*1024)) << "M free)\n";
             apply_block( itr.first, skip_flags );
@@ -227,6 +227,7 @@ void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, b
    }
 }
 
+
 void database::close(bool rewind)
 {
    try
@@ -246,6 +247,7 @@ void database::close(bool rewind)
    FC_CAPTURE_AND_RETHROW()
 }
 
+// if the block is in fork_db or in block_log, return true, otherwise return false.
 bool database::is_known_block( const block_id_type& id )const
 { try {
    return fetch_block_by_id( id ).valid();
@@ -540,6 +542,7 @@ bool database::push_block(const signed_block& new_block, uint32_t skip)
    return result;
 }
 
+// This usally happens when two witness nodes are using same account
 void database::_maybe_warn_multiple_production( uint32_t height )const
 {
    auto blocks = _fork_db.fetch_block_by_number( height );
@@ -556,6 +559,7 @@ void database::_maybe_warn_multiple_production( uint32_t height )const
    return;
 }
 
+// TODO: very important code related to consensus, need to refactory to improve readability
 bool database::_push_block(const signed_block& new_block)
 { try {
    uint32_t skip = get_node_properties().skip_flags;
@@ -563,6 +567,7 @@ bool database::_push_block(const signed_block& new_block)
 
    if( !(skip&skip_fork_db) )
    {
+      // _fork_db.push_block will return the head block of current longest chain in fork_db.
       shared_ptr<fork_item> new_head = _fork_db.push_block(new_block);
       _maybe_warn_multiple_production( new_head->num );
 
@@ -574,6 +579,7 @@ bool database::_push_block(const signed_block& new_block)
          if( new_head->data.block_num() > head_block_num() )
          {
             // wlog( "Switching to fork: ${id}", ("id",new_head->data.id()) );
+            // get two branches, which shared same parent, not include parent, stored reversely.
             auto branches = _fork_db.fetch_branch_from(new_head->data.id(), head_block_id());
 
             // pop blocks until we hit the forked block
@@ -1048,6 +1054,9 @@ asset database::create_vesting( const account_object& to_account, asset steem, b
        *
        *  128 bit math is requred due to multiplying of 64 bit numbers. This is done in asset and price.
        */
+
+      // From my understanding, the ratio is not changes here,
+      // but it's being changed by the gradually reduced price in process_fund function
       asset new_vesting = steem * ( to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price() );
 
       modify( to_account, [&]( account_object& to )
@@ -1252,6 +1261,8 @@ void database::clear_null_account_balance()
    if( null_account.vesting_shares.amount > 0 )
    {
       const auto& gpo = get_dynamic_global_properties();
+      // TODO: need to confirm if below calc is correct or not.
+      // QUESTION: should below calc using divide instead of multiply?
       auto converted_steem = null_account.vesting_shares * gpo.get_vesting_share_price();
 
       modify( gpo, [&]( dynamic_global_property_object& g )
@@ -1811,11 +1822,13 @@ void database::process_funds()
 
       auto new_steem = ( props.virtual_supply.amount * current_inflation_rate ) / ( int64_t( STEEMIT_100_PERCENT ) * int64_t( STEEMIT_BLOCKS_PER_YEAR ) );
 
+      // hardfork 20 fixes the inflation rate at 5%
       if(has_hardfork(STEEMIT_HARDFORK_0_20__11))
          new_steem = ( share_type(STEEMIT_INIT_SUPPLY) * int64_t(STEEMIT_INFLATION_RATE_PERCENT_0_20) ) / ( int64_t( STEEMIT_100_PERCENT ) * int64_t( STEEMIT_BLOCKS_PER_YEAR ) );
 
       auto content_reward = ( new_steem * STEEMIT_CONTENT_REWARD_PERCENT ) / STEEMIT_100_PERCENT;
       if( has_hardfork( STEEMIT_HARDFORK_0_17__774 ) )
+          // distribute the content_reward to all participants according to their percentage.
          content_reward = pay_reward_funds( content_reward ); /// 75% to content creator
       auto vesting_reward = ( new_steem * STEEMIT_VESTING_FUND_PERCENT ) / STEEMIT_100_PERCENT; /// 15% to vesting fund
       auto witness_reward = new_steem - content_reward - vesting_reward; /// Remaining 10% to witness pay
@@ -1834,10 +1847,15 @@ void database::process_funds()
 
       witness_reward /= wso.witness_pay_normalization_factor;
 
+      // retally the new_steem
       new_steem = content_reward + vesting_reward + witness_reward;
 
       modify( props, [&]( dynamic_global_property_object& p )
       {
+          // as the total_vesting_fund_steem growing without growing total_vesting_shares,
+          // then the price will gradually reduce, means 1 weku will buy less and less vesting.
+          // note: price = total vesting / total vesting fund
+          // basically, vesting_reward will benefit power up users by reducing the price.
          p.total_vesting_fund_steem += asset( vesting_reward, STEEM_SYMBOL );
          if( !has_hardfork( STEEMIT_HARDFORK_0_17__774 ) )
             p.total_reward_fund_steem  += asset( content_reward, STEEM_SYMBOL );
@@ -2554,6 +2572,8 @@ void database::apply_block( const signed_block& next_block, uint32_t skip )
 
    //fc::time_point end_time = fc::time_point::now();
    //fc::microseconds dt = end_time - begin_time;
+
+   // QUESTION: What is below section of code for?
    if( _flush_blocks != 0 )
    {
       if( _next_flush_block == 0 )
@@ -2603,6 +2623,7 @@ void database::show_free_memory( bool force )
    }
 }
 
+// Most important function in the system.
 void database::_apply_block( const signed_block& next_block )
 { try {
    uint32_t next_block_num = next_block.block_num();
@@ -2656,8 +2677,7 @@ void database::_apply_block( const signed_block& next_block )
    /// parse witness version reporting
    process_header_extensions( next_block );
 
-   // NATHAN: Removed to allow HF21 to pass, Check To be reimplemented on HF21__01
-   /*if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork
+   if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) )
    {
       const auto& witness = get_witness( next_block.witness );
       const auto& hardfork_state = get_hardfork_property_object();
@@ -2665,7 +2685,7 @@ void database::_apply_block( const signed_block& next_block )
          "Block produced by witness that is not running current hardfork",
          ("witness",witness)("next_block.witness",next_block.witness)("hardfork_state", hardfork_state)
       );
-   }*/
+   }
 
    for( const auto& trx : next_block.transactions )
    {
@@ -2691,6 +2711,7 @@ void database::_apply_block( const signed_block& next_block )
    update_witness_schedule(*this);
 
    update_median_feed();
+   // QUESTION: another update_virtual_supply in next 10 lines?
    update_virtual_supply();
 
    clear_null_account_balance();
@@ -2706,6 +2727,7 @@ void database::_apply_block( const signed_block& next_block )
    expire_escrow_ratification();
    process_decline_voting_rights();
 
+   // For WEKU, all hardforks before hardfork_20 are applied just after block 1 is saved to dish
    process_hardforks();
 
    // notify observers that the block has been applied
@@ -2716,6 +2738,7 @@ void database::_apply_block( const signed_block& next_block )
 FC_CAPTURE_LOG_AND_RETHROW( (next_block.block_num()) )
 }
 
+// QUESTION: no sure why use next block versions to update witness object versions.
 void database::process_header_extensions( const signed_block& next_block )
 {
    auto itr = next_block.extensions.begin();
@@ -2891,6 +2914,7 @@ void database::_apply_transaction(const signed_transaction& trx)
 
       STEEMIT_ASSERT( trx.expiration <= now + fc::seconds(STEEMIT_MAX_TIME_UNTIL_EXPIRATION), transaction_expiration_exception,
                   "", ("trx.expiration",trx.expiration)("now",now)("max_til_exp",STEEMIT_MAX_TIME_UNTIL_EXPIRATION));
+      // TODO: refactory below asserts, since we has the hardfork since block 1.
       if( has_hardfork( STEEMIT_HARDFORK_0_9 ) ) // Simple solution to pending trx bug when now == trx.expiration
          STEEMIT_ASSERT( now < trx.expiration, transaction_expiration_exception, "", ("now",now)("trx.exp",trx.expiration) );
       STEEMIT_ASSERT( now <= trx.expiration, transaction_expiration_exception, "", ("now",now)("trx.exp",trx.expiration) );
@@ -2906,6 +2930,7 @@ void database::_apply_transaction(const signed_transaction& trx)
       });
    }
 
+   // fire the signal (kind of event), so it will call all signal connected functions.
    notify_on_pre_apply_transaction( trx );
 
    //Finally process the operations
@@ -2914,7 +2939,7 @@ void database::_apply_transaction(const signed_transaction& trx)
    { try {
       apply_operation(op);
       ++_current_op_in_trx;
-     } FC_CAPTURE_AND_RETHROW( (op) );
+     } FC_CAPTURE_AND_RETHROW( (op) ); // QUESTION: Should we remove the transaction object created above in transaction index if error happens here?
    }
    _current_trx_id = transaction_id_type();
 
@@ -3086,10 +3111,12 @@ void database::update_last_irreversible_block()
 
       static_assert( STEEMIT_IRREVERSIBLE_THRESHOLD > 0, "irreversible threshold must be nonzero" );
 
+      // QUESTION: not sure what below 3 lines is about?
       // 1 1 1 2 2 2 2 2 2 2 -> 2     .7*10 = 7
       // 1 1 1 1 1 1 1 2 2 2 -> 1
       // 3 3 3 3 3 3 3 3 3 3 -> 3
 
+      // if wit_objs.size() < 4, then offset will be always 0.
       size_t offset = ((STEEMIT_100_PERCENT - STEEMIT_IRREVERSIBLE_THRESHOLD) * wit_objs.size() / STEEMIT_100_PERCENT);
       //ilog("offset: ${a}", ("a", offset));
       std::nth_element( wit_objs.begin(), wit_objs.begin() + offset, wit_objs.end(),
@@ -3100,9 +3127,12 @@ void database::update_last_irreversible_block()
 
       uint32_t new_last_irreversible_block_num = wit_objs[offset]->last_confirmed_block_num;
 
+      // TODO: Need to remove the hardcode here.
+      // only used to fix the two witnesses, and branch from each other and cannot reach concensus.
       // Alexey: hard code here for fix the less witness bug
-      if(offset < 1)
-          new_last_irreversible_block_num = wit_objs.back()->last_confirmed_block_num;
+      //if(offset < 1)
+      //    new_last_irreversible_block_num = wit_objs.back()->last_confirmed_block_num;
+
       //ilog("witness: ${a}", ("a", std::string(wit_objs[offset]->owner)));
       //ilog("before: new_last_irreversible_block_num: ${a}", ("a", new_last_irreversible_block_num));
       //ilog("before: dpo.last_irreversible_block_num: ${a}", ("a", dpo.last_irreversible_block_num));
@@ -3115,7 +3145,9 @@ void database::update_last_irreversible_block()
          } );
       }
    }
+
    //ilog("after: dpo.last_irreversible_block_num: ${a}", ("a", dpo.last_irreversible_block_num));
+   // Discards all undo history prior to revision
    commit( dpo.last_irreversible_block_num );
 
    if( !( get_node_properties().skip_flags & skip_block_log ) )
@@ -3143,6 +3175,7 @@ void database::update_last_irreversible_block()
       }
    }
 
+   // QUESTION: not sure what exactly below function is doing
    _fork_db.set_max_size( dpo.head_block_number - dpo.last_irreversible_block_num + 1 );
 } FC_CAPTURE_AND_RETHROW() }
 
@@ -3480,9 +3513,11 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
       {
          case STEEM_SYMBOL:
          {
+             // QUESTION: what is the "* 9"  for?
             asset new_vesting( (adjust_vesting && delta.amount > 0) ? delta.amount * 9 : 0, STEEM_SYMBOL );
             props.current_supply += delta + new_vesting;
             props.virtual_supply += delta + new_vesting;
+            // QUESTION: update total_vesting_fund_steem without update total_vesting_shares?
             props.total_vesting_fund_steem += new_vesting;
             assert( props.current_supply.amount.value >= 0 );
             break;
@@ -3996,7 +4031,11 @@ void database::apply_hardfork( uint32_t hardfork )
             
             break;
          }              
-      default:
+
+         // case STEEMIT_HARDFORK_0_22: // not ready yet
+         //  perform_vesting_share_scale_down();
+            // break;
+         default:
          break;
    }
 
@@ -4054,6 +4093,7 @@ void database::validate_invariants()const
          total_vesting += itr->vesting_shares;
          total_vesting += itr->reward_vesting_balance;
          pending_vesting_steem += itr->reward_vesting_steem;
+         // QUESTION: what is total_vsf_votes stands for?
          total_vsf_votes += ( itr->proxy == STEEMIT_PROXY_TO_SELF_ACCOUNT ?
                                  itr->witness_vote_weight() :
                                  ( STEEMIT_MAX_PROXY_RECURSION_DEPTH > 0 ?
@@ -4158,6 +4198,7 @@ void database::perform_vesting_share_split( uint32_t magnitude )
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
       {
          d.total_vesting_shares.amount *= magnitude;
+         // will be adjusted at bottom by function: adjust_rshares2
          d.total_reward_shares2 = 0;
       } );
 
@@ -4197,6 +4238,68 @@ void database::perform_vesting_share_split( uint32_t magnitude )
 
    }
    FC_CAPTURE_AND_RETHROW()
+}
+
+// used for hardfork_22
+void database::perform_vesting_share_scale_down( uint32_t magnitude )
+{
+    try
+    {
+        // Need to update all VESTS in accounts and the total VESTS in the dgpo
+        for( const auto& account : get_index<account_index>().indices() )
+        {
+            modify( account, [&]( account_object& a )
+            {
+                a.vesting_shares.amount /= magnitude;
+                a.withdrawn             /= magnitude;
+                a.to_withdraw           /= magnitude;
+                a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
+                if( a.vesting_withdraw_rate.amount == 0 )
+                    a.vesting_withdraw_rate.amount = 1;
+
+                for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+                    a.proxied_vsf_votes[i] /= magnitude;
+            } );
+        }
+
+        const auto& comments = get_index< comment_index >().indices();
+        for( const auto& comment : comments )
+        {
+            modify( comment, [&]( comment_object& c )
+            {
+                c.net_rshares       /= magnitude;
+                c.abs_rshares       /= magnitude;
+                c.vote_rshares      /= magnitude;
+            } );
+        }
+
+        asset total_vesting = asset(0, VESTS_SYMBOL);
+        for( const auto& account : get_index<account_index>().indices() )
+        {
+           total_vesting += account.vesting_shares;
+           total_vesting += account.reward_vesting_balance;
+        }
+
+        // adjust total_vesting_shares
+        modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
+        {
+            d.total_vesting_shares.amount = total_vesting;
+            // will be adjusted at bottom by function: adjust_rshares2
+            d.total_reward_shares2 = 0;
+        } );
+
+        // adjust gpo.total_reward_shares2
+        for( const auto& c : comments )
+        {
+            if( c.net_rshares.value > 0 )
+                adjust_rshares2( c, 0, util::evaluate_reward_curve( c.net_rshares.value ) );
+        }
+
+        // re-validate the whole system
+        validate_invariants();
+
+    }
+    FC_CAPTURE_AND_RETHROW()
 }
 
 void database::retally_comment_children()
