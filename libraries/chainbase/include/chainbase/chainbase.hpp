@@ -989,10 +989,14 @@ namespace chainbase {
          }
 
       private:
+         // represents file: shared_memory.bin in memory, which contains environment at first, then all other memory objects.
          unique_ptr<bip::managed_mapped_file>                        _segment;
+         // represents file: shared_memory.meta in memory, which only contains one object: read_write_mutex_manager
          unique_ptr<bip::managed_mapped_file>                        _meta;
          read_write_mutex_manager*                                   _rw_manager = nullptr;
          bool                                                        _read_only = false;
+         // use to try lock file: shared_memory.meta, to prevent acess from all other processes (not threads).
+         // its a exclusive lock, to prevent all other processes (not threads) to access.
          bip::file_lock                                              _flock;
 
          /**
