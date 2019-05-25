@@ -195,7 +195,8 @@ namespace steemit {
                 int witnesses_on_version = 0;
                 auto ver_itr = witness_versions.begin();
 
-                // The map should be sorted highest version to smallest, so we iterate until we hit the majority of witnesses on at least this version
+                // The map should be sorted highest version to smallest,
+                // so we iterate until we hit the majority of witnesses on at least this version
                 while (ver_itr != witness_versions.end()) {
                     witnesses_on_version += ver_itr->second;
 
@@ -228,7 +229,8 @@ namespace steemit {
 
                 // We no longer have a majority
                 // QUESTION: what is the consequences of not having a majority hardfork version?
-                // looks like next_harfork field is only useful for debug_node?
+                // ANSWER: if we don't have a najority, then new hardfork will be applied.
+                // since, hardfork is triggered by two factors: time and next_hardfork.
                 if (hf_itr == hardfork_version_votes.end()) {
                     db.modify(db.get_hardfork_property_object(), [&](hardfork_property_object &hpo) {
                         hpo.next_hardfork = hpo.current_hardfork_version;
