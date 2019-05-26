@@ -3644,6 +3644,7 @@ void database::process_hardforks()
       // If there are upcoming hardforks and the next one is later, do nothing
       const auto& hardforks = get_hardfork_property_object();
 
+      // only used for special cases.
       while( hardforks.last_hardfork < STEEMIT_NUM_HARDFORKS
              && _hardfork_times[ hardforks.last_hardfork + 1 ] <= head_block_time())
       {
@@ -3682,6 +3683,7 @@ bool database::has_hardfork( uint32_t hardfork )const
    return get_hardfork_property_object().processed_hardforks.size() > hardfork;
 }
 
+// for testing only
 void database::set_hardfork( uint32_t hardfork, bool apply_now )
 {
    auto const& hardforks = get_hardfork_property_object();
@@ -4245,7 +4247,7 @@ void database::perform_vesting_share_scale_down( uint32_t magnitude )
 {
     try
     {
-        // Need to update all VESTS in accounts and the total VESTS in the dgpo
+        // update related shares in all accounts
         for( const auto& account : get_index<account_index>().indices() )
         {
             modify( account, [&]( account_object& a )
@@ -4262,6 +4264,7 @@ void database::perform_vesting_share_scale_down( uint32_t magnitude )
             } );
         }
 
+        // update related shares in all comments
         const auto& comments = get_index< comment_index >().indices();
         for( const auto& comment : comments )
         {
@@ -4273,6 +4276,7 @@ void database::perform_vesting_share_scale_down( uint32_t magnitude )
             } );
         }
 
+        // re-calculate total vesting
         asset total_vesting = asset(0, VESTS_SYMBOL);
         for( const auto& account : get_index<account_index>().indices() )
         {
@@ -4280,20 +4284,20 @@ void database::perform_vesting_share_scale_down( uint32_t magnitude )
            total_vesting += account.reward_vesting_balance;
         }
 
+        // re-calculate total reward shares2
+        fc::uint128 total_rshares2 = 0;
+        for( const auto& c : comments )
+        {
+            if( c.net_rshares.value <= 0 ) continue;
+            total_rshares2 += util::evaluate_reward_curve( c.net_rshares.value ) ;
+        }
+
         // adjust total_vesting_shares
         modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
         {
             d.total_vesting_shares.amount = total_vesting;
-            // will be adjusted at bottom by function: adjust_rshares2
-            d.total_reward_shares2 = 0;
+            d.total_reward_shares2 = total_rshares2;
         } );
-
-        // adjust gpo.total_reward_shares2
-        for( const auto& c : comments )
-        {
-            if( c.net_rshares.value > 0 )
-                adjust_rshares2( c, 0, util::evaluate_reward_curve( c.net_rshares.value ) );
-        }
 
         // re-validate the whole system
         validate_invariants();
