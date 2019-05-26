@@ -177,6 +177,9 @@ namespace chainbase {
     *  Additionally, the constructor for value_type must take an allocator
     */
     // MultiIndexType here is a MultiIndexContainer
+    // generic_index is a wrapper of multi-index container, it includes a multi-index container, and other fields,
+    // such as id as "primary key", and fields to support "undo" feature.
+    // it's a kind of single "table" of relashionship database with "undo" feature.
    template<typename MultiIndexType>
    class generic_index
    {
@@ -201,6 +204,7 @@ namespace chainbase {
           */
          template<typename Constructor>
          const value_type& emplace( Constructor&& c ) {
+             // QUESTION: does this mean that the first id is 0?
             auto new_id = _next_id;
 
             auto constructor = [&]( value_type& v ) {
@@ -284,10 +288,12 @@ namespace chainbase {
                }
 
                generic_index& _index;
-               bool           _apply = true;
-               int64_t        _revision = 0;
-         };
+               bool           _apply = true; // QUESTION: used for?
+               int64_t        _revision = 0; // this revision matches the parent revision in generic_index
+         }; // end of embeded session in generic_index
 
+         // start new undo session means, create a undo_state<T> object into generic_index stack.
+         // so each undo_state objet in the stack represents a single session
          session start_undo_session( bool enabled ) {
             if( enabled ) {
                _stack.emplace_back( _indices.get_allocator() );
@@ -299,6 +305,7 @@ namespace chainbase {
             }
          }
 
+         // typo version of indices()
          const index_type& indicies()const { return _indices; }
          int64_t revision()const { return _revision; }
 
@@ -330,7 +337,7 @@ namespace chainbase {
                if( !ok ) BOOST_THROW_EXCEPTION( std::logic_error( "Could not restore object, most likely a uniqueness constraint was violated" ) );
             }
 
-            _stack.pop_back();
+            _stack.pop_back(); // remove one undo_state<T> object (means single session) from generic_index stack.
             --_revision;
          }
 
@@ -343,6 +350,8 @@ namespace chainbase {
          void squash()
          {
             if( !enabled() ) return;
+
+            // if only one undo_state, it will simply be removed?
             if( _stack.size() == 1 ) {
                _stack.pop_front();
                return;
@@ -462,12 +471,15 @@ namespace chainbase {
                undo();
          }
 
+         // QUESTION: Does this mean discard all undo states after revision?
+         // Wondering the use case of this function.
          void set_revision( int64_t revision )
          {
             if( _stack.size() != 0 ) BOOST_THROW_EXCEPTION( std::logic_error("cannot set revision while there is an existing undo stack") );
             _revision = revision;
          }
 
+         // remove object by id, use remove internally
          void remove_object( int64_t id )
          {
             const value_type* val = find( typename value_type::id_type(id) );
@@ -517,11 +529,13 @@ namespace chainbase {
 
          void on_create( const value_type& v ) {
             if( !enabled() ) return;
-            auto& head = _stack.back();
+            auto& head = _stack.back(); // head is an undo_state<T> object
 
             head.new_ids.insert( v.id );
          }
 
+         // each element of _stack is a undo_state<value_type> object,
+         // wich contains new_ids, old_values, removed_values, revision which are used for undo function.
          boost::interprocess::deque< undo_state_type, allocator<undo_state_type> > _stack;
 
          /**
@@ -531,11 +545,12 @@ namespace chainbase {
           *  Commit will discard all revisions prior to the committed revision.
           */
          int64_t                         _revision = 0;
-         typename value_type::id_type    _next_id = 0;
+         typename value_type::id_type    _next_id = 0; // used as "auto-incremented" id in database table.
          index_type                      _indices; // _indices is a multiindex container
-         uint32_t                        _size_of_value_type = 0;
-         uint32_t                        _size_of_this = 0;
+         uint32_t                        _size_of_value_type = 0; // used for validation
+         uint32_t                        _size_of_this = 0; // used for validation
    };
+    // end of generic_index
 
    class abstract_session {
       public:
@@ -546,6 +561,7 @@ namespace chainbase {
          virtual int64_t revision()const  = 0;
    };
 
+   // session_impl is a simple wrapper for embeded session in generic_index
    template<typename SessionType>
    class session_impl : public abstract_session
    {
@@ -594,6 +610,7 @@ namespace chainbase {
          index_extensions   _extensions;
    };
 
+   // index_impl is a simple wrapper for generic_index
    template<typename BaseIndex>
    class index_impl : public abstract_index {
       public:
@@ -675,6 +692,10 @@ namespace chainbase {
 #ifdef CHAINBASE_CHECK_LOCKING
          void require_lock_fail( const char* method, const char* lock_type, const char* tname )const;
 
+         // some functions must already have a lock as pre-execute condition.
+         // so this is to make sure that pre-conditon is satisfiled.
+         // every time a lock is acquired, the lock will incremented.
+         // every time a lock is released, the lock will decremented.
          void require_read_lock( const char* method, const char* tname )const
          {
             if( BOOST_UNLIKELY( _enable_require_locking & _read_only & (_read_lock_count <= 0) ) )
@@ -688,6 +709,8 @@ namespace chainbase {
          }
 #endif
 
+        // embeded session in database, it's different with session embedded in generic_index.
+        // this session is "database session", it's a wrapper/container of all generic_index(table) sessions.
          struct session {
             public:
                session( session&& s ):_index_sessions( std::move(s._index_sessions) ),_revision( s._revision ){}
@@ -731,7 +754,7 @@ namespace chainbase {
 
          session start_undo_session( bool enabled );
 
-         int64_t revision()const {
+         int64_t revision()const { // all indices/tables in the database have same reivsion number.
              if( _index_list.size() == 0 ) return -1;
              return _index_list[0]->revision();
          }
@@ -748,7 +771,7 @@ namespace chainbase {
              for( auto i : _index_list ) i->set_revision( revision );
          }
 
-
+        // add generic_index<T> via abstract_index
          template<typename MultiIndexType>
          void add_index() {
              const uint16_t type_id = generic_index<MultiIndexType>::value_type::type_id;
@@ -842,6 +865,7 @@ namespace chainbase {
             return index_type_ptr( _index_map[index_type::value_type::type_id]->get() )->indicies().template get<ByIndex>();
          }
 
+         // the difference with get_index() is that, this one has a write lock, and the other one has a read lock.
          template<typename MultiIndexType>
          generic_index<MultiIndexType>& get_mutable_index()
          {
@@ -919,6 +943,7 @@ namespace chainbase {
          {
              CHAINBASE_REQUIRE_WRITE_LOCK("create", ObjectType);
              typedef typename get_index_type<ObjectType>::type index_type;
+             // call generic_index<T>::emplace, then call underline multiindex container emplace.
              return get_mutable_index<index_type>().emplace( std::forward<Constructor>(con) );
          }
 
