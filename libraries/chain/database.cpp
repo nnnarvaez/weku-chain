@@ -4295,7 +4295,7 @@ void database::perform_vesting_share_scale_down( uint32_t magnitude )
         // adjust total_vesting_shares
         modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
         {
-            d.total_vesting_shares.amount = total_vesting;
+            d.total_vesting_shares = total_vesting;
             d.total_reward_shares2 = total_rshares2;
         } );
 
