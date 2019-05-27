@@ -3996,59 +3996,67 @@ void database::apply_hardfork( uint32_t hardfork )
            {
 
               // Update all VESTS in accounts and the total VESTS in the dgpo
-              for( const auto& account : get_index<account_index>().indices() )
-              {
-                share_type totalv = 0;
-                share_type totalp = 0;                
-                share_type new_vesting = account->vesting_shares.amount / 1000
-                share_type new_pending = account->reward_vesting_balance.amount / 1000
-          
-                 modify( account, [&]( account_object& a )
-                 {
-                    a.vesting_shares.amount             /= 1000;
-                    a.reward_vesting_balance.amount     /= 1000;
-                    a.withdrawn                         /= 1000;
-                    a.to_withdraw                       /= 1000;
-                    a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS, VESTS_SYMBOL );
-                    if( a.vesting_withdraw_rate.amount == 0 )
-                       a.vesting_withdraw_rate.amount = 1;
+            const auto& aidx = get_index< account_index, by_name >();
+            auto current = aidx.begin();
+            auto totalv = asset( 0, VESTS_SYMBOL);   
+            auto totalp = asset( 0, VESTS_SYMBOL);   
 
-                    for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
-                       a.proxied_vsf_votes[i] /= 1000;
-                 } );
-                totalv += new_vesting;
-                totalp += new_pending;         
-              }
-                modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
-                {
-                   gpo.total_vesting_shares.amount = totalv;
-                   gpo.pending_rewarded_vesting_shares.amount = totalp;
-                });
-                    
-              // Update Pendint post payout rewards                   
-              const auto& comments = get_index< comment_index >().indices();
-              for( const auto& comment : comments )
-              {
-                 modify( comment, [&]( comment_object& c )
-                 {
-                    c.net_rshares       /= 1000;
-                    c.abs_rshares       /= 1000;
-                    c.vote_rshares      /= 1000;
-                 } );
-              }
+            while( current != aidx.end() )
+            {
+            const auto& account = *current;
+            auto new_vesting = asset( account.vesting_shares.amount/1000, VESTS_SYMBOL);    
+            auto new_pending = asset( account.reward_vesting_balance.amount/1000, VESTS_SYMBOL);    
+            auto new_rec_delegation = asset( account.received_vesting_shares.amount/1000, VESTS_SYMBOL);    
+            auto new_giv_delegation = asset( account.delegated_vesting_shares.amount/1000, VESTS_SYMBOL);    
+            adjust_witness_votes( account, new_vesting.amount - account.vesting_shares.amount );
+            
+            modify( account , [&]( account_object& a )
+            {
+                a.vesting_shares = new_vesting;
+                a.reward_vesting_balance = new_pending;
+                a.received_vesting_shares = new_rec_delegation;
+                a.delegated_vesting_shares = new_giv_delegation;
+                a.to_withdraw                       /= 1000;
+                a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS, VESTS_SYMBOL );
+                if( a.vesting_withdraw_rate.amount == 0 )
+                    a.vesting_withdraw_rate.amount = 1;
+                
+                for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+                   a.proxied_vsf_votes[i] /= 1000;                
+                
+                //ilog( "Recalculating: Witness votes | Delegations IN/OUT | Rewards Pending | Balances : ${p}", ("p", a.name));                      
+            });
+            totalv += new_vesting;
+            totalp += new_pending;
+            ++current;
+            }
 
-              for( const auto& c : comments )
-              {
-                 if( c.net_rshares.value > 0 )
-                    adjust_rshares2( c, 0, util::evaluate_reward_curve( c.net_rshares.value ) );
-              }
+            modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+            {
+                gpo.total_vesting_shares = totalv;
+                gpo.pending_rewarded_vesting_shares = totalp;
+            }); 
+            
+            // Update Pendint post payout rewards                   
+            const auto& comments = get_index< comment_index >().indices();
+            for( const auto& comment : comments )
+            {
+             modify( comment, [&]( comment_object& c )
+             {
+                c.net_rshares       /= 1000;
+                c.abs_rshares       /= 1000;
+                c.vote_rshares      /= 1000;
+             } );
+            }
 
+            for( const auto& c : comments )
+            {
+             if( c.net_rshares.value > 0 )
+                adjust_rshares2( c, 0, util::evaluate_reward_curve( c.net_rshares.value ) );
+            }
            }
            FC_CAPTURE_AND_RETHROW()
-            
-            
-            
-            
+
             
             ilog( "Retally witness votes after SHARE SPLIT");             
             retally_witness_votes();
