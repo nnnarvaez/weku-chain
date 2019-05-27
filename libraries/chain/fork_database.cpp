@@ -17,11 +17,13 @@ void fork_database::pop_block()
 {
    FC_ASSERT( _head, "cannot pop an empty fork database" );
    auto prev = _head->prev.lock();
+   // QUESTION: does this mean that fork_db should always have at lease one item?
+   // ANSWER: Yes, every time the database opens, it will starts with the last irriversable block.
    FC_ASSERT( prev, "popping head block would leave fork DB empty" );
    _head = prev;
 }
 
-void     fork_database::start_block(signed_block b)
+void fork_database::start_block(signed_block b)
 {
    auto item = std::make_shared<fork_item>(std::move(b));
    _index.insert(item);
@@ -56,8 +58,10 @@ shared_ptr<fork_item>  fork_database::push_block(const signed_block& b)
 // and also move head to biggest block num if larger than current num
 void  fork_database::_push_block(const item_ptr& item)
 {
+   // QEUSTION: why check _head, should the ford_db always has at least one block?
    if( _head ) // make sure the block is within the range that we are caching
    {
+      // QUESTION: what is the possible reason that would cause this "block too old" issue?
       FC_ASSERT( item->num > std::max<int64_t>( 0, int64_t(_head->num) - (_max_size) ),
                  "attempting to push a block that is too old",
                  ("item->num",item->num)("head",_head->num)("max_size",_max_size));
@@ -67,6 +71,7 @@ void  fork_database::_push_block(const item_ptr& item)
    {
       auto& index = _index.get<block_id>();
       auto itr = index.find(item->previous_id());
+      // throws an exception, then catched by parent function push_block, and re-throws again.
       STEEMIT_ASSERT(itr != index.end(), unlinkable_block_exception, "block does not link to known chain");
       FC_ASSERT(!(*itr)->invalid);
       item->prev = *itr;
@@ -104,7 +109,7 @@ void fork_database::set_max_size( uint32_t s )
    _max_size = s;
    if( !_head ) return;
 
-   { /// index
+   { /// index, remove old items out range of new _max_size
       auto& by_num_idx = _index.get<block_num>();
       auto itr = by_num_idx.begin();
       while( itr != by_num_idx.end() )
@@ -116,7 +121,7 @@ void fork_database::set_max_size( uint32_t s )
          itr = by_num_idx.begin();
       }
    }
-   { /// unlinked_index
+   { /// unlinked_index, remove old items out range of new _max_size
       auto& by_num_idx = _unlinked_index.get<block_num>();
       auto itr = by_num_idx.begin();
       while( itr != by_num_idx.end() )
@@ -219,7 +224,7 @@ pair<fork_database::branch_type,fork_database::branch_type>
    return result;
 } FC_CAPTURE_AND_RETHROW( (first)(second) ) }
 
-// main branch means the branch pointed by head
+// main branch means the branch pointed by head which is the longest branch.
 // there are some other branches in the index but not pointed by head
 // the head pointer might change during each push_block.
 shared_ptr<fork_item> fork_database::walk_main_branch_to_num( uint32_t block_num )const
@@ -243,6 +248,8 @@ shared_ptr<fork_item> fork_database::fetch_block_on_main_branch_by_number( uint3
    return walk_main_branch_to_num(block_num);
 }
 
+// only used in chain::database::_push_block
+// should we check the h is indeed in the _index before assign it to head?
 void fork_database::set_head(shared_ptr<fork_item> h)
 {
    _head = h;

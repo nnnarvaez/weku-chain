@@ -19,6 +19,8 @@ namespace steemit { namespace chain {
     * This is an implementation detail. The values here are calculated during normal chain operations and reflect the
     * current values of global blockchain properties.
     */
+    // QUESTION: Wondering why not embeded this object into database itself?
+    // create an index for this object, and the index will only contain one object.
    class dynamic_global_property_object : public object< dynamic_global_property_object_type, dynamic_global_property_object>
    {
       public:

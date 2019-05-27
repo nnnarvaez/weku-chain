@@ -100,8 +100,8 @@ namespace steemit { namespace chain {
          uint32_t                 _max_size = 1024;
 
          fork_multi_index_type    _unlinked_index;
-         fork_multi_index_type    _index;
-         shared_ptr<fork_item>    _head;
+         fork_multi_index_type    _index; // fork_db only have one index/table.
+         shared_ptr<fork_item>    _head; // QUESTION: on what scenario that the _head is null/empty.
    };
 
 } } // steemit::chain
