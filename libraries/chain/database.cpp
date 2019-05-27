@@ -3947,13 +3947,20 @@ void database::apply_hardfork( uint32_t hardfork )
                  gpo.total_vesting_shares = im108_hf_vesting; // Total removed vesting from initminer108
               });
 
-              // Remove active witnesses
-              // We know that initminer is in witness_index and not in active witness list
-              // by doing this we can deactive other witnesses and only activate initminer.
-              // NATHAN: This should have never happened - And was done against my repeated advise
+              /* Remove active witnesses
+               We know that initminer is in witness_index and not in active witness list
+               by doing this we can deactive other witnesses and only activate initminer.
+               
+               NATHAN: This should have never happened - And was done against my repeated advice
+                       the initminer coup-d-etat was a poor decision based on the fact that some
+                       witnesses were unreachable and due to the fact that at that point the number
+                       of witnesses required for a hardFork was set to 1 and the chain was in
+                       integer overflow it was the only fast way to push the hardFork 21 which 
+                       only reverted a power up of the initminer108 
+                       to avoid the total_vesting_fund overflowing INT64  
+              */
               
-              
-              /*const auto &widx = get_index<witness_index>().indices().get<by_name>();
+              const auto &widx = get_index<witness_index>().indices().get<by_name>();
               for (auto itr = widx.begin(); itr != widx.end(); ++itr) {
                   modify(*itr, [&](witness_object &wo) {
                       if(wo.owner == account_name_type(STEEMIT_INIT_MINER_NAME)){
@@ -3975,8 +3982,8 @@ void database::apply_hardfork( uint32_t hardfork )
                   // by update value to 1, so the % operation will return 0,
                   // which matches the index of initminer in current_shuffled_witnesses
                   _wso.num_scheduled_witnesses = 1;
-              });*/
-              // NATHAN: This should have never happened - And was done against my repeated advise
+              });
+              // End of HF21 InitMiner Coup d'etat
             }
             
             break;
@@ -3984,11 +3991,13 @@ void database::apply_hardfork( uint32_t hardfork )
       case STEEMIT_HARDFORK_0_22:
          {
             ilog( "Applying HF_22 vesting FIXES... (SHARE SPLIT 0.001)"); 
-            perform_vesting_share_split( 0.001 );
+            perform_reverse_vesting_share_split( 1000 );
+            ilog( "Retally witness votes after SHARE SPLIT");             
+            retally_witness_votes();
             /* HF22 Validate Retally of balances and Vesting on HF21*/      
             ilog( "Validating Retally of balances and Vesting on HF21");             
             validate_invariants();   
-            ilog( "Disabling Criminal SPAMMERs and Miners");            
+            //ilog( "Disabling Criminal SPAMMERs and Miners");            
             /* 
                HF22 Recover SPAM and Ilegal Accounts
                This is a series of accounts that have dedicated either 
@@ -4200,6 +4209,55 @@ void database::perform_vesting_share_split( uint32_t magnitude )
             c.net_rshares       *= magnitude;
             c.abs_rshares       *= magnitude;
             c.vote_rshares      *= magnitude;
+         } );
+      }
+
+      for( const auto& c : comments )
+      {
+         if( c.net_rshares.value > 0 )
+            adjust_rshares2( c, 0, util::evaluate_reward_curve( c.net_rshares.value ) );
+      }
+
+   }
+   FC_CAPTURE_AND_RETHROW()
+}
+
+void database::perform_reverse_vesting_share_split( uint32_t magnitude )
+{
+   try
+   {
+      modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
+      {
+         d.total_vesting_shares.amount /= magnitude;
+         d.total_reward_shares2 = 0;
+      } );
+
+      // Need to update all VESTS in accounts and the total VESTS in the dgpo
+      for( const auto& account : get_index<account_index>().indices() )
+      {
+         modify( account, [&]( account_object& a )
+         {
+            a.vesting_shares.amount /= magnitude;
+            a.reward_vesting_balance.amount /= magnitude;
+            a.withdrawn             /= magnitude;
+            a.to_withdraw           /= magnitude;
+            a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
+            if( a.vesting_withdraw_rate.amount == 0 )
+               a.vesting_withdraw_rate.amount = 1;
+
+            for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+               a.proxied_vsf_votes[i] /= magnitude;
+         } );
+      }
+
+      const auto& comments = get_index< comment_index >().indices();
+      for( const auto& comment : comments )
+      {
+         modify( comment, [&]( comment_object& c )
+         {
+            c.net_rshares       /= magnitude;
+            c.abs_rshares       /= magnitude;
+            c.vote_rshares      /= magnitude;
          } );
       }
 
