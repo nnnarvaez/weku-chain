@@ -180,6 +180,10 @@ vector<item_ptr> fork_database::fetch_block_by_number(uint32_t num)const
 }
 
 // get two branches, which shared same parent, not include parent, stored reversely.
+// should return sth like:
+// branch1: first, ..., a3, a2, a1.
+// branch2: second, ..., b3, b2, b1.
+// and a1.previous_id() == b1.previous_id() if found common ancestor
 pair<fork_database::branch_type,fork_database::branch_type>
   fork_database::fetch_branch_from(block_id_type first, block_id_type second)const
 { try {

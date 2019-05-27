@@ -130,7 +130,7 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
          // Rewind all undo state. This should return us to the state at the last irreversible block.
          with_write_lock( [&]()
          {
-            undo_all();
+            undo_all(); // which will clean all undo_state in all indices/tables inside database.
             FC_ASSERT( revision() == head_block_num(), "Chainbase revision does not match head block num",
                ("rev", revision())("head_block", head_block_num()) );
             validate_invariants();
@@ -144,6 +144,8 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
             // This assertion should be caught and a reindex should occur
             FC_ASSERT( head_block.valid() && head_block->id() == head_block_id(), "Chain state does not match block log. Please reindex blockchain." );
 
+            // QUESTION: is it empty after database open/at this point?
+            // copy the current head_block into ford_db's internal index/table as first/head object/record?
             _fork_db.start_block( *head_block );
          }
       }
@@ -157,6 +159,7 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
    FC_CAPTURE_LOG_AND_RETHROW( (data_dir)(shared_mem_dir)(shared_file_size) )
 }
 
+// TODO: need to improve the performance of this function, since it's quite slow now.
 // it's been called when user run: wekud --replay
 void database::reindex( const fc::path& data_dir, const fc::path& shared_mem_dir, uint64_t shared_file_size )
 {
@@ -190,6 +193,7 @@ void database::reindex( const fc::path& data_dir, const fc::path& shared_mem_dir
 
       with_write_lock( [&]()
       {
+          // here 0 is file position, not block number, so itr will point to first block: block #1
          auto itr = _block_log.read_block( 0 );
          auto last_block_num = _block_log.head()->block_num();
 
@@ -200,10 +204,12 @@ void database::reindex( const fc::path& data_dir, const fc::path& shared_mem_dir
                std::cerr << "   " << double( cur_block_num * 100 ) / last_block_num << "%   " << cur_block_num << " of " << last_block_num <<
                "   (" << (get_free_memory() / (1024*1024)) << "M free)\n";
             apply_block( itr.first, skip_flags );
-            itr = _block_log.read_block( itr.second );
+            itr = _block_log.read_block( itr.second ); // itr.second points to the position of next block.
          }
 
-         apply_block( itr.first, skip_flags );
+         apply_block( itr.first, skip_flags ); // apply last_block_num/head block number
+          // set revision to head block number,
+          // which in turn set all revisions to head_block_num of indices/tables contained in current database.
          set_revision( head_block_num() );
       });
 
@@ -341,25 +347,33 @@ const signed_transaction database::get_recent_transaction( const transaction_id_
    auto itr = index.find(trx_id);
    FC_ASSERT(itr != index.end());
    signed_transaction trx;
-   fc::raw::unpack( itr->packed_trx, trx );
+   fc::raw::unpack( itr->packed_trx, trx ); // transaction is packed into bytes in transaction_index
    return trx;;
 } FC_CAPTURE_AND_RETHROW() }
 
 std::vector< block_id_type > database::get_block_ids_on_fork( block_id_type head_of_fork ) const
 { try {
    pair<fork_database::branch_type, fork_database::branch_type> branches = _fork_db.fetch_branch_from(head_block_id(), head_of_fork);
+
+   // if below condition is not satisfield, means the system cannot find common ancestor between head_block_id() and head_of_fork
+   // should return sth like:
+    // branch1: head_block_id(), ..., a3, a2, a1.
+    // branch2: head_of_fork, ..., b3, b2, b1.
+    // and a1.previous_id() == b1.previous_id() if found common ancestor
+
    if( !((branches.first.back()->previous_id() == branches.second.back()->previous_id())) )
-   {
+   {// should never happen in production mode
       edump( (head_of_fork)
              (head_block_id())
              (branches.first.size())
              (branches.second.size()) );
+      // print error, and throw exception (terminate system, only applies in debug mode)
       assert(branches.first.back()->previous_id() == branches.second.back()->previous_id());
    }
    std::vector< block_id_type > result;
    for( const item_ptr& fork_block : branches.second )
       result.emplace_back(fork_block->id);
-   result.emplace_back(branches.first.back()->previous_id());
+   result.emplace_back(branches.first.back()->previous_id()); // add common ancestor id.
    return result;
 } FC_CAPTURE_AND_RETHROW() }
 
@@ -446,6 +460,7 @@ const savings_withdraw_object* database::find_savings_withdraw( const account_na
 
 const dynamic_global_property_object&database::get_dynamic_global_properties() const
 { try {
+    // should we embeded gpo as npo(as below) in database instead of index/table which only has one object?
    return get< dynamic_global_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
@@ -469,6 +484,7 @@ const hardfork_property_object& database::get_hardfork_property_object()const
    return get< hardfork_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
+// not doing actual calc, just get data, should be renamed to get_discussion_payout_time
 const time_point_sec database::calculate_discussion_payout_time( const comment_object& comment )const
 {
    if( has_hardfork( STEEMIT_HARDFORK_0_17__769 ) || comment.parent_author == STEEMIT_ROOT_POST_PARENT )
@@ -482,6 +498,8 @@ const reward_fund_object& database::get_reward_fund( const comment_object& c ) c
    return get< reward_fund_object, by_name >( STEEMIT_POST_REWARD_FUND_NAME );
 }
 
+// looks like this function is not used.
+// TODO: remove it later.
 void database::pay_fee( const account_object& account, asset fee )
 {
    FC_ASSERT( fee.amount >= 0 ); /// NOTE if this fails then validate() on some operation is probably wrong
@@ -543,7 +561,7 @@ bool database::push_block(const signed_block& new_block, uint32_t skip)
    return result;
 }
 
-// This usally happens when two witness nodes are using same account
+// This happens when two witness nodes are using same account
 void database::_maybe_warn_multiple_production( uint32_t height )const
 {
    auto blocks = _fork_db.fetch_block_by_number( height );
@@ -579,14 +597,19 @@ bool database::_push_block(const signed_block& new_block)
          //Only switch forks if new_head is actually higher than head
          if( new_head->data.block_num() > head_block_num() )
          {
-            // wlog( "Switching to fork: ${id}", ("id",new_head->data.id()) );
+            wlog( "Switching to fork: ${id}", ("id",new_head->data.id()) );
+
             // get two branches, which shared same parent, not include parent, stored reversely.
+            // such as: head_block_id(), ..., a3, a2, a1 (a3.block_num > a2.block_num > a1.block_num)
             auto branches = _fork_db.fetch_branch_from(new_head->data.id(), head_block_id());
 
-            // pop blocks until we hit the forked block
+            // pop blocks until we hit the forked block ??
+            // pop blocks until we hit the commen ancestor block of these two branches ??
+            // abandon blocks on shorter branch, and add blocks from longer branch later.
             while( head_block_id() != branches.second.back()->data.previous )
-               pop_block();
+               pop_block(); // pop block in fork_db
 
+               // add blocks from longer branch based on common ancestor (since blocks on shorter branch are already abandoned above.)
             // push all blocks on the new fork
             for( auto ritr = branches.first.rbegin(); ritr != branches.first.rend(); ++ritr )
             {
@@ -599,15 +622,21 @@ bool database::_push_block(const signed_block& new_block)
                    session.push();
                 }
                 catch ( const fc::exception& e ) { except = e; }
+
+                // if any error during appling all blocks on the new branch, the system will roll back to previous branch.
                 if( except )
                 {
-                   // wlog( "exception thrown while switching forks ${e}", ("e",except->to_detail_string() ) );
+                   wlog( "exception thrown while switching forks ${e}", ("e",except->to_detail_string() ) );
+
                    // remove the rest of branches.first from the fork_db, those blocks are invalid
+                   // for example: fork_branch is: new_head, ..., b5, b4, b3, b2, b1.
+                   // if exception happens while applying block b3, then b3, b4, b5, ... new_head will all be removed.
                    while( ritr != branches.first.rend() )
                    {
                       _fork_db.remove( (*ritr)->data.id() );
                       ++ritr;
                    }
+                   // reset head back to head_block_id()
                    _fork_db.set_head( branches.second.front() );
 
                    // pop all blocks from the bad fork
@@ -635,6 +664,7 @@ bool database::_push_block(const signed_block& new_block)
    {
       auto session = start_undo_session( true );
       apply_block(new_block, skip);
+      // when session complete, leave all undo_states on the stack instead of undo them.
       session.push();
    }
    catch( const fc::exception& e )
@@ -797,8 +827,8 @@ signed_block database::_generate_block(
          catch ( const fc::exception& e )
          {
             // Do nothing, transaction will not be re-applied
-            //wlog( "Transaction was not processed while generating block due to ${e}", ("e", e) );
-            //wlog( "The transaction was ${t}", ("t", tx) );
+            wlog( "Transaction was not processed while generating block due to ${e}", ("e", e) );
+            wlog( "The transaction was ${t}", ("t", tx) );
          }
       }
       if( postponed_tx_count > 0 )
@@ -957,6 +987,7 @@ fc::time_point_sec database::get_slot_time(uint32_t slot_num)const
    auto interval = STEEMIT_BLOCK_INTERVAL;
    const dynamic_global_property_object& dpo = get_dynamic_global_properties();
 
+    // means just complete the init_genesis, which at block #0, the block #1 is not generated yet at this point.
    if( head_block_num() == 0 )
    {
       // n.b. first block is at genesis_time plus one block interval
@@ -965,6 +996,7 @@ fc::time_point_sec database::get_slot_time(uint32_t slot_num)const
    }
 
    int64_t head_block_abs_slot = head_block_time().sec_since_epoch() / interval;
+   // re-adjust head_slot_time to absolute slot time based on unix epoch.
    fc::time_point_sec head_slot_time( head_block_abs_slot * interval );
 
    // "slot 0" is head_slot_time
@@ -1000,9 +1032,14 @@ std::pair< asset, asset > database::create_sbd( const account_object& to_account
 
       if( !median_price.is_null() )
       {
+          // for example: sbd_print_rate = 20%,  steem.amount = 100 WEKUK
+          // then amount for to_sbd will be 20 , and amount for to_steem willbe 80
          auto to_sbd = ( gpo.sbd_print_rate * steem.amount ) / STEEMIT_100_PERCENT;
          auto to_steem = steem.amount - to_sbd;
 
+         // to_sbd is an amount of WEKU need to be convert to SBD
+         // median_price is SBD/WEKU, means how much SBD per WEKU.
+         // so the UNIT of variable sbd here will be SBD
          auto sbd = asset( to_sbd, STEEM_SYMBOL ) * median_price;
 
          if( to_reward_balance )
@@ -1023,6 +1060,7 @@ std::pair< asset, asset > database::create_sbd( const account_object& to_account
       }
       else
       {
+          // if no median_price availabe, it will just add weku directly without SBD.
          adjust_balance( to_account, steem );
          assets.second = steem;
       }
@@ -1056,14 +1094,16 @@ asset database::create_vesting( const account_object& to_account, asset steem, b
        *  128 bit math is requred due to multiplying of 64 bit numbers. This is done in asset and price.
        */
 
-      // From my understanding, the ratio is not changes here,
+      // The V/C ratio is not changed inside this function,
       // but it's being changed by the gradually reduced price in process_fund function
+      // vesting_share_price means how many VESTS you can get per WEKU
       asset new_vesting = steem * ( to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price() );
 
       modify( to_account, [&]( account_object& to )
       {
          if( to_reward_balance )
          {
+             // reward vesting balance and reward_vesting_steem are adding at same time?
             to.reward_vesting_balance += new_vesting;
             to.reward_vesting_steem += steem;
          }
@@ -1117,6 +1157,7 @@ uint32_t database::get_pow_summary_target()const
       return (0xFC00 - 0x0040 * dgp.num_pow_witnesses) << 0x10;
 }
 
+// TODO: need to figure out the exact logic of adjust proxied witness votes function groups.
 void database::adjust_proxied_witness_votes( const account_object& a,
                                    const std::array< share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                                    int depth )
@@ -1227,6 +1268,7 @@ void database::clear_witness_votes( const account_object& a )
       });
 }
 
+// get called for every block creation.
 void database::clear_null_account_balance()
 {
    if( !has_hardfork( STEEMIT_HARDFORK_0_14__327 ) ) return;
@@ -1808,6 +1850,7 @@ void database::process_funds()
    const auto& props = get_dynamic_global_properties();
    const auto& wso = get_witness_schedule_object();
 
+    // since process_funds happens before process_hardfork, so block #1 will not have hardfork_0_16_551 (any hardfork)
    if( has_hardfork( STEEMIT_HARDFORK_0_16__551) )
    {
       /**
@@ -2454,6 +2497,7 @@ void database::init_genesis( uint64_t init_supply )
          } );
       }
 
+      // during genesis, the total_vesting_shares and total_vesting_steem_fund are still 0
       create< dynamic_global_property_object >( [&]( dynamic_global_property_object& p )
       {
          p.current_witness = STEEMIT_INIT_MINER_NAME;
@@ -2593,13 +2637,13 @@ void database::apply_block( const signed_block& next_block, uint32_t skip )
             x += now % span;
          }
          _next_flush_block = x;
-         //ilog( "Next flush scheduled at block ${b}", ("b", x) );
+         ilog( "Next flush scheduled at block ${b}", ("b", x) );
       }
 
       if( _next_flush_block == block_num )
       {
          _next_flush_block = 0;
-         //ilog( "Flushing database shared memory at block ${b}", ("b", block_num) );
+         ilog( "Flushing database shared memory at block ${b}", ("b", block_num) );
          chainbase::database::flush();
       }
    }
@@ -2731,6 +2775,8 @@ void database::_apply_block( const signed_block& next_block )
    process_decline_voting_rights();
 
    // For WEKU, all hardforks before hardfork_20 are applied just after block 1 is saved to dish
+        // this process_hardforks is almost at the end of the process,
+        // which also means during process of block #1, there is only harfork 0.
    process_hardforks();
 
    // notify observers that the block has been applied
@@ -2742,6 +2788,7 @@ FC_CAPTURE_LOG_AND_RETHROW( (next_block.block_num()) )
 }
 
 // QUESTION: no sure why use next block versions to update witness object versions.
+// should the version in block header always same with witness version?
 void database::process_header_extensions( const signed_block& next_block )
 {
    auto itr = next_block.extensions.begin();
@@ -2791,7 +2838,7 @@ void database::process_header_extensions( const signed_block& next_block )
 }
 
 
-
+// only update median feed once every hour.
 void database::update_median_feed() {
 try {
    if( (head_block_num() % STEEMIT_FEED_INTERVAL_BLOCKS) != 0 )
@@ -3008,6 +3055,7 @@ void database::update_global_dynamic_data( const signed_block& b )
                w.total_missed++;
                if( has_hardfork( STEEMIT_HARDFORK_0_14__278 ) )
                {
+                   // automatically de-active witnesses if it missed over one day' block.
                   if( head_block_num() - w.last_confirmed_block_num  > STEEMIT_BLOCKS_PER_DAY )
                   {
                      w.signing_key = public_key_type();
@@ -3411,14 +3459,14 @@ void database::adjust_balance( const account_object& a, const asset& delta )
                acnt.sbd_seconds_last_update = head_block_time();
 
                if( acnt.sbd_seconds > 0 &&
-                   (acnt.sbd_seconds_last_update - acnt.sbd_last_interest_payment).to_seconds() > STEEMIT_SBD_INTEREST_COMPOUND_INTERVAL_SEC )
+                   (acnt.sbd_seconds_last_update - acnt.sbd_last_interest_payment).to_seconds() > STEEMIT_SBD_INTEREST_COMPOUND_INTERVAL_SEC ) // 30 days
                {
                   auto interest = acnt.sbd_seconds / STEEMIT_SECONDS_PER_YEAR;
                   interest *= get_dynamic_global_properties().sbd_interest_rate;
                   interest /= STEEMIT_100_PERCENT;
                   asset interest_paid(interest.to_uint64(), SBD_SYMBOL);
                   acnt.sbd_balance += interest_paid;
-                  acnt.sbd_seconds = 0;
+                  acnt.sbd_seconds = 0; // reset sbd_seconds to 0
                   acnt.sbd_last_interest_payment = head_block_time();
 
                   if(interest > 0)
@@ -3522,6 +3570,7 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
             props.current_supply += delta + new_vesting;
             props.virtual_supply += delta + new_vesting;
             // QUESTION: update total_vesting_fund_steem without update total_vesting_shares?
+            // TODO: figure out why add new_vesting to total_vesting_fund_steem here.
             props.total_vesting_fund_steem += new_vesting;
             assert( props.current_supply.amount.value >= 0 );
             break;
@@ -3687,7 +3736,7 @@ bool database::has_hardfork( uint32_t hardfork )const
    return get_hardfork_property_object().processed_hardforks.size() > hardfork;
 }
 
-// for testing only
+// for testing only, no production code should use this function.
 void database::set_hardfork( uint32_t hardfork, bool apply_now )
 {
    auto const& hardforks = get_hardfork_property_object();
@@ -4246,8 +4295,8 @@ void database::perform_vesting_share_split( uint32_t magnitude )
    FC_CAPTURE_AND_RETHROW()
 }
 
-// used for hardfork_22
-void database::perform_vesting_share_scale_down( uint32_t magnitude )
+// only used for hardfork_22
+void database::perform_vesting_share_scale_down( uint32_t denom )
 {
     try
     {
@@ -4256,15 +4305,16 @@ void database::perform_vesting_share_scale_down( uint32_t magnitude )
         {
             modify( account, [&]( account_object& a )
             {
-                a.vesting_shares.amount /= magnitude;
-                a.withdrawn             /= magnitude;
-                a.to_withdraw           /= magnitude;
+                a.vesting_shares.amount /= denom;
+                a.reward_vesting_balance.amount /= denom;
+                a.withdrawn             /= denom;
+                a.to_withdraw           /= denom;
                 a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
                 if( a.vesting_withdraw_rate.amount == 0 )
                     a.vesting_withdraw_rate.amount = 1;
 
                 for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
-                    a.proxied_vsf_votes[i] /= magnitude;
+                    a.proxied_vsf_votes[i] /= denom;
             } );
         }
 
@@ -4274,18 +4324,19 @@ void database::perform_vesting_share_scale_down( uint32_t magnitude )
         {
             modify( comment, [&]( comment_object& c )
             {
-                c.net_rshares       /= magnitude;
-                c.abs_rshares       /= magnitude;
-                c.vote_rshares      /= magnitude;
+                c.net_rshares       /= denom;
+                c.abs_rshares       /= denom;
+                c.vote_rshares      /= denom;
             } );
         }
 
         // re-calculate total vesting
         asset total_vesting = asset(0, VESTS_SYMBOL);
+        asset total_pending_vesting = asset(0, VESTS_SYMBOL);
         for( const auto& account : get_index<account_index>().indices() )
         {
            total_vesting += account.vesting_shares;
-           total_vesting += account.reward_vesting_balance;
+           total_pending_vesting += account.reward_vesting_balance;
         }
 
         // re-calculate total reward shares2
@@ -4300,6 +4351,7 @@ void database::perform_vesting_share_scale_down( uint32_t magnitude )
         modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
         {
             d.total_vesting_shares = total_vesting;
+            d.pending_rewarded_vesting_shares = total_pending_vesting;
             d.total_reward_shares2 = total_rshares2;
         } );
 
