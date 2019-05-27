@@ -103,10 +103,12 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
       // shared_mem.bin will contains all data, and the first object at the offset 0 of the database
       // is the object named environment_check which is used to check if the memory file is
       // created from same OS/compiler version/release or debug mode.
-      // shared_mem.meta will only contains one rw_manager object which is used to file lock.
+      // shared_mem.meta will only contains one rw_manager object which is used to contain mutex for read/write lock.
       chainbase::database::open( shared_mem_dir, chainbase_flags, shared_file_size );
 
+      // create/read indices/tables to memory database
       initialize_indexes();
+      // register evaluators
       initialize_evaluators();
 
       if( chainbase_flags & chainbase::database::read_write )
@@ -116,15 +118,14 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
             with_write_lock( [&]()
             {
                // after init_genesis, the head_block_number of gpo is set to 0;
+               // since gpo's head_block_number is not set, so it's using default 0.
                // init_genesis will not trigger apply_block()
+               // will also push the genesis time into processed_hardforks as hardfork 0
                init_genesis( initial_supply );
             });
 
          // if just after init_genesis, at this point, the block_log file will be empty.
          _block_log.open( data_dir / "block_log" );
-
-         // TODO: remove below line
-         auto log_head = _block_log.head();
 
          // Rewind all undo state. This should return us to the state at the last irreversible block.
          with_write_lock( [&]()
@@ -2213,6 +2214,7 @@ uint32_t database::last_non_undoable_block_num() const
    return get_dynamic_global_properties().last_irreversible_block_num;
 }
 
+// add evaluators into evaluator_registory's internal list
 void database::initialize_evaluators()
 {
    _my->_evaluator_registry.register_evaluator< vote_evaluator                           >();
@@ -2424,9 +2426,10 @@ void database::init_genesis( uint64_t init_supply )
          auth.active.weight_threshold = 0;
       });
 
+       // currently, the system will only create on initminer in below loop
       for( int i = 0; i < STEEMIT_NUM_INIT_MINERS; ++i )
       {
-         // QUESTION: Does this create initminer twice? since above code already created one.
+
          create< account_object >( [&]( account_object& a )
          {
             a.name = STEEMIT_INIT_MINER_NAME + ( i ? fc::to_string( i ) : std::string() );
@@ -3176,6 +3179,7 @@ void database::update_last_irreversible_block()
    }
 
    // QUESTION: not sure what exactly below function is doing
+   // doing this will resize the max_size of fork_db, which in turn delete old items out of the range of new _max_size.
    _fork_db.set_max_size( dpo.head_block_number - dpo.last_irreversible_block_num + 1 );
 } FC_CAPTURE_AND_RETHROW() }
 

@@ -54,6 +54,7 @@ namespace steemit { namespace chain {
          void set_producing( bool p ) { _is_producing = p;  }
          bool _is_producing = false;
 
+         // not very useful, only used to control if system should print out hardfork message to console.
          bool _log_hardforks = true;
 
          enum validation_steps
@@ -86,10 +87,10 @@ namespace steemit { namespace chain {
          void open( const fc::path& data_dir, const fc::path& shared_mem_dir, uint64_t initial_supply = STEEMIT_INIT_SUPPLY, uint64_t shared_file_size = 0, uint32_t chainbase_flags = 0 );
 
          /**
-          * @brief Rebuild object graph from block history and open detabase
+          * @brief Rebuild object graph from block history and open database
           *
           * This method may be called after or instead of @ref database::open, and will rebuild the object graph by
-          * replaying blockchain history. When this method exits successfully, the database will be open.
+          * replaying block chain history. When this method exits successfully, the database will be open.
           */
          void reindex( const fc::path& data_dir, const fc::path& shared_mem_dir, uint64_t shared_file_size = (1024l*1024l*1024l*8l) );
 
