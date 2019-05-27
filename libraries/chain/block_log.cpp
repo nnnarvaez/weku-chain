@@ -80,6 +80,7 @@ namespace steemit { namespace chain {
    block_log::block_log()
    :my( new detail::block_log_impl() )
    {
+      // set exception masks, here only failbit and badbit will throw exception, other issuers will be ignored.
       my->block_stream.exceptions( std::fstream::failbit | std::fstream::badbit );
       my->index_stream.exceptions( std::fstream::failbit | std::fstream::badbit );
    }
@@ -155,14 +156,14 @@ namespace steemit { namespace chain {
                ilog( "Index is incomplete" );
                construct_index();
             }
-         }
+         } // log is nonempty, but index is empty, construct index.
          else
          {
             ilog( "Index is empty" );
             construct_index();
          }
       }
-      else if( index_size )
+      else if( index_size ) // log is empty, but the index is nonempty.
       {
          ilog( "Index is nonempty, remove and recreate it" );
          my->index_stream.close();
@@ -219,7 +220,7 @@ namespace steemit { namespace chain {
          my->block_stream.seekg( pos );
          std::pair<signed_block,uint64_t> result;
          fc::raw::unpack( my->block_stream, result.first );
-         result.second = uint64_t(my->block_stream.tellg()) + 8;
+         result.second = uint64_t(my->block_stream.tellg()) + 8; // second contains the start pos of next block.
          return result;
       }
       FC_LOG_AND_RETHROW()
@@ -247,6 +248,8 @@ namespace steemit { namespace chain {
       {
          my->check_index_read();
 
+         // block_id contains info of block_number.
+         // block_number is stored in block_id._hash[0] in reversed order of 4 bits.
          if( !( my->head.valid() && block_num <= protocol::block_header::num_from_id( my->head_id ) && block_num > 0 ) )
             return npos;
          my->index_stream.seekg( sizeof( uint64_t ) * ( block_num - 1 ) );
