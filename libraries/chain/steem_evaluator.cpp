@@ -899,7 +899,14 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
 {
    const auto& account = _db.get_account( o.account );
-
+   // NATHAN: FIX: Avoid negative power downs.
+       if( o.vesting_shares.amount < 0 )
+       {
+        FC_ASSERT( false, "Cannot withdraw negative VESTS. account: ${account}, vests:${vests}",
+        ("account", o.account)("vests", o.vesting_shares) );
+        return;
+       }
+   // NATHAN: END FIX: Avoid negative power downs.     
    FC_ASSERT( account.vesting_shares >= asset( 0, VESTS_SYMBOL ), "Account does not have sufficient Steem Power for withdraw." );
    FC_ASSERT( account.vesting_shares - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Steem Power for withdraw." );
 
