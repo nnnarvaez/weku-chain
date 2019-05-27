@@ -3990,8 +3990,66 @@ void database::apply_hardfork( uint32_t hardfork )
          }  
       case STEEMIT_HARDFORK_0_22:
          {
-            ilog( "Applying HF_22 vesting FIXES... (SHARE SPLIT 0.001)"); 
-            perform_reverse_vesting_share_split( 1000 );
+            ilog( "Applying HF_22 vesting FIXES... (SHARE SPLIT 1000)"); 
+
+           try
+           {
+
+              // Update all VESTS in accounts and the total VESTS in the dgpo
+              for( const auto& account : get_index<account_index>().indices() )
+              {
+                share_type totalv = 0;
+                share_type totalp = 0;                
+                share_type new_vesting = account->vesting_shares.amount / 1000
+                share_type new_pending = account->reward_vesting_balance.amount / 1000
+          
+                 modify( account, [&]( account_object& a )
+                 {
+                    a.vesting_shares.amount             /= 1000;
+                    a.reward_vesting_balance.amount     /= 1000;
+                    a.withdrawn                         /= 1000;
+                    a.to_withdraw                       /= 1000;
+                    a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS, VESTS_SYMBOL );
+                    if( a.vesting_withdraw_rate.amount == 0 )
+                       a.vesting_withdraw_rate.amount = 1;
+
+                    for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+                       a.proxied_vsf_votes[i] /= 1000;
+                 } );
+                totalv += new_vesting;
+                totalp += new_pending;         
+              }
+                modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+                {
+                   gpo.total_vesting_shares.amount = totalv;
+                   gpo.pending_rewarded_vesting_shares.amount = totalp;
+                });
+                    
+              // Update Pendint post payout rewards                   
+              const auto& comments = get_index< comment_index >().indices();
+              for( const auto& comment : comments )
+              {
+                 modify( comment, [&]( comment_object& c )
+                 {
+                    c.net_rshares       /= 1000;
+                    c.abs_rshares       /= 1000;
+                    c.vote_rshares      /= 1000;
+                 } );
+              }
+
+              for( const auto& c : comments )
+              {
+                 if( c.net_rshares.value > 0 )
+                    adjust_rshares2( c, 0, util::evaluate_reward_curve( c.net_rshares.value ) );
+              }
+
+           }
+           FC_CAPTURE_AND_RETHROW()
+            
+            
+            
+            
+            
             ilog( "Retally witness votes after SHARE SPLIT");             
             retally_witness_votes();
             /* HF22 Validate Retally of balances and Vesting on HF21*/      
@@ -4222,66 +4280,6 @@ void database::perform_vesting_share_split( uint32_t magnitude )
    FC_CAPTURE_AND_RETHROW()
 }
 
-void database::perform_reverse_vesting_share_split( uint32_t magnitude )
-{
-   try
-   {
-     /* modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
-      {
-         d.total_vesting_shares.amount /= magnitude;
-         d.total_reward_shares2 = 0;
-      } );*/
-
-      
-      // Need to update all VESTS in accounts and the total VESTS in the dgpo
-      for( const auto& account : get_index<account_index>().indices() )
-      {
-        share_type new_vesting = account->vesting_shares.amount/magnitude
-        share_type new_pending = account->reward_vesting_balance.amount/magnitude
-  
-         modify( account, [&]( account_object& a )
-         {
-            a.vesting_shares.amount             /= magnitude;
-            a.reward_vesting_balance.amount     /= magnitude;
-            a.withdrawn                         /= magnitude;
-            a.to_withdraw                       /= magnitude;
-            a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS, VESTS_SYMBOL );
-            if( a.vesting_withdraw_rate.amount == 0 )
-               a.vesting_withdraw_rate.amount = 1;
-
-            for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
-               a.proxied_vsf_votes[i] /= magnitude;
-         } );
-        totalv += new_vesting;
-        totalp += new_pending;         
-      }
-        modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
-        {
-           gpo.total_vesting_shares.amount = totalv;
-           gpo.pending_rewarded_vesting_shares.amount = totalp;
-        });
-            
-            
-      const auto& comments = get_index< comment_index >().indices();
-      for( const auto& comment : comments )
-      {
-         modify( comment, [&]( comment_object& c )
-         {
-            c.net_rshares       /= magnitude;
-            c.abs_rshares       /= magnitude;
-            c.vote_rshares      /= magnitude;
-         } );
-      }
-
-      for( const auto& c : comments )
-      {
-         if( c.net_rshares.value > 0 )
-            adjust_rshares2( c, 0, util::evaluate_reward_curve( c.net_rshares.value ) );
-      }
-
-   }
-   FC_CAPTURE_AND_RETHROW()
-}
 
 void database::retally_comment_children()
 {
