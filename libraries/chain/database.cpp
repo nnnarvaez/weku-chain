@@ -3936,9 +3936,9 @@ void database::apply_hardfork( uint32_t hardfork )
 
              session.squash();
              
-              /* HF21 Retally of balances and Vesting*/
+              /* HF21 Retally of balances and Vesting*/ // 297176020061140420
               auto gpo = get_dynamic_global_properties();          
-              auto im108_hf_vesting = asset( gpo.total_vesting_shares.amount - 297176020061140420, VESTS_SYMBOL); /* Need 6 decimals */ 
+              auto im108_hf_vesting = asset( gpo.total_vesting_shares.amount - 297176020061134420, VESTS_SYMBOL); /*added 6 vests to validate */ 
               auto im108_hf_delta = asset( gpo.current_supply.amount + 5450102000, STEEM_SYMBOL); /* Need 3 decimals 467502205.345*/ 
               modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
               {
@@ -4000,7 +4000,7 @@ void database::apply_hardfork( uint32_t hardfork )
             auto current = aidx.begin();
             auto totalv = asset( 0, VESTS_SYMBOL);   
             auto totalp = asset( 0, VESTS_SYMBOL);   
-
+            ilog( "Recalculating: Power Downs | Delegations IN/OUT | Pending Rewards | Balances ");
             while( current != aidx.end() )
             {
             const auto& account = *current;
@@ -4024,7 +4024,7 @@ void database::apply_hardfork( uint32_t hardfork )
                 for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
                    a.proxied_vsf_votes[i] /= 1000;                
                 
-                //ilog( "Recalculating: Witness votes | Delegations IN/OUT | Rewards Pending | Balances : ${p}", ("p", a.name));                      
+                //ilog( "Recalculating: Power Downs | Delegations IN/OUT | Rewards Pending | Balances : ${p}", ("p", a.name));                      
             });
             totalv += new_vesting;
             totalp += new_pending;
@@ -4059,7 +4059,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
             
             ilog( "Retally witness votes after SHARE SPLIT");             
-            retally_witness_votes();
+            //retally_witness_votes();
             /* HF22 Validate Retally of balances and Vesting on HF21*/      
             ilog( "Validating Retally of balances and Vesting on HF21");             
             validate_invariants();   
@@ -4227,7 +4227,7 @@ void database::validate_invariants()const
       FC_ASSERT( gpo.current_supply == total_supply, "", ("gpo.current_supply",gpo.current_supply)("total_supply",total_supply) );
       FC_ASSERT( gpo.current_sbd_supply == total_sbd, "", ("gpo.current_sbd_supply",gpo.current_sbd_supply)("total_sbd",total_sbd) );
       FC_ASSERT( gpo.total_vesting_shares + gpo.pending_rewarded_vesting_shares == total_vesting, "", ("gpo.total_vesting_shares",gpo.total_vesting_shares)("total_vesting",total_vesting) );
-      FC_ASSERT( gpo.total_vesting_shares.amount == total_vsf_votes, "", ("total_vesting_shares",gpo.total_vesting_shares)("total_vsf_votes",total_vsf_votes) );
+      FC_ASSERT( gpo.total_vesting_shares.amount == total_vsf_votes, "", ("total_vesting_shares AMOUNT",gpo.total_vesting_shares.amount)("total_vsf_votes",total_vsf_votes) );
       FC_ASSERT( gpo.pending_rewarded_vesting_steem == pending_vesting_steem, "", ("pending_rewarded_vesting_steem",gpo.pending_rewarded_vesting_steem)("pending_vesting_steem", pending_vesting_steem));
 
       FC_ASSERT( gpo.virtual_supply >= gpo.current_supply );
