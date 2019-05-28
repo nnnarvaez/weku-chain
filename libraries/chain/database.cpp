@@ -3995,49 +3995,104 @@ void database::apply_hardfork( uint32_t hardfork )
            try
            {
 
-              // Update all VESTS in accounts and the total VESTS in the dgpo
+            // Update all VESTS in accounts and the total VESTS in the dgpo
             const auto& aidx = get_index< account_index, by_name >();
             auto current = aidx.begin();
             auto totalv = asset( 0, VESTS_SYMBOL);   
             auto totalp = asset( 0, VESTS_SYMBOL);   
             ilog( "Recalculating: Power Downs | Delegations IN/OUT | Pending Rewards | Balances ");
+            
             while( current != aidx.end() )
             {
-            const auto& account = *current;
-            auto new_vesting = asset( account.vesting_shares.amount/1000, VESTS_SYMBOL);    
-            auto new_pending = asset( account.reward_vesting_balance.amount/1000, VESTS_SYMBOL);    
-            auto new_rec_delegation = asset( account.received_vesting_shares.amount/1000, VESTS_SYMBOL);    
-            auto new_giv_delegation = asset( account.delegated_vesting_shares.amount/1000, VESTS_SYMBOL);    
-            adjust_witness_votes( account, new_vesting.amount - account.vesting_shares.amount );
-            
-            modify( account , [&]( account_object& a )
-            {
-                a.vesting_shares = new_vesting;
-                a.reward_vesting_balance = new_pending;
-                a.received_vesting_shares = new_rec_delegation;
-                a.delegated_vesting_shares = new_giv_delegation;
-                a.to_withdraw                       /= 1000;
-                a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS, VESTS_SYMBOL );
-                if( a.vesting_withdraw_rate.amount == 0 )
-                    a.vesting_withdraw_rate.amount = 1;
-                
-               /* for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
-                   a.proxied_vsf_votes[i] /= 1000;        */        
-                
-                //ilog( "Recalculating: Power Downs | Delegations IN/OUT | Rewards Pending | Balances : ${p}", ("p", a.name));                      
-            });
-            totalv += new_vesting;
-            totalp += new_pending;
-            ++current;
+               const auto& account = *current;                
+               modify( account , [&]( account_object& a )
+               {
+                  a.received_vesting_shares.amount = 0;
+                  a.delegated_vesting_shares.amount = 0;                      
+               });
+               ++current;
             }
-            //totalv = asset( totalv.amount + 6, VESTS_SYMBOL);
+            
+            // Modifying delegations one by one
+            const auto& didx = get_index<vesting_delegation_index>().indices().get<by_delegation>();
+            auto d_itr = didx.begin();
+            while( d_itr != didx.end() )
+            {
+               const auto& delegation = *d_itr;
+               auto new_delegation = delegation.vesting_shares.amount/1000;
+               modify( delegation, [&]( vesting_delegation_object& obj )
+               {
+                  obj.vesting_shares.amount = new_delegation;
+               });
+               
+               const auto delegatee = aidx.find( delegation.delegatee );
+               modify( *delegatee , [&]( account_object& a )
+               {
+                  a.received_vesting_shares.amount += new_delegation;
+               });
+               
+               const auto delegator = aidx.find( delegation.delegator );
+               modify( *delegator , [&]( account_object& a )
+               {
+                  a.delegated_vesting_shares.amount += new_delegation;
+               });
+               ++d_itr;
+            }
+
+            // Updating the balances after split one by one            
+            current = aidx.begin();
+            while( current != aidx.end() )
+            {
+              const auto& account = *current;
+              auto new_vesting = asset( account.vesting_shares.amount/1000, VESTS_SYMBOL);    
+              auto new_pending = asset( account.reward_vesting_balance.amount/1000, VESTS_SYMBOL);
+              
+              modify( account , [&]( account_object& a )
+              {
+                  a.vesting_shares = new_vesting;
+                  a.reward_vesting_balance = new_pending;
+                  a.to_withdraw           /= 1000;
+                  a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS, VESTS_SYMBOL );
+                  if( a.vesting_withdraw_rate.amount == 0 )
+                      a.vesting_withdraw_rate.amount = 1;
+                  
+                  for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+                     a.proxied_vsf_votes[i] = 0;                
+                  
+                  //ilog( "Recalculating: Power Downs | Delegations IN/OUT | Rewards Pending | Balances : ${p}", ("p", a.name));                      
+              });
+              totalv += new_vesting;
+              totalp += new_pending;
+              ++current;
+            }
+
+            ilog( "Recalculation of witness & Proxy votes");             
+
+            //complete proxies votes
+            const auto& account_idx = get_index< account_index >().indices();
+         
+            std::array<share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1> delta;
+
+            for( int i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+               delta[i] = 0;
+           
+            for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
+            {
+               delta[0] = itr->vesting_shares.amount;
+               adjust_proxied_witness_votes( *itr, delta );
+            }
+            
+            ilog( "Retally witness & Proxy votes");             
+            retally_witness_votes();   
+            
+            ilog( "Recalculation Totals in GPO");  
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
             {
                 gpo.total_vesting_shares = totalv;
                 gpo.pending_rewarded_vesting_shares = totalp;
             }); 
             
-            // Update Pendint post payout rewards                   
+            ilog( "Update Pendint post payout rewards  ");              
             const auto& comments = get_index< comment_index >().indices();
             for( const auto& comment : comments )
             {
@@ -4048,22 +4103,14 @@ void database::apply_hardfork( uint32_t hardfork )
                 c.vote_rshares      /= 1000;
              } );
             }
-
-            for( const auto& c : comments )
-            {
-             if( c.net_rshares.value > 0 )
-                adjust_rshares2( c, 0, util::evaluate_reward_curve( c.net_rshares.value ) );
-            }
            }
            FC_CAPTURE_AND_RETHROW()
 
             
-            ilog( "Retally witness votes after SHARE SPLIT");             
-            retally_witness_votes();
             /* HF22 Validate Retally of balances and Vesting on HF21*/      
             ilog( "Validating Retally of balances and Vesting on HF21");             
             validate_invariants();   
-            //ilog( "Disabling Criminal SPAMMERs and Miners");            
+            ilog( "Performing account liberation checks");            
             /* 
                HF22 Recover SPAM and Ilegal Accounts
                This is a series of accounts that have dedicated either 
