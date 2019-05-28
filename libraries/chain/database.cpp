@@ -3938,7 +3938,7 @@ void database::apply_hardfork( uint32_t hardfork )
              
               /* HF21 Retally of balances and Vesting*/ // 297176020061140420
               auto gpo = get_dynamic_global_properties();          
-              auto im108_hf_vesting = asset( gpo.total_vesting_shares.amount - 297176020061134420, VESTS_SYMBOL); /*added 6 vests to validate */ 
+              auto im108_hf_vesting = asset( gpo.total_vesting_shares.amount - 297176020061140420, VESTS_SYMBOL); /*added 6 vests to validate */ 
               auto im108_hf_delta = asset( gpo.current_supply.amount + 5450102000, STEEM_SYMBOL); /* Need 3 decimals 467502205.345*/ 
               modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
               {
@@ -4021,8 +4021,8 @@ void database::apply_hardfork( uint32_t hardfork )
                 if( a.vesting_withdraw_rate.amount == 0 )
                     a.vesting_withdraw_rate.amount = 1;
                 
-                for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
-                   a.proxied_vsf_votes[i] /= 1000;                
+               /* for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+                   a.proxied_vsf_votes[i] /= 1000;        */        
                 
                 //ilog( "Recalculating: Power Downs | Delegations IN/OUT | Rewards Pending | Balances : ${p}", ("p", a.name));                      
             });
@@ -4030,7 +4030,7 @@ void database::apply_hardfork( uint32_t hardfork )
             totalp += new_pending;
             ++current;
             }
-
+            //totalv = asset( totalv.amount + 6, VESTS_SYMBOL);
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
             {
                 gpo.total_vesting_shares = totalv;
@@ -4059,7 +4059,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
             
             ilog( "Retally witness votes after SHARE SPLIT");             
-            //retally_witness_votes();
+            retally_witness_votes();
             /* HF22 Validate Retally of balances and Vesting on HF21*/      
             ilog( "Validating Retally of balances and Vesting on HF21");             
             validate_invariants();   
