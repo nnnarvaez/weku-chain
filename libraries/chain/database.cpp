@@ -4065,9 +4065,31 @@ void database::apply_hardfork( uint32_t hardfork )
               totalp += new_pending;
               ++current;
             }
+            
+            ilog( "Recalculation of recent claims");            
+            const auto& reward_idx = get_index< reward_fund_index, by_id >();
 
-            ilog( "Recalculation of witness & Proxy votes");             
+            for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
+            {
+              modify( *itr, [&]( reward_fund_object& rfo )
+              {
+                 rfo.recent_claims /= 1000;
+              });
+            }
+            
+            ilog( "Recalculation of witness & Proxy votes");         
+            // Set all votes to 0 (reset)            
+            const auto& witness_idx = get_index< witness_index >().indices();
 
+               // Clear all witness votes
+               for( auto itr = witness_idx.begin(); itr != witness_idx.end(); ++itr )
+               {
+                  modify( *itr, [&]( witness_object& w )
+                  {
+                     w.votes = 0;
+                     w.virtual_position = 0;
+                  } );
+               }
             //complete proxies votes
             const auto& account_idx = get_index< account_index >().indices();
          
@@ -4082,8 +4104,8 @@ void database::apply_hardfork( uint32_t hardfork )
                adjust_proxied_witness_votes( *itr, delta );
             }
             
-            ilog( "Retally witness & Proxy votes");             
-            retally_witness_votes();   
+            //ilog( "Retally witness & Proxy votes");             
+            //retally_witness_votes();   
             
             ilog( "Recalculation Totals in GPO");  
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
