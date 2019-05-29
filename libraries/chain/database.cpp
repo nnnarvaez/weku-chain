@@ -4092,7 +4092,7 @@ void database::apply_hardfork( uint32_t hardfork )
                 gpo.pending_rewarded_vesting_shares = totalp;
             }); 
             
-            ilog( "Update Pendint post payout rewards  ");              
+            ilog( "Update Pending post payout rewards  ");              
             const auto& comments = get_index< comment_index >().indices();
             for( const auto& comment : comments )
             {
