@@ -1,4 +1,4 @@
-https://images2.weku.io/DQmUTkiVbJSAsLMFd8YZYa3jfw39nZnxeuZqXMQRFZGu4TZ/image.png
+![](https://images2.weku.io/DQmUTkiVbJSAsLMFd8YZYa3jfw39nZnxeuZqXMQRFZGu4TZ/image.png)
 
 # Introducing Weku (beta)
 
