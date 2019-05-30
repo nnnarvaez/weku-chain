@@ -1,3 +1,5 @@
+https://images2.weku.io/DQmUTkiVbJSAsLMFd8YZYa3jfw39nZnxeuZqXMQRFZGu4TZ/image.png
+
 # Introducing Weku (beta)
 
 Weku is a Delegated Proof of Stake blockchain that uses a "Proof of Brain" social consensus algorithm for token allocation.
