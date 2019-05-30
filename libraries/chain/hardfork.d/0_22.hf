@@ -2,7 +2,7 @@
 #define STEEMIT_HARDFORK_0_22 22
 #define STEEMIT_HARDFORK_0_22__000 STEEMIT_HARDFORK_0_22
 
-#define STEEMIT_HARDFORK_0_22_TIME 1558940514 // Monday, May 27, 2019 7:01:54 AM GMT 
+#define STEEMIT_HARDFORK_0_22_TIME 1559260800 // Friday, May 31, 2019 2:00:00 AM GMT
 #define STEEMIT_HARDFORK_0_22_VERSION hardfork_version( 0, 22 )
 
 
@@ -13,6 +13,14 @@ inline static const std::set< std::string >& get_compromised_accounts22()
 {
    static const std::set< std::string > compromised_accounts
    {
+    "bot",
+    "nathan",
+    "voku",
+    "weku",
+    "sandranahil",
+    "bendecida",
+    "weku-exchange",
+    "weku-bank",
     "acidyo",
     "admin",
     "adventure",
