@@ -2638,7 +2638,8 @@ void database::_apply_block( const signed_block& next_block )
    /// parse witness version reporting
    process_header_extensions( next_block );
 
-   // NATHAN: Removed to allow HF21 to pass, Check To be reimplemented on HF21__01
+   // NATHAN: Check reimplemented on HF22
+
    if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork
    {
       const auto& witness = get_witness( next_block.witness );
@@ -3574,10 +3575,11 @@ void database::init_hardforks()
    FC_ASSERT( STEEMIT_HARDFORK_0_21 == 21, "Invalid hardfork configuration" );
    _hardfork_times[ STEEMIT_HARDFORK_0_21 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_21_TIME );
    _hardfork_versions[ STEEMIT_HARDFORK_0_21 ] = STEEMIT_HARDFORK_0_21_VERSION;
+
    FC_ASSERT( STEEMIT_HARDFORK_0_22 == 22, "Invalid hardfork configuration" );
    _hardfork_times[ STEEMIT_HARDFORK_0_22 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_22_TIME );
    _hardfork_versions[ STEEMIT_HARDFORK_0_22 ] = STEEMIT_HARDFORK_0_22_VERSION;
-   
+
    const auto& hardforks = get_hardfork_property_object();
    FC_ASSERT( hardforks.last_hardfork <= STEEMIT_NUM_HARDFORKS, "Chain knows of more hardforks than configuration", ("hardforks.last_hardfork",hardforks.last_hardfork)("STEEMIT_NUM_HARDFORKS",STEEMIT_NUM_HARDFORKS) );
    FC_ASSERT( _hardfork_versions[ hardforks.last_hardfork ] <= STEEMIT_BLOCKCHAIN_VERSION, "Blockchain version is older than last applied hardfork" );
@@ -3936,9 +3938,10 @@ void database::apply_hardfork( uint32_t hardfork )
 
              session.squash();
              
-              /* HF21 Retally of balances and Vesting*/ // 297176020061140420
+              /* HF21 Retally of balances and Vesting*/
               auto gpo = get_dynamic_global_properties();          
-              auto im108_hf_vesting = asset( gpo.total_vesting_shares.amount - 297176020061140420, VESTS_SYMBOL); /*added 6 vests to validate */ 
+              auto im108_hf_vesting = asset( gpo.total_vesting_shares.amount - 297176020061140420, VESTS_SYMBOL); /* Need 6 decimals */ 
+
               auto im108_hf_delta = asset( gpo.current_supply.amount + 5450102000, STEEM_SYMBOL); /* Need 3 decimals 467502205.345*/ 
               modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
               {
@@ -3946,6 +3949,7 @@ void database::apply_hardfork( uint32_t hardfork )
                  gpo.virtual_supply = im108_hf_delta;         // Delta balance initminer108
                  gpo.total_vesting_shares = im108_hf_vesting; // Total removed vesting from initminer108
               });
+
 
               /* Remove active witnesses
                We know that initminer is in witness_index and not in active witness list
@@ -3959,7 +3963,7 @@ void database::apply_hardfork( uint32_t hardfork )
                        only reverted a power up of the initminer108 
                        to avoid the total_vesting_fund overflowing INT64  
               */
-              
+
               const auto &widx = get_index<witness_index>().indices().get<by_name>();
               for (auto itr = widx.begin(); itr != widx.end(); ++itr) {
                   modify(*itr, [&](witness_object &wo) {
@@ -4157,6 +4161,7 @@ void database::apply_hardfork( uint32_t hardfork )
       default:
          break;
    }
+
 
    modify( get_hardfork_property_object(), [&]( hardfork_property_object& hfp )
    {
