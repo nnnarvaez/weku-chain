@@ -1,7 +1,5 @@
-// fiel path - libraries/fc/src/rpc/websocket_api.cpp
-
-
-
+# file path - ./libraries/fc/src/rpc/websocket_api.cpp
+```
 #include <fc/rpc/websocket_api.hpp>
 #include <iostream>
 #include <fstream>
@@ -215,6 +213,4 @@ std::string websocket_api_connection::on_message(
 }
 
 } } // namespace fc::rpc
-
-
-
+```
