@@ -95,6 +95,10 @@ sudo apt-get install -y \
 
 # Clone and Compile
 
+You might want to add the websocket blocking even if it is inefficient, follow [these instructions](https://github.com/nnnarvaez/weku-chain/blob/master/original_wss_block.md)
+
+
+
 Example: (non rpc node)
 ```
 # git clone https://github.com/wekuio/weku-chain
