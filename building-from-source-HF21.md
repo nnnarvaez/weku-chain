@@ -1,4 +1,4 @@
-# How to build from source HF21 release:
+# How to build WEKUD from source HF21 release:
 
 It is strongly reccomended you use UBUNTU 16.04, this instructions are for this OS and altought it might run in other versions the instructions might vary and it is your responsability to figure them out. (it will be nice if a detailed how-to is provided after you succesfully manage to deploy it in a newer version)
 
