@@ -1,4 +1,9 @@
-# file path - ./libraries/fc/src/rpc/websocket_api.cpp
+# File path - 
+`./libraries/fc/src/rpc/websocket_api.cpp`
+
+Copy paste the code replacing the contents of the file prior to build.
+Thi is needed ATM because the repository in a include, and we are using an old version, in the future this might become a local file.
+
 ```
 #include <fc/rpc/websocket_api.hpp>
 #include <iostream>
