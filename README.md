@@ -12,6 +12,8 @@ Weku is a Delegated Proof of Stake platform based on the STEEM blockchain, that 
 
 tbd
 
+# Last Candidate release HF22
+
 ![](https://images2.weku.io/DQmUTkiVbJSAsLMFd8YZYa3jfw39nZnxeuZqXMQRFZGu4TZ/image.png)
 
 
@@ -178,6 +180,8 @@ You have the option to declare your witness intention to the network, unless you
 
 # Seed Nodes
 
+tbd
+
 
 # Testing
 
@@ -206,4 +210,5 @@ private-key = <your-active-private-key>
 
 # More documentation
 
-[This folder contains varied information](https://github.com/nnnarvaez/weku-chain/tree/master/doc) Beware some might not apply to current version
+[This folder contains varied information](https://github.com/nnnarvaez/weku-chain/tree/master/doc)
+Beware some might not apply to current version
