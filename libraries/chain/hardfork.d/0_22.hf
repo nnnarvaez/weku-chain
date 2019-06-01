@@ -13,6 +13,10 @@ inline static const std::set< std::string >& get_compromised_accounts22()
 {
    static const std::set< std::string > compromised_accounts
    {
+    "rebeca",
+    "ajorundon",
+    "nikollettesunday",
+    "mariablue",
     "bot",
     "nathan",
     "voku",
