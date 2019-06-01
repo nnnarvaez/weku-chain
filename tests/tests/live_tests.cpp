@@ -20,7 +20,7 @@ using namespace steemit::protocol;
 
 BOOST_FIXTURE_TEST_SUITE( live_tests, live_database_fixture )
 
-/*
+
 BOOST_AUTO_TEST_CASE( vests_stock_split )
 {
    try
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE( vests_stock_split )
       validate_database();
    }
    FC_LOG_AND_RETHROW()
-}*/
+}
 
 BOOST_AUTO_TEST_CASE( retally_votes )
 {

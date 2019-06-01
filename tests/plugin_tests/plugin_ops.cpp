@@ -9,7 +9,7 @@
 
 using namespace steemit::chain;
 using namespace steemit::chain::test;
-/*
+
 namespace steemit { namespace plugin_tests {
 
 using namespace steemit::app;
@@ -86,7 +86,7 @@ FC_REFLECT( steemit::plugin_tests::test_b_operation, (account) )
 DECLARE_OPERATION_TYPE( steemit::plugin_tests::test_op );
 FC_REFLECT_TYPENAME( steemit::plugin_tests::test_op );
 DEFINE_OPERATION_TYPE( steemit::plugin_tests::test_op );
-*/
+
 
 BOOST_FIXTURE_TEST_SUITE( plugin_ops, clean_database_fixture );
 /*
