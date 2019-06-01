@@ -65,6 +65,17 @@ void witness_update_evaluator::do_apply( const witness_update_operation& o )
 {
    _db.get_account( o.owner ); // verify owner exists
 
+   if ( _db.has_hardfork( STEEMIT_HARDFORK_0_22 ) )
+   {
+      FC_ASSERT( o.props.maximum_block_size >= STEEMIT_MIN_BLOCK_SIZE_LIMIT_HF22, "maximum_block_size is too small. maximum_block_size ${mbs}, min limit ${limit}",
+         ("mbs", o.props.maximum_block_size)
+         ("limit", STEEMIT_MIN_BLOCK_SIZE_LIMIT_HF22));
+   }else{
+      FC_ASSERT( o.props.maximum_block_size >= STEEMIT_MIN_BLOCK_SIZE_LIMIT, "maximum_block_size is too small. maximum_block_size ${mbs}, min limit ${limit}",
+         ("mbs", o.props.maximum_block_size)
+         ("limit", STEEMIT_MIN_BLOCK_SIZE_LIMIT));
+   }
+
    if ( _db.has_hardfork( STEEMIT_HARDFORK_0_1 ) )
    {
       FC_ASSERT( o.url.size() <= STEEMIT_MAX_WITNESS_URL_LENGTH, "URL is too long" );
