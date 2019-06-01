@@ -915,7 +915,6 @@ inline static const std::set< std::string >& get_compromised_accounts22()
     "yoy",
     "vov",
     "mop",
-    "alexey04",
     "rrter",
     "amot",
     "abbl",
