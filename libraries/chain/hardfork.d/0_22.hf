@@ -1,0 +1,6 @@
+#ifndef STEEMIT_HARDFORK_0_22
+#define STEEMIT_HARDFORK_0_22 22
+
+#define STEEMIT_HARDFORK_0_22_TIME 1559433600 // Sunday, June 2, 2019 12:00:00 AM
+#define STEEMIT_HARDFORK_0_22_VERSION hardfork_version( 0, 22 )
+#endif

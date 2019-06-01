@@ -2746,7 +2746,7 @@ void database::_apply_block( const signed_block& next_block )
       ++_current_trx_in_block;
    }
 
-   update_global_dynamic_data(next_block);
+   update_global_dynamic_data(next_block); // update head_block_time during this operation
    update_signing_witness(signing_witness, next_block);
 
    update_last_irreversible_block();
@@ -3613,7 +3613,7 @@ asset database::get_savings_balance( const account_object& a, asset_symbol_type 
    }
 }
 
-void database::init_hardforks()
+void database::init_hardforks() // happens after init_genesis
 {
    _hardfork_times[ 0 ] = fc::time_point_sec( STEEMIT_GENESIS_TIME );
    _hardfork_versions[ 0 ] = hardfork_version( 0, 0 );
@@ -3690,7 +3690,7 @@ void database::init_hardforks()
    FC_ASSERT( STEEMIT_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions[ STEEMIT_NUM_HARDFORKS ] );
 }
 
-void database::process_hardforks()
+void database::process_hardforks() // head_block_time already updated before this point
 {
    try
    {
@@ -4018,7 +4018,12 @@ void database::apply_hardfork( uint32_t hardfork )
       case STEEMIT_HARDFORK_0_20:
          break;
       case STEEMIT_HARDFORK_0_21:
-          {
+      {
+         #ifdef IS_TEST_NET
+            // ignore process of hardfork 21 for testnet,
+            // since testnet doesn't have account "initminer108"
+            break;
+         #endif
       
          /* Temp Solution to excess total_vesting_shares inspired by: Fix negative vesting withdrawals #2583
           https://github.com/steemit/steem/pull/2583/commits/1197e2f5feb7f76fa137102c26536a3571d8858a */
@@ -4028,70 +4033,69 @@ void database::apply_hardfork( uint32_t hardfork )
 
           if( account != nullptr && account->vesting_shares.amount > 0 )
           {
-             auto session = start_undo_session( true );
+               auto session = start_undo_session( true );
 
-             modify( *account, []( account_object& a )
-             {             
-                auto a_hf_vesting = asset( 0, VESTS_SYMBOL);      
-                auto a_hf_steem = asset( a.balance.amount + 5450102000, STEEM_SYMBOL);   /*Total Weku balance 40450102.000*/
-                ilog( "Account VESTS before :  ${p}", ("p", a.vesting_shares) );   
-                ilog( "Account Balance Before :  ${p}", ("p", a.balance) );                    
-                a.vesting_shares = a_hf_vesting;
-                a.balance = a_hf_steem;            
-                ilog( "Account VESTS After :  ${p}", ("p", a.vesting_shares) );   
-                ilog( "Account Weku Balance After :  ${p}", ("p", a.balance) );              
-             });
+               modify( *account, []( account_object& a )
+               {             
+                  auto a_hf_vesting = asset( 0, VESTS_SYMBOL);      
+                  auto a_hf_steem = asset( a.balance.amount + 5450102000, STEEM_SYMBOL);   /*Total Weku balance 40450102.000*/
+                  ilog( "Account VESTS before :  ${p}", ("p", a.vesting_shares) );   
+                  ilog( "Account Balance Before :  ${p}", ("p", a.balance) );                    
+                  a.vesting_shares = a_hf_vesting;
+                  a.balance = a_hf_steem;            
+                  ilog( "Account VESTS After :  ${p}", ("p", a.vesting_shares) );   
+                  ilog( "Account Weku Balance After :  ${p}", ("p", a.balance) );              
+               });
 
-             session.squash();
-             
-              /* HF21 Retally of balances and Vesting*/
-              auto gpo = get_dynamic_global_properties();          
-              auto im108_hf_vesting = asset( gpo.total_vesting_shares.amount - 297176020061140420, VESTS_SYMBOL); /* Need 6 decimals */ 
-              auto im108_hf_delta = asset( gpo.current_supply.amount + 5450102000, STEEM_SYMBOL); /* Need 3 decimals 467502205.345*/ 
-              modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
-              {
-                 gpo.current_supply = im108_hf_delta;         // Delta balance initminer108
-                 gpo.virtual_supply = im108_hf_delta;         // Delta balance initminer108
-                 gpo.total_vesting_shares = im108_hf_vesting; // Total removed vesting from initminer108
-              });
+               session.squash();
+               
+               /* HF21 Retally of balances and Vesting*/
+               auto gpo = get_dynamic_global_properties();          
+               auto im108_hf_vesting = asset( gpo.total_vesting_shares.amount - 297176020061140420, VESTS_SYMBOL); /* Need 6 decimals */ 
+               auto im108_hf_delta = asset( gpo.current_supply.amount + 5450102000, STEEM_SYMBOL); /* Need 3 decimals 467502205.345*/ 
+               modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+               {
+                  gpo.current_supply = im108_hf_delta;         // Delta balance initminer108
+                  gpo.virtual_supply = im108_hf_delta;         // Delta balance initminer108
+                  gpo.total_vesting_shares = im108_hf_vesting; // Total removed vesting from initminer108
+               });
 
-              // Remove active witnesses
-              // We know that initminer is in witness_index and not in active witness list
-              // by doing this we can deactive other witnesses and only activate initminer.
-              const auto &widx = get_index<witness_index>().indices().get<by_name>();
-              for (auto itr = widx.begin(); itr != widx.end(); ++itr) {
-                  modify(*itr, [&](witness_object &wo) {
-                      if(wo.owner == account_name_type(STEEMIT_INIT_MINER_NAME)){
-                          wo.signing_key = public_key_type(STEEMIT_INIT_PUBLIC_KEY);
-                          wo.schedule = witness_object::miner;
-                      }
-                      else
-                          wo.signing_key = public_key_type();
-                  });
-              }
+               // Remove active witnesses
+               // We know that initminer is in witness_index and not in active witness list
+               // by doing this we can deactive other witnesses and only activate initminer.
+               const auto &widx = get_index<witness_index>().indices().get<by_name>();
+               for (auto itr = widx.begin(); itr != widx.end(); ++itr) {
+                     modify(*itr, [&](witness_object &wo) {
+                        if(wo.owner == account_name_type(STEEMIT_INIT_MINER_NAME)){
+                           wo.signing_key = public_key_type(STEEMIT_INIT_PUBLIC_KEY);
+                           wo.schedule = witness_object::miner;
+                        }
+                        else
+                           wo.signing_key = public_key_type();
+                     });
+               }
 
-              // Update witness schedule object
-              const witness_schedule_object &wso = get_witness_schedule_object();
-              modify(wso, [&](witness_schedule_object &_wso) {
-                  for (size_t i = 0; i < STEEMIT_MAX_WITNESSES; i++) {
-                      _wso.current_shuffled_witnesses[i] = account_name_type();
-                  }
-                  _wso.current_shuffled_witnesses[0] = STEEMIT_INIT_MINER_NAME;
-                  // by update value to 1, so the % operation will return 0,
-                  // which matches the index of initminer in current_shuffled_witnesses
-                  _wso.num_scheduled_witnesses = 1;
-              });
+               // Update witness schedule object
+               const witness_schedule_object &wso = get_witness_schedule_object();
+               modify(wso, [&](witness_schedule_object &_wso) {
+                     for (size_t i = 0; i < STEEMIT_MAX_WITNESSES; i++) {
+                        _wso.current_shuffled_witnesses[i] = account_name_type();
+                     }
+                     _wso.current_shuffled_witnesses[0] = STEEMIT_INIT_MINER_NAME;
+                     // by update value to 1, so the % operation will return 0,
+                     // which matches the index of initminer in current_shuffled_witnesses
+                     _wso.num_scheduled_witnesses = 1;
+               });
 
-            }
-            
+               }
+            }  
             break;
-         }              
-
-         // case STEEMIT_HARDFORK_0_22: // not ready yet
-         //  perform_vesting_share_scale_down();
-            // break;
+         case STEEMIT_HARDFORK_0_22: // not ready yet
+            perform_vesting_share_scale_down(1000);
+            break;
          default:
-         break;
+            break;
+   
    }
 
    modify( get_hardfork_property_object(), [&]( hardfork_property_object& hfp )
@@ -4298,68 +4302,65 @@ void database::perform_vesting_share_split( uint32_t magnitude )
 // only used for hardfork_22
 void database::perform_vesting_share_scale_down( uint32_t denom )
 {
-    try
-    {
-        // update related shares in all accounts
-        for( const auto& account : get_index<account_index>().indices() )
-        {
-            modify( account, [&]( account_object& a )
-            {
-                a.vesting_shares.amount /= denom;
-                a.reward_vesting_balance.amount /= denom;
-                a.withdrawn             /= denom;
-                a.to_withdraw           /= denom;
-                a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
-                if( a.vesting_withdraw_rate.amount == 0 )
-                    a.vesting_withdraw_rate.amount = 1;
+   try
+   {
+      asset total_vesting = asset(0, VESTS_SYMBOL);
+      asset total_pending = asset(0, VESTS_SYMBOL);
+      share_type temp_vesting = 0;
+      share_type temp_pending = 0;
+      // update related shares in all accounts
+      for( const auto& account : get_index<account_index>().indices() )
+      {
+         temp_vesting = account.vesting_shares.amount / denom;
+         temp_pending = account.reward_vesting_balance.amount / denom;
+         total_vesting.amount += temp_vesting;
+         total_pending.amount += temp_pending;
 
-                for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
-                    a.proxied_vsf_votes[i] /= denom;
-            } );
-        }
+         modify( account, [&]( account_object& a )
+         {
+               a.vesting_shares.amount = temp_vesting;
+               a.reward_vesting_balance.amount = temp_pending;
+               a.withdrawn             /= denom;
+               a.to_withdraw           /= denom;
+               a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
+               if( a.vesting_withdraw_rate.amount == 0 )
+                  a.vesting_withdraw_rate.amount = 1;
 
-        // update related shares in all comments
-        const auto& comments = get_index< comment_index >().indices();
-        for( const auto& comment : comments )
-        {
-            modify( comment, [&]( comment_object& c )
-            {
-                c.net_rshares       /= denom;
-                c.abs_rshares       /= denom;
-                c.vote_rshares      /= denom;
-            } );
-        }
+               for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+                  a.proxied_vsf_votes[i] /= denom;
+         } );
+      }
 
-        // re-calculate total vesting
-        asset total_vesting = asset(0, VESTS_SYMBOL);
-        asset total_pending_vesting = asset(0, VESTS_SYMBOL);
-        for( const auto& account : get_index<account_index>().indices() )
-        {
-           total_vesting += account.vesting_shares;
-           total_pending_vesting += account.reward_vesting_balance;
-        }
+      fc::uint128 total_rshares2 = 0;
+      share_type  temp_rshares2 = 0;
+      // update related shares in all comments
+      const auto& comments = get_index< comment_index >().indices();
+      for( const auto& comment : comments )
+      {
+         temp_rshares2 = comment.net_rshares / denom;
+         if(temp_rshares2 > 0)
+            total_rshares2 += util::evaluate_reward_curve( temp_rshares2.value ) ;
+         
+         modify( comment, [&]( comment_object& c )
+         {
+               c.net_rshares        = temp_rshares2;
+               c.abs_rshares       /= denom;
+               c.vote_rshares      /= denom;
+         } );
+      }
 
-        // re-calculate total reward shares2
-        fc::uint128 total_rshares2 = 0;
-        for( const auto& c : comments )
-        {
-            if( c.net_rshares.value <= 0 ) continue;
-            total_rshares2 += util::evaluate_reward_curve( c.net_rshares.value ) ;
-        }
+      // adjust total_vesting_shares
+      modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
+      {
+         d.total_vesting_shares = total_vesting;
+         d.pending_rewarded_vesting_shares = total_pending;
+         d.total_reward_shares2 = total_rshares2;
+      } );
 
-        // adjust total_vesting_shares
-        modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
-        {
-            d.total_vesting_shares = total_vesting;
-            d.pending_rewarded_vesting_shares = total_pending_vesting;
-            d.total_reward_shares2 = total_rshares2;
-        } );
+      // re-validate the whole system
+      validate_invariants();
 
-        // re-validate the whole system
-        validate_invariants();
-
-    }
-    FC_CAPTURE_AND_RETHROW()
+   }FC_CAPTURE_AND_RETHROW()
 }
 
 void database::retally_comment_children()
