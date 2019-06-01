@@ -198,12 +198,13 @@ on how to use lcov to check code test coverage.
 **Basic**
 
 ```
-rpc-endpoint = 127.0.0.1:9876
-p2p-endpoint = 0.0.0.0:3333
-seed-node = 35.192.74.160:8190
-seed-node = 35.192.74.160:3333
+seed-node = dev.weku.io:4444
+rpc-endpoint = 127.0.0.1:8190
+p2p-endpoint = 0.0.0.0:4444
 shared-file-size = 50G
-enable-stale-production = false
+enable-plugin = witness
+enable-stale-production = true
+required-participation = false
 witness = "<your-account>"
 private-key = <your-active-private-key>
 ```
