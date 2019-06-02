@@ -1069,7 +1069,6 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
       });
    }
 }
-
 void account_witness_vote_evaluator::do_apply( const account_witness_vote_operation& o )
 {
    const auto& voter = _db.get_account( o.account );

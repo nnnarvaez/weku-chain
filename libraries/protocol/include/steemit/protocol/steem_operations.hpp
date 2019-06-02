@@ -182,7 +182,6 @@ namespace steemit { namespace protocol {
       void get_required_posting_authorities( flat_set<account_name_type>& a )const{ a.insert(voter); }
    };
 
-
    /**
     * @ingroup operations
     *
@@ -453,6 +452,15 @@ namespace steemit { namespace protocol {
       void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(account); }
    };
 
+   struct blacklist_vote_operation : public base_operation
+   {
+      account_name_type voter;
+      account_name_type badguy;
+      bool              approve = true;
+
+      void validate() const;
+      void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(voter); }
+   };
 
    /**
     * @brief provides a generic way to add higher level protocols on top of witness consensus
@@ -1000,6 +1008,7 @@ FC_REFLECT( steemit::protocol::set_withdraw_vesting_route_operation, (from_accou
 FC_REFLECT( steemit::protocol::witness_update_operation, (owner)(url)(block_signing_key)(props)(fee) )
 FC_REFLECT( steemit::protocol::account_witness_vote_operation, (account)(witness)(approve) )
 FC_REFLECT( steemit::protocol::account_witness_proxy_operation, (account)(proxy) )
+FC_REFLECT( steemit::protocol::blacklist_vote_operation, (voter)(badguy)(approve))
 FC_REFLECT( steemit::protocol::comment_operation, (parent_author)(parent_permlink)(author)(permlink)(title)(body)(json_metadata) )
 FC_REFLECT( steemit::protocol::vote_operation, (voter)(author)(permlink)(weight) )
 FC_REFLECT( steemit::protocol::custom_operation, (required_auths)(id)(data) )

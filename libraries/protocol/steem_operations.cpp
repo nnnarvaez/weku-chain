@@ -208,6 +208,11 @@ namespace steemit { namespace protocol {
       FC_ASSERT( proxy != account, "Cannot proxy to self" );
    }
 
+   void blacklist_vote_operation::validate() const{
+      validate_account_name(voter);
+      validate_account_name(badguy);
+   }
+
    void custom_operation::validate() const {
       /// required auth accounts are the ones whose bandwidth is consumed
       FC_ASSERT( required_auths.size() > 0, "at least on account must be specified" );

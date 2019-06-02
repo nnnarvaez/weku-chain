@@ -2348,6 +2348,7 @@ void database::initialize_indexes()
    add_core_index< reward_fund_index                       >(*this);
    add_core_index< vesting_delegation_index                >(*this);
    add_core_index< vesting_delegation_expiration_index     >(*this);
+   add_core_index< blacklist_vote_index                    >(*this);
 
    _plugin_index_signal();
 }

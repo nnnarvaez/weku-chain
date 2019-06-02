@@ -61,6 +61,7 @@ namespace steemit { namespace protocol {
             claim_reward_balance_operation,
             delegate_vesting_shares_operation,
             account_create_with_delegation_operation,
+            blacklist_vote_operation,
 
             /// virtual operations below this point
             fill_convert_request_operation,
