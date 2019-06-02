@@ -16,6 +16,7 @@
 #include <steemit/chain/shared_db_merkle.hpp>
 #include <steemit/chain/operation_notification.hpp>
 #include <steemit/chain/witness_schedule.hpp>
+#include <steemit/chain/blacklist_objects.hpp>
 
 #include <steemit/chain/util/asset.hpp>
 #include <steemit/chain/util/reward.hpp>
@@ -2302,6 +2303,7 @@ void database::initialize_evaluators()
    _my->_evaluator_registry.register_evaluator< claim_reward_balance_evaluator           >();
    _my->_evaluator_registry.register_evaluator< account_create_with_delegation_evaluator >();
    _my->_evaluator_registry.register_evaluator< delegate_vesting_shares_evaluator        >();
+   _my->_evaluator_registry.register_evaluator< blacklist_vote_evaluator                 >();
 }
 
 void database::set_custom_operation_interpreter( const std::string& id, std::shared_ptr< custom_operation_interpreter > registry )
