@@ -123,8 +123,25 @@ namespace steemit { namespace chain {
                                     share_type() );
          }
 
+         share_type blacklist_total_votes = 0;     
+
+         // TODO: need define detail rules later.
+         bool blacklist_is_vote_disabled() const {
+            return blacklist_total_votes / vesting_shares.amount > 2; // need move to config after we have detail rules
+         }  
+
+         // TODO: need define detail rules later.
+         bool blacklist_is_comment_disabled() const { // freeze transfer for a while
+            return blacklist_total_votes / vesting_shares.amount > 3; // need move to config after we have detail rules
+         }
+
+         // TODO: need define detail rules later.
+         bool blacklist_is_transfer_disabled() const { // freeze transfer for a while
+            return blacklist_total_votes / vesting_shares.amount > 4; // need move to config after we have detail rules
+         } 
+
          asset effective_vesting_shares()const { return vesting_shares - delegated_vesting_shares + received_vesting_shares; }
-   };
+  };
 
    class account_authority_object : public object< account_authority_object_type, account_authority_object >
    {
@@ -473,6 +490,7 @@ FC_REFLECT( steemit::chain::account_object,
              (posting_rewards)
              (proxied_vsf_votes)(witnesses_voted_for)
              (last_post)(last_root_post)(post_bandwidth)
+             (blacklist_total_votes)
           )
 CHAINBASE_SET_INDEX_TYPE( steemit::chain::account_object, steemit::chain::account_index )
 
