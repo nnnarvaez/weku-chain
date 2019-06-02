@@ -42,12 +42,13 @@
 #else // IS LIVE STEEM NETWORK
 #define STEEMIT_INIT_PUBLIC_KEY_STR             "WKA859Vj7Hh38YN1uU4eCrxsJvZ8Ls7TqzQ2CYXZ9ebksz9UAGhpg"
 #define STEEMIT_CHAIN_ID                          (fc::sha256::hash("weku_chain_production"))
+// trying to change the currency for the test enviroment: NOT sure it will sincronize
 #define VESTS_SYMBOL  (uint64_t(6) | (uint64_t('V') << 8) | (uint64_t('E') << 16) | (uint64_t('S') << 24) | (uint64_t('T') << 32) | (uint64_t('S') << 40)) ///< VESTS with 6 digits of precision
-#define STEEM_SYMBOL  (uint64_t(3) | (uint64_t('W') << 8) | (uint64_t('E') << 16) | (uint64_t('K') << 24) | (uint64_t('U') << 32) )                        ///< WEKU with 3 digits of precision
-#define SBD_SYMBOL    (uint64_t(3) | (uint64_t('W') << 8) | (uint64_t('K') << 16) | (uint64_t('D') << 24) )                                                ///< WEKU Backed Dollars with 3 digits of precision
+#define STEEM_SYMBOL  (uint64_t(3) | (uint64_t('P') << 8) | (uint64_t('R') << 16) | (uint64_t('O') << 24) | (uint64_t('G') << 32) )                        ///< WEKU with 3 digits of precision
+#define SBD_SYMBOL    (uint64_t(3) | (uint64_t('P') << 8) | (uint64_t('B') << 16) | (uint64_t('D') << 24) )                                                ///< WEKU Backed Dollars with 3 digits of precision
 #define STMD_SYMBOL   (uint64_t(3) | (uint64_t('W') << 8) | (uint64_t('E') << 16) | (uint64_t('K') << 24) | (uint64_t('U') << 32) | (uint64_t('D') << 40)) ///< WEKU Dollars with 3 digits of precision
-#define STEEMIT_SYMBOL                          "WEKU"
-#define STEEMIT_ADDRESS_PREFIX                  "WKA"
+#define STEEMIT_SYMBOL                          "PROG"
+#define STEEMIT_ADDRESS_PREFIX                  "PGA"
 
 /*
 #define STEEMIT_INIT_PUBLIC_KEY_STR             "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
