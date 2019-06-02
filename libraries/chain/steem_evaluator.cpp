@@ -4,6 +4,7 @@
 #include <steemit/chain/steem_objects.hpp>
 #include <steemit/chain/witness_objects.hpp>
 #include <steemit/chain/block_summary_object.hpp>
+#include <steemit/chain/blacklist_objects.hpp>
 
 #include <steemit/chain/util/reward.hpp>
 
@@ -473,6 +474,9 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
 
 void comment_evaluator::do_apply( const comment_operation& o )
 { try {
+   if(_db.has_hardfork( STEEMIT_HARDFORK_0_22))
+      FC_ASSERT(!voter.blacklist_is_comment_disabled(), "Operation fail, voter is in blacklist.");
+
    if( _db.has_hardfork( STEEMIT_HARDFORK_0_5__55 ) )
       FC_ASSERT( o.title.size() + o.body.size() + o.json_metadata.size(), "Cannot update comment because nothing appears to be changing." );
 
@@ -869,6 +873,10 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 
 void transfer_evaluator::do_apply( const transfer_operation& o )
 {
+
+   if(_db.has_hardfork( STEEMIT_HARDFORK_0_22))
+      FC_ASSERT(!voter.blacklist_is_transfer_disabled(), "Operation fail, voter is in blacklist.");
+
    const auto& from_account = _db.get_account(o.from);
    const auto& to_account = _db.get_account(o.to);
 
@@ -1062,7 +1070,6 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
    }
 }
 
-
 void account_witness_vote_evaluator::do_apply( const account_witness_vote_operation& o )
 {
    const auto& voter = _db.get_account( o.account );
@@ -1130,10 +1137,41 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
    }
 }
 
+void blacklist_vote_evaluator::do_apply(const blacklist_vote_operation& o){
+   const auto& voter = _db.get_account(o.voter);
+   const auto& badguy = _db.get_account(o.badguy);
+   // TODO: we might or might not want this check, decide later
+   //FC_ASSERT(voter.proxy.size() == 0, "A proxy is currently set, please clear the proxy before voting for a blacklist.");
+   if(o.approve) 
+      FC_ASSERT(voter.can_vote, "Account has declined its voting rights.");
+   
+   const auto& idx = _db.get_index<blacklist_vote_index>().indices().get<by_voter_badguy>();
+   auto itr = idx.find(boost::make_tuple(voter.id, badguy.id));
+
+   if(itr == idx.end()){ // create vote
+      FC_ASSERT(o.approve, "Vote doesn't exist, user must indicate a desire to approve blacklist.");
+
+      _db.create<blacklist_vote_object>([&](blacklist_vote_object& v){
+         v.voter = voter.id;
+         v.badguy = badguy.id;
+         v.net_shares = voter.vesting_shares.amount;
+      });
+
+      _db.modify(badguy, [&] (account_object& a){ a.blacklist_total_votes += voter.vesting_shares.amount;});
+   }else{ // remove existing vote
+      FC_ASSERT( !o.approve, "Vote currently exists, user must indicate a desire to reject blacklist." );
+      _db.modify(badguy, [&] (account_object& a){ a.blacklist_total_votes -= voter.vesting_shares.amount;});
+      _db.remove(*itr);
+   }
+}
+
 void vote_evaluator::do_apply( const vote_operation& o )
 { try {
    const auto& comment = _db.get_comment( o.author, o.permlink );
    const auto& voter   = _db.get_account( o.voter );
+
+   if(_db.has_hardfork( STEEMIT_HARDFORK_0_22))
+      FC_ASSERT(!voter.blacklist_is_vote_disabled(), "Operation fail, voter is in blacklist.");
 
    if( _db.has_hardfork( STEEMIT_HARDFORK_0_10 ) )
       FC_ASSERT( !(voter.owner_challenged || voter.active_challenged ), "Operation cannot be processed because the account is currently challenged." );
