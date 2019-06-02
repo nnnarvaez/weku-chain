@@ -15,6 +15,7 @@ class blacklist_vote_object: public object<blacklist_vote_object_type, blacklist
         id_type id;
         account_id_type voter_id;
         account_id_type badguy_id;
+        share_type      net_shares;
 };
 
 struct by_voter_badguy;
@@ -44,5 +45,5 @@ typedef multi_index_container<
 
 }}
 
-FC_REFLECT(steemit::chain::blacklist_vote_object, (id)(voter_id)(badguy_id))
+FC_REFLECT(steemit::chain::blacklist_vote_object, (id)(voter_id)(badguy_id)(net_shares))
 CHAINBASE_SET_INDEX_TYPE(steemit::chain::blacklist_vote_object, steemit::chain::blacklist_vote_index)

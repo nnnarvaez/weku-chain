@@ -474,16 +474,17 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
 
 void comment_evaluator::do_apply( const comment_operation& o )
 { try {
+
+   const auto& auth = _db.get_account( o.author ); /// prove it exists
+
    if(_db.has_hardfork( STEEMIT_HARDFORK_0_22))
-      FC_ASSERT(!voter.blacklist_is_comment_disabled(), "Operation fail, voter is in blacklist.");
+      FC_ASSERT(!auth.blacklist_is_comment_disabled(), "Operation fail, voter is in blacklist.");
 
    if( _db.has_hardfork( STEEMIT_HARDFORK_0_5__55 ) )
       FC_ASSERT( o.title.size() + o.body.size() + o.json_metadata.size(), "Cannot update comment because nothing appears to be changing." );
 
    const auto& by_permlink_idx = _db.get_index< comment_index >().indices().get< by_permlink >();
    auto itr = by_permlink_idx.find( boost::make_tuple( o.author, o.permlink ) );
-
-   const auto& auth = _db.get_account( o.author ); /// prove it exists
 
    if( _db.has_hardfork( STEEMIT_HARDFORK_0_10 ) )
       FC_ASSERT( !(auth.owner_challenged || auth.active_challenged ), "Operation cannot be processed because account is currently challenged." );
@@ -873,12 +874,12 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 
 void transfer_evaluator::do_apply( const transfer_operation& o )
 {
-
-   if(_db.has_hardfork( STEEMIT_HARDFORK_0_22))
-      FC_ASSERT(!voter.blacklist_is_transfer_disabled(), "Operation fail, voter is in blacklist.");
-
    const auto& from_account = _db.get_account(o.from);
    const auto& to_account = _db.get_account(o.to);
+
+   if(_db.has_hardfork( STEEMIT_HARDFORK_0_22))
+      FC_ASSERT(!from_account.blacklist_is_transfer_disabled(), "Operation fail, voter is in blacklist.");
+
 
    if( from_account.active_challenged )
    {
@@ -1151,8 +1152,8 @@ void blacklist_vote_evaluator::do_apply(const blacklist_vote_operation& o){
       FC_ASSERT(o.approve, "Vote doesn't exist, user must indicate a desire to approve blacklist.");
 
       _db.create<blacklist_vote_object>([&](blacklist_vote_object& v){
-         v.voter = voter.id;
-         v.badguy = badguy.id;
+         v.voter_id = voter.id;
+         v.badguy_id = badguy.id;
          v.net_shares = voter.vesting_shares.amount;
       });
 
