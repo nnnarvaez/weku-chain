@@ -7,11 +7,7 @@ using namespace std;
 using namespace steemit::chain;
 using namespace boost::multi_index;
 
-enum blacklist_object_types{
-    blacklist_vote_object_type = {BLACKLIST_SPACE_ID << 8}
-};
-
-class blacklist_vote_object: public object<namblacklist_vote_object_type, blacklist_vote_object>{
+class blacklist_vote_object: public object<blacklist_vote_object_type, blacklist_vote_object>{
     public: 
         template<typename Constructor, typename Allocator>
         blacklist_vote_object(Constructor&& c, allocator<Allocator> a){c(*this);}
