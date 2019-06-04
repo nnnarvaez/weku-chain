@@ -4116,10 +4116,12 @@ void database::apply_hardfork( uint32_t hardfork )
 	    (gpo.current_sbd_supply * get_feed_history().current_median_history + gpo.current_supply)
 	    the result at block 9585623 is 469768240.812 WEKU this Needs 3 decimals so the point is removed, 
 	    it was chosen not use a fixed value but to calculate it the same as is done on ASSERT of 
-	    validate_invariants() 
+	    validate_invariants() since the SBD/WKD price is 1 to 1 at this point in time the amount 
+	    was directly transposed to avoid the possibility of mismatches if the HF is replayed when the price
+	    is something else.
 	    */  	
             auto gpo = get_dynamic_global_properties();
-	    auto hf_virtual = asset( gpo.virtual_supply.amount + gpo.current_supply.amount, STEEM_SYMBOL); // Option B  
+	    auto hf_virtual = asset( gpo.current_sbd_supply.amount + gpo.current_supply.amount, STEEM_SYMBOL); // Option B 
 		   
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
             {
