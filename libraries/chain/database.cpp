@@ -3946,7 +3946,8 @@ void database::apply_hardfork( uint32_t hardfork )
               modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
               {
                  gpo.current_supply = im108_hf_delta;         // Delta balance initminer108
-                 gpo.virtual_supply = im108_hf_delta;         // Delta balance initminer108
+                 gpo.virtual_supply = im108_hf_delta;         // Delta balance initminer108 NATHAN: Corrected in HF22 to:
+		                                              // (gpo.virtual_supply.ammount + gpo.current_supply.amount)
                  gpo.total_vesting_shares = im108_hf_vesting; // Total removed vesting from initminer108
               });
 
@@ -4110,12 +4111,23 @@ void database::apply_hardfork( uint32_t hardfork )
             
             //ilog( "Retally witness & Proxy votes");             
             //retally_witness_votes();   
-            
+         
             ilog( "Recalculation Totals in GPO");  
+ 
+	    /* 
+	    Fixing HF21 wrong virtual.supply declaration 
+	    (gpo.current_sbd_supply * get_feed_history().current_median_history + gpo.current_supply)
+	    the result at block 9585623 is 469768240.812 WEKU this Needs 3 decimals so the point is removed, 
+	    it was chosen not use a fixed value but to calculate it the same as is done on ASSERT of 
+	    validate_invariants() 
+	    */  	
+	    auto hf_virtual = asset( gpo.virtual_supply.ammount + gpo.current_supply.amount, STEEM_SYMBOL); // Option B  
+		   
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
             {
                 gpo.total_vesting_shares = totalv;
                 gpo.pending_rewarded_vesting_shares = totalp;
+		gpo.virtual_supply = hf_virtual ;              // Corrected virtual supply from tally error carried from HF21
             }); 
             
             ilog( "Update Pending post payout rewards  ");              
