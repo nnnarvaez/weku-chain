@@ -65,6 +65,17 @@ void witness_update_evaluator::do_apply( const witness_update_operation& o )
 {
    _db.get_account( o.owner ); // verify owner exists
 
+   if ( _db.has_hardfork( STEEMIT_HARDFORK_0_22 ) )
+   {
+      FC_ASSERT( o.props.maximum_block_size >= STEEMIT_MIN_BLOCK_SIZE_LIMIT_HF22, "maximum_block_size is too small. maximum_block_size ${mbs}, min limit ${limit}",
+         ("mbs", o.props.maximum_block_size)
+         ("limit", STEEMIT_MIN_BLOCK_SIZE_LIMIT_HF22));
+   }else{
+      FC_ASSERT( o.props.maximum_block_size >= STEEMIT_MIN_BLOCK_SIZE_LIMIT, "maximum_block_size is too small. maximum_block_size ${mbs}, min limit ${limit}",
+         ("mbs", o.props.maximum_block_size)
+         ("limit", STEEMIT_MIN_BLOCK_SIZE_LIMIT));
+   }
+
    if ( _db.has_hardfork( STEEMIT_HARDFORK_0_1 ) )
    {
       FC_ASSERT( o.url.size() <= STEEMIT_MAX_WITNESS_URL_LENGTH, "URL is too long" );
@@ -899,7 +910,14 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
 {
    const auto& account = _db.get_account( o.account );
-
+   // NATHAN: FIX: Avoid negative power downs.
+       if( o.vesting_shares.amount < 0 )
+       {
+        FC_ASSERT( false, "Cannot withdraw negative VESTS. account: ${account}, vests:${vests}",
+        ("account", o.account)("vests", o.vesting_shares) );
+        return;
+       }
+   // NATHAN: END FIX: Avoid negative power downs.     
    FC_ASSERT( account.vesting_shares >= asset( 0, VESTS_SYMBOL ), "Account does not have sufficient Steem Power for withdraw." );
    FC_ASSERT( account.vesting_shares - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Steem Power for withdraw." );
 

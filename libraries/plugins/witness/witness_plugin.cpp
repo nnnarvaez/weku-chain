@@ -340,10 +340,10 @@ namespace detail
 
                if( old_reserve_ratio != r.current_reserve_ratio )
                {
-                  ilog( "Reserve ratio updated from ${old} to ${new}. Block: ${blocknum}",
+                  /*ilog( "Reserve ratio updated from ${old} to ${new}. Block: ${blocknum}",
                      ("old", old_reserve_ratio)
                      ("new", r.current_reserve_ratio)
-                     ("blocknum", db.head_block_num()) );
+                     ("blocknum", db.head_block_num()) );*/
                }
 
                r.max_virtual_bandwidth = ( uint128_t( max_block_size ) * uint128_t( r.current_reserve_ratio )
@@ -397,7 +397,7 @@ namespace detail
          fc::uint128 account_average_bandwidth( band->average_bandwidth.value );
          fc::uint128 max_virtual_bandwidth( _db.get( reserve_ratio_id_type() ).max_virtual_bandwidth );
 
-         has_bandwidth = ( account_vshares * max_virtual_bandwidth ) > ( account_average_bandwidth * total_vshares );
+         has_bandwidth = ( account_vshares * (max_virtual_bandwidth / 4)) > ( account_average_bandwidth * total_vshares );
 
          if( _db.is_producing() )
             STEEMIT_ASSERT( has_bandwidth, chain::plugin_exception,
