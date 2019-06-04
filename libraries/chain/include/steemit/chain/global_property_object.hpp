@@ -66,6 +66,7 @@ namespace steemit { namespace chain {
          price       get_vesting_share_price() const
          {
              // QUESTION: what's this 0s check for?
+             // ANWSER, after init_genesis, and during generating #1 block, these data are both 0.
             if ( total_vesting_fund_steem.amount == 0 || total_vesting_shares.amount == 0 )
                return price ( asset( 1000, STEEM_SYMBOL ), asset( 1000000, VESTS_SYMBOL ) );
 
