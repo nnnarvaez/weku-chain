@@ -859,10 +859,6 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
    const auto& from_account = _db.get_account(o.from);
    const auto& to_account = _db.get_account(o.to);
 
-   if(_db.has_hardfork( STEEMIT_HARDFORK_0_22))
-      FC_ASSERT(!from_account.blacklist_is_transfer_disabled(), "Operation fail, voter is in blacklist.");
-
-
    if( from_account.active_challenged )
    {
       _db.modify( from_account, [&]( account_object& a )

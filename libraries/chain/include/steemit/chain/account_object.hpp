@@ -135,11 +135,6 @@ namespace steemit { namespace chain {
             return blacklist_total_votes / vesting_shares.amount > 3; // need move to config after we have detail rules
          }
 
-         // TODO: need define detail rules later.
-         bool blacklist_is_transfer_disabled() const { // freeze transfer for a while
-            return blacklist_total_votes / vesting_shares.amount > 4; // need move to config after we have detail rules
-         } 
-
          asset effective_vesting_shares()const { return vesting_shares - delegated_vesting_shares + received_vesting_shares; }
   };
 
