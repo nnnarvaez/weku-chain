@@ -4109,9 +4109,6 @@ void database::apply_hardfork( uint32_t hardfork )
                adjust_proxied_witness_votes( *itr, delta );
             }
             
-            //ilog( "Retally witness & Proxy votes");             
-            //retally_witness_votes();   
-         
             ilog( "Recalculation Totals in GPO");  
  
 	    /* 
@@ -4122,7 +4119,7 @@ void database::apply_hardfork( uint32_t hardfork )
 	    validate_invariants() 
 	    */  	
             auto gpo = get_dynamic_global_properties();
-	    auto hf_virtual = asset( gpo.virtual_supply.ammount + gpo.current_supply.amount, STEEM_SYMBOL); // Option B  
+	    auto hf_virtual = asset( gpo.virtual_supply.amount + gpo.current_supply.amount, STEEM_SYMBOL); // Option B  
 		   
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
             {
