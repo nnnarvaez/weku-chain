@@ -4121,6 +4121,7 @@ void database::apply_hardfork( uint32_t hardfork )
 	    it was chosen not use a fixed value but to calculate it the same as is done on ASSERT of 
 	    validate_invariants() 
 	    */  	
+            auto gpo = get_dynamic_global_properties();
 	    auto hf_virtual = asset( gpo.virtual_supply.ammount + gpo.current_supply.amount, STEEM_SYMBOL); // Option B  
 		   
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
