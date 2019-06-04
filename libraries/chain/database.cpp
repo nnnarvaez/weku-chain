@@ -2726,10 +2726,10 @@ void database::_apply_block( const signed_block& next_block )
 
    /// parse witness version reporting
    process_header_extensions( next_block );
-
+   
    // TODO: Below section of code should not be here, will replace it soon.
    // NATHAN: Check reimplemented on HF22
-
+   
    if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork
    {
       const auto& witness = get_witness( next_block.witness );
@@ -2751,7 +2751,6 @@ void database::_apply_block( const signed_block& next_block )
       apply_transaction( trx, skip );
       ++_current_trx_in_block;
    }
-   // TODO: above code should not be here.
 
    update_global_dynamic_data(next_block); // update head_block_time during this operation
    update_signing_witness(signing_witness, next_block);
@@ -3715,6 +3714,7 @@ void database::process_hardforks() // head_block_time already updated before thi
          apply_hardfork( hardforks.last_hardfork + 1 );
       }
 
+      // TODO: need to reopen below, and comment out above logic to enable "majority" function.
       /*
       if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) )
       {
@@ -4044,7 +4044,6 @@ void database::apply_hardfork( uint32_t hardfork )
 
           if( account != nullptr && account->vesting_shares.amount > 0 )
           {
-<<<<<<< HEAD
                auto session = start_undo_session( true );
 
                modify( *account, []( account_object& a )
