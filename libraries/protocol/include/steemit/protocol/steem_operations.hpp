@@ -393,7 +393,6 @@ namespace steemit { namespace protocol {
       void validate()const
       {
          FC_ASSERT( account_creation_fee.amount >= STEEMIT_MIN_ACCOUNT_CREATION_FEE);
-         FC_ASSERT( maximum_block_size >= STEEMIT_MIN_BLOCK_SIZE_LIMIT);
          FC_ASSERT( sbd_interest_rate >= 0 );
          FC_ASSERT( sbd_interest_rate <= STEEMIT_100_PERCENT );
       }

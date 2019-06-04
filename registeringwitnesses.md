@@ -1,11 +1,5 @@
-This instructions do not apply but are a good start for a how-to.
+Once wekud is built you need to declare your witness intention and broadcast it on the platform
 
-
-# Execute the following instructions for witness.
-1. unregister as a witness (see note below)
-2. modify/add `max-block-age = 2000000` in `config.ini`
-3. stop witness and restart
-4. register as a witness (see note below)
 
 # How to register as a witness?
 

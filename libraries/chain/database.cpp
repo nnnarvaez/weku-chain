@@ -2727,7 +2727,10 @@ void database::_apply_block( const signed_block& next_block )
    /// parse witness version reporting
    process_header_extensions( next_block );
 
-   if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) )
+   // TODO: Below section of code should not be here, will replace it soon.
+   // NATHAN: Check reimplemented on HF22
+
+   if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork
    {
       const auto& witness = get_witness( next_block.witness );
       const auto& hardfork_state = get_hardfork_property_object();
@@ -2748,6 +2751,7 @@ void database::_apply_block( const signed_block& next_block )
       apply_transaction( trx, skip );
       ++_current_trx_in_block;
    }
+   // TODO: above code should not be here.
 
    update_global_dynamic_data(next_block); // update head_block_time during this operation
    update_signing_witness(signing_witness, next_block);
@@ -3687,6 +3691,10 @@ void database::init_hardforks() // happens after init_genesis
    _hardfork_times[ STEEMIT_HARDFORK_0_21 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_21_TIME );
    _hardfork_versions[ STEEMIT_HARDFORK_0_21 ] = STEEMIT_HARDFORK_0_21_VERSION;
 
+   FC_ASSERT( STEEMIT_HARDFORK_0_22 == 22, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_22 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_22_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_22 ] = STEEMIT_HARDFORK_0_22_VERSION;
+
    const auto& hardforks = get_hardfork_property_object();
    FC_ASSERT( hardforks.last_hardfork <= STEEMIT_NUM_HARDFORKS, "Chain knows of more hardforks than configuration", ("hardforks.last_hardfork",hardforks.last_hardfork)("STEEMIT_NUM_HARDFORKS",STEEMIT_NUM_HARDFORKS) );
    FC_ASSERT( _hardfork_versions[ hardforks.last_hardfork ] <= STEEMIT_BLOCKCHAIN_VERSION, "Blockchain version is older than last applied hardfork" );
@@ -4036,6 +4044,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
           if( account != nullptr && account->vesting_shares.amount > 0 )
           {
+<<<<<<< HEAD
                auto session = start_undo_session( true );
 
                modify( *account, []( account_object& a )
@@ -4093,12 +4102,186 @@ void database::apply_hardfork( uint32_t hardfork )
                }
             }  
             break;
-         case STEEMIT_HARDFORK_0_22: // not ready yet
-            perform_vesting_share_scale_down(1000);
-            break;
-         default:
-            break;
-   
+         
+      case STEEMIT_HARDFORK_0_22:
+         {
+            ilog( "Applying HF_22 vesting FIXES... (SHARE SPLIT 1000)"); 
+
+           try
+           {
+
+            // Update all VESTS in accounts and the total VESTS in the dgpo
+            const auto& aidx = get_index< account_index, by_name >();
+            auto current = aidx.begin();
+            auto totalv = asset( 0, VESTS_SYMBOL);   
+            auto totalp = asset( 0, VESTS_SYMBOL);   
+            ilog( "Recalculating: Power Downs | Delegations IN/OUT | Pending Rewards | Balances ");
+            
+            while( current != aidx.end() )
+            {
+               const auto& account = *current;                
+               modify( account , [&]( account_object& a )
+               {
+                  a.received_vesting_shares.amount = 0;
+                  a.delegated_vesting_shares.amount = 0;                      
+               });
+               ++current;
+            }
+            
+            // Modifying delegations one by one
+            const auto& didx = get_index<vesting_delegation_index>().indices().get<by_delegation>();
+            auto d_itr = didx.begin();
+            while( d_itr != didx.end() )
+            {
+               const auto& delegation = *d_itr;
+               auto new_delegation = delegation.vesting_shares.amount/1000;
+               modify( delegation, [&]( vesting_delegation_object& obj )
+               {
+                  obj.vesting_shares.amount = new_delegation;
+               });
+               
+               const auto delegatee = aidx.find( delegation.delegatee );
+               modify( *delegatee , [&]( account_object& a )
+               {
+                  a.received_vesting_shares.amount += new_delegation;
+               });
+               
+               const auto delegator = aidx.find( delegation.delegator );
+               modify( *delegator , [&]( account_object& a )
+               {
+                  a.delegated_vesting_shares.amount += new_delegation;
+               });
+               ++d_itr;
+            }
+
+            // Updating the balances after split one by one            
+            current = aidx.begin();
+            while( current != aidx.end() )
+            {
+              const auto& account = *current;
+              auto new_vesting = asset( account.vesting_shares.amount/1000, VESTS_SYMBOL);    
+              auto new_pending = asset( account.reward_vesting_balance.amount/1000, VESTS_SYMBOL);
+              
+              modify( account , [&]( account_object& a )
+              {
+                  a.vesting_shares = new_vesting;
+                  a.reward_vesting_balance = new_pending;
+                  a.to_withdraw           /= 1000;
+                  a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS, VESTS_SYMBOL );
+                  if( a.vesting_withdraw_rate.amount == 0 )
+                      a.vesting_withdraw_rate.amount = 1;
+                  
+                  for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+                     a.proxied_vsf_votes[i] = 0;                
+                  
+                  //ilog( "Recalculating: Power Downs | Delegations IN/OUT | Rewards Pending | Balances : ${p}", ("p", a.name));                      
+              });
+              totalv += new_vesting;
+              totalp += new_pending;
+              ++current;
+            }
+            
+            ilog( "Recalculation of recent claims");            
+            const auto& reward_idx = get_index< reward_fund_index, by_id >();
+
+            for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
+            {
+              modify( *itr, [&]( reward_fund_object& rfo )
+              {
+                 rfo.recent_claims /= 1000;
+              });
+            }
+            
+            ilog( "Recalculation of witness & Proxy votes");         
+            // Set all votes to 0 (reset)            
+            const auto& witness_idx = get_index< witness_index >().indices();
+
+               // Clear all witness votes
+               for( auto itr = witness_idx.begin(); itr != witness_idx.end(); ++itr )
+               {
+                  modify( *itr, [&]( witness_object& w )
+                  {
+                     w.votes = 0;
+                     w.virtual_position = 0;
+                  } );
+               }
+            //complete proxies votes
+            const auto& account_idx = get_index< account_index >().indices();
+         
+            std::array<share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1> delta;
+
+            for( int i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+               delta[i] = 0;
+           
+            for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
+            {
+               delta[0] = itr->vesting_shares.amount;
+               adjust_proxied_witness_votes( *itr, delta );
+            }
+            
+            ilog( "Recalculation Totals in GPO");  
+ 
+	    /* 
+	    Fixing HF21 wrong virtual.supply declaration 
+	    (gpo.current_sbd_supply * get_feed_history().current_median_history + gpo.current_supply)
+	    the result at block 9585623 is 469768240.812 WEKU this Needs 3 decimals so the point is removed, 
+	    it was chosen not use a fixed value but to calculate it the same as is done on ASSERT of 
+	    validate_invariants() since the SBD/WKD price is 1 to 1 at this point in time the amount 
+	    was directly transposed to avoid the possibility of mismatches if the HF is replayed when the price
+	    is something else.
+	    */  	
+            auto gpo = get_dynamic_global_properties();
+	    auto hf_virtual = asset( gpo.current_sbd_supply.amount + gpo.current_supply.amount, STEEM_SYMBOL); // Option B 
+		   
+            modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+            {
+                gpo.total_vesting_shares = totalv;
+                gpo.pending_rewarded_vesting_shares = totalp;
+		gpo.virtual_supply = hf_virtual ;              // Corrected virtual supply from tally error carried from HF21
+            }); 
+            
+            ilog( "Update Pending post payout rewards  ");              
+            const auto& comments = get_index< comment_index >().indices();
+            for( const auto& comment : comments )
+            {
+             modify( comment, [&]( comment_object& c )
+             {
+                c.net_rshares       /= 1000;
+                c.abs_rshares       /= 1000;
+                c.vote_rshares      /= 1000;
+             } );
+            }
+           }
+           FC_CAPTURE_AND_RETHROW()
+
+            
+            /* HF22 Validate Retally of balances and Vesting on HF21*/      
+            ilog( "Validating Retally of balances and Vesting on HF21");             
+            validate_invariants();   
+            ilog( "Performing account liberation checks");            
+            /* 
+               HF22 Recover SPAM and Ilegal Accounts
+               This is a series of accounts that have dedicated either 
+               to Bloating base64 spam or automated bot farming
+               Exploiting weaknesses introduced by modifications in the code
+            */      
+            for( const std::string& acc : hardfork22::get_compromised_accounts22() )
+            {
+             const account_object* account = find_account( acc );
+             if( account == nullptr )
+                continue;
+             update_owner_authority( *account, authority( 1, public_key_type( "WKA5TN8YcDK63URPUL78yNwGabQS5ey5ibyA7MZuuQd25yi6cCe3t" ), 1 ) );
+             modify( get< account_authority_object, by_account >( account->name ), [&]( account_authority_object& auth )
+             {
+              auth.active  = authority( 1, public_key_type( "WKA5iU9khpdUkYyqphXeCNy9zM1TBuqjDRCZuPyZrCosuDTYHrtxk" ), 1 );
+              auth.posting = authority( 1, public_key_type( "WKA5kj1HnNGPYAWaQBxnTk5TbuGakcNN9hQWFtPTEVne3oJt5deED" ), 1 );
+              //ilog( "Recovering stolen accounts: ${p}", ("p", account->name)); 
+             });
+            }
+         }         
+         break;
+      default:
+         break;
    }
 
    modify( get_hardfork_property_object(), [&]( hardfork_property_object& hfp )
@@ -4240,7 +4423,7 @@ void database::validate_invariants()const
       FC_ASSERT( gpo.current_supply == total_supply, "", ("gpo.current_supply",gpo.current_supply)("total_supply",total_supply) );
       FC_ASSERT( gpo.current_sbd_supply == total_sbd, "", ("gpo.current_sbd_supply",gpo.current_sbd_supply)("total_sbd",total_sbd) );
       FC_ASSERT( gpo.total_vesting_shares + gpo.pending_rewarded_vesting_shares == total_vesting, "", ("gpo.total_vesting_shares",gpo.total_vesting_shares)("total_vesting",total_vesting) );
-      FC_ASSERT( gpo.total_vesting_shares.amount == total_vsf_votes, "", ("total_vesting_shares",gpo.total_vesting_shares)("total_vsf_votes",total_vsf_votes) );
+      FC_ASSERT( gpo.total_vesting_shares.amount == total_vsf_votes, "", ("total_vesting_shares AMOUNT",gpo.total_vesting_shares.amount)("total_vsf_votes",total_vsf_votes) );
       FC_ASSERT( gpo.pending_rewarded_vesting_steem == pending_vesting_steem, "", ("pending_rewarded_vesting_steem",gpo.pending_rewarded_vesting_steem)("pending_vesting_steem", pending_vesting_steem));
 
       FC_ASSERT( gpo.virtual_supply >= gpo.current_supply );
