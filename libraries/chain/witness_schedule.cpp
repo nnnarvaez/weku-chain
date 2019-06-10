@@ -163,10 +163,14 @@ namespace steemit {
 
             size_t expected_active_witnesses = std::min(size_t(STEEMIT_MAX_WITNESSES), widx.size());
 
-            //Alexey: remove this check, which cause chain stuck at block: 3090927 during replay
-            //FC_ASSERT( active_witnesses.size() == expected_active_witnesses, "number of active witnesses does not equal expected_active_witnesses=${expected_active_witnesses}",
-            //                                   ("active_witnesses.size()",active_witnesses.size()) ("STEEMIT_MAX_WITNESSES",STEEMIT_MAX_WITNESSES) ("expected_active_witnesses", expected_active_witnesses) );
-
+            // Remove this check before hf22, which cause chain stuck at block: 3090927 during replay
+            if(db.has_hardfork(STEEMIT_HARDFORK_0_22))
+                FC_ASSERT( active_witnesses.size() == expected_active_witnesses, 
+                    "number of active witnesses does not equal expected_active_witnesses=${expected_active_witnesses}",
+                    ("active_witnesses.size()",active_witnesses.size()) 
+                    ("STEEMIT_MAX_WITNESSES",STEEMIT_MAX_WITNESSES) 
+                    ("expected_active_witnesses", expected_active_witnesses) );
+            
             auto majority_version = wso.majority_version;
 
             if (db.has_hardfork(STEEMIT_HARDFORK_0_5__54)) {
@@ -193,6 +197,8 @@ namespace steemit {
                 // wso.hardfork_required_witnesses = 17 (set in config)
                 // so after the while loop, the majority_version will be: "1.2"
                 // QUESTION: majority_version is only used to display info, doesn't involve in any concensus algorithm?
+                // ANSWER: yes majority_version is not involve in the hardfork process logic, it's just for info displaying.
+                // only hardfork_version_votes involves the hardfork process logic.
                 int witnesses_on_version = 0;
                 auto ver_itr = witness_versions.begin();
 
@@ -209,6 +215,7 @@ namespace steemit {
                     ++ver_itr;
                 }
 
+                // "majority" feature for hardfork process logic starts here.
                 auto hf_itr = hardfork_version_votes.begin();
 
                 while (hf_itr != hardfork_version_votes.end()) {
@@ -230,7 +237,7 @@ namespace steemit {
 
                 // We no longer have a majority
                 // QUESTION: what is the consequences of not having a majority hardfork version?
-                // ANSWER: if we don't have a najority, then new hardfork will be applied.
+                // ANSWER: if we don't have a najority, then new hardfork will not be applied.
                 // since, hardfork is triggered by two factors: time and next_hardfork.
                 if (hf_itr == hardfork_version_votes.end()) {
                     db.modify(db.get_hardfork_property_object(), [&](hardfork_property_object &hpo) {
