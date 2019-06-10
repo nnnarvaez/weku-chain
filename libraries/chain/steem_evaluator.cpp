@@ -488,8 +488,9 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
    const auto& auth = _db.get_account( o.author ); /// prove it exists
 
-   if(_db.has_hardfork( STEEMIT_HARDFORK_0_22))
-      FC_ASSERT(!auth.blacklist_is_comment_disabled(), "Operation fail, voter is in blacklist.");
+   // disabled now, might be enabled in future release.
+   //if(_db.has_hardfork( STEEMIT_HARDFORK_0_22))
+   //   FC_ASSERT(!auth.blacklist_is_comment_disabled(), "Operation fail, voter is in blacklist.");
 
    if( _db.has_hardfork( STEEMIT_HARDFORK_0_5__55 ) )
       FC_ASSERT( o.title.size() + o.body.size() + o.json_metadata.size(), "Cannot update comment because nothing appears to be changing." );
@@ -1184,8 +1185,9 @@ void vote_evaluator::do_apply( const vote_operation& o )
    const auto& comment = _db.get_comment( o.author, o.permlink );
    const auto& voter   = _db.get_account( o.voter );
 
-   if(_db.has_hardfork( STEEMIT_HARDFORK_0_22))
-      FC_ASSERT(!voter.blacklist_is_vote_disabled(), "Operation fail, voter is in blacklist.");
+   // disabled now, might be enabled in future release.
+   //if(_db.has_hardfork( STEEMIT_HARDFORK_0_22))
+   //   FC_ASSERT(!voter.blacklist_is_vote_disabled(), "Operation fail, voter is in blacklist.");
 
    if( _db.has_hardfork( STEEMIT_HARDFORK_0_10 ) )
       FC_ASSERT( !(voter.owner_challenged || voter.active_challenged ), "Operation cannot be processed because the account is currently challenged." );

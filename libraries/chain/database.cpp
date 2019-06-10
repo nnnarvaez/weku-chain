@@ -1270,9 +1270,9 @@ void database::clear_witness_votes( const account_object& a )
 }
 
 // get called for every block creation.
-void database::clear_null_account_balance()
+void database::clear_null_account_balance() // will return immediatly at block #1
 {
-   if( !has_hardfork( STEEMIT_HARDFORK_0_14__327 ) ) return;
+   if( !has_hardfork( STEEMIT_HARDFORK_0_14__327 ) ) return; // can be replace to hardfork19
 
    const auto& null_account = get_account( STEEMIT_NULL_ACCOUNT );
    asset total_steem( 0, STEEM_SYMBOL );
@@ -1852,7 +1852,7 @@ void database::process_funds()
    const auto& wso = get_witness_schedule_object();
 
     // since process_funds happens before process_hardfork, so block #1 will not have hardfork_0_16_551 (any hardfork)
-   if( has_hardfork( STEEMIT_HARDFORK_0_16__551) )
+   if( has_hardfork( STEEMIT_HARDFORK_0_16__551) ) // at block #1, it would not be true.
    {
       /**
        * At block 7,000,000 have a 9.5% instantaneous inflation rate, decreasing to 0.95% at a rate of 0.01%
@@ -1868,18 +1868,18 @@ void database::process_funds()
       auto new_steem = ( props.virtual_supply.amount * current_inflation_rate ) / ( int64_t( STEEMIT_100_PERCENT ) * int64_t( STEEMIT_BLOCKS_PER_YEAR ) );
 
       // hardfork 20 fixes the inflation rate at 5%
-      if(has_hardfork(STEEMIT_HARDFORK_0_20__11))
+      if(has_hardfork(STEEMIT_HARDFORK_0_20__11)) // VERY IMPORTANT !
          new_steem = ( share_type(STEEMIT_INIT_SUPPLY) * int64_t(STEEMIT_INFLATION_RATE_PERCENT_0_20) ) / ( int64_t( STEEMIT_100_PERCENT ) * int64_t( STEEMIT_BLOCKS_PER_YEAR ) );
 
       auto content_reward = ( new_steem * STEEMIT_CONTENT_REWARD_PERCENT ) / STEEMIT_100_PERCENT;
-      if( has_hardfork( STEEMIT_HARDFORK_0_17__774 ) )
+      if( has_hardfork( STEEMIT_HARDFORK_0_17__774 ) ) // TODO: can be removed
           // distribute the content_reward to all participants according to their percentage.
          content_reward = pay_reward_funds( content_reward ); /// 75% to content creator
       auto vesting_reward = ( new_steem * STEEMIT_VESTING_FUND_PERCENT ) / STEEMIT_100_PERCENT; /// 15% to vesting fund
       auto witness_reward = new_steem - content_reward - vesting_reward; /// Remaining 10% to witness pay
 
       const auto& cwit = get_witness( props.current_witness );
-      witness_reward *= STEEMIT_MAX_WITNESSES;
+      witness_reward *= STEEMIT_MAX_WITNESSES; // this multiply of witness_reward will change the new_steem dramatically, not sure why we do this?
 
       if( cwit.schedule == witness_object::timeshare )
          witness_reward *= wso.timeshare_weight;
@@ -1902,7 +1902,7 @@ void database::process_funds()
           // note: price = total vesting / total vesting fund
           // basically, vesting_reward will benefit power up users by reducing the price.
          p.total_vesting_fund_steem += asset( vesting_reward, STEEM_SYMBOL );
-         if( !has_hardfork( STEEMIT_HARDFORK_0_17__774 ) )
+         if( !has_hardfork( STEEMIT_HARDFORK_0_17__774 ) ) // TODO: hf check can be cleaned.
             p.total_reward_fund_steem  += asset( content_reward, STEEM_SYMBOL );
          p.current_supply           += asset( new_steem, STEEM_SYMBOL );
          p.virtual_supply           += asset( new_steem, STEEM_SYMBOL );
@@ -1912,7 +1912,7 @@ void database::process_funds()
       push_virtual_operation( producer_reward_operation( cwit.owner, producer_reward ) );
 
    }
-   else
+   else // block #1 runs below else branch.
    {
       auto content_reward = get_content_reward();
       auto curate_reward = get_curation_reward();
@@ -2472,7 +2472,7 @@ void database::init_genesis( uint64_t init_supply )
          auth.active.weight_threshold = 0;
       });
 
-       // currently, the system will only create on initminer in below loop
+       // currently, the system will only create one initminer in below loop
       for( int i = 0; i < STEEMIT_NUM_INIT_MINERS; ++i )
       {
 
@@ -2516,7 +2516,7 @@ void database::init_genesis( uint64_t init_supply )
       // QUESTION: Does this actually save and empty feed_history_object into index/container?
       create< feed_history_object >( [&]( feed_history_object& o ) {});
       // QUESTION: Does it necessary to create all these empty objects?
-      for( int i = 0; i < 0x10000; i++ )
+      for( int i = 0; i < 0x10000; i++ ) // used as objects pool? very likely just used for objects pooling for fast searching.
          create< block_summary_object >( [&]( block_summary_object& ) {});
       create< hardfork_property_object >( [&](hardfork_property_object& hpo )
       {
@@ -2624,7 +2624,7 @@ void database::apply_block( const signed_block& next_block, uint32_t skip )
    //fc::microseconds dt = end_time - begin_time;
 
    // QUESTION: What is below section of code for?
-   if( _flush_blocks != 0 )
+   if( _flush_blocks != 0 ) // normally set to 10000
    {
       if( _next_flush_block == 0 )
       {
@@ -2706,12 +2706,12 @@ void database::_apply_block( const signed_block& next_block )
 
    const auto& gprops = get_dynamic_global_properties();
    auto block_size = fc::raw::pack_size( next_block );
-   if( has_hardfork( STEEMIT_HARDFORK_0_12 ) )
+   if( has_hardfork( STEEMIT_HARDFORK_0_12 ) ) // TODO: this check can be safely removed
    {
       FC_ASSERT( block_size <= gprops.maximum_block_size, "Block Size is too Big", ("next_block_num",next_block_num)("block_size", block_size)("max",gprops.maximum_block_size) );
    }
 
-   if( block_size < STEEMIT_MIN_BLOCK_SIZE )
+   if( block_size < STEEMIT_MIN_BLOCK_SIZE ) // 115 bytes
    {
       elog( "Block size is too small",
          ("next_block_num",next_block_num)("block_size", block_size)("min",STEEMIT_MIN_BLOCK_SIZE)
@@ -2721,7 +2721,7 @@ void database::_apply_block( const signed_block& next_block )
    /// modify current witness so transaction evaluators can know who included the transaction,
    /// this is mostly for POW operations which must pay the current_witness
    modify( gprops, [&]( dynamic_global_property_object& dgp ){
-      dgp.current_witness = next_block.witness;
+      dgp.current_witness = next_block.witness; // TODO: should be moved to update_global_dynamic_data? or has to be updated here, since below operations might need it?
    });
 
    /// parse witness version reporting
@@ -2730,7 +2730,7 @@ void database::_apply_block( const signed_block& next_block )
    // TODO: Below section of code should not be here, will replace it soon.
    // NATHAN: Check reimplemented on HF22
    
-   if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork
+   if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork 
    {
       const auto& witness = get_witness( next_block.witness );
       const auto& hardfork_state = get_hardfork_property_object();
@@ -2761,16 +2761,16 @@ void database::_apply_block( const signed_block& next_block )
    clear_expired_transactions();
    clear_expired_orders();
    clear_expired_delegations();
-   update_witness_schedule(*this);
+   update_witness_schedule(*this); // only run every 21 blocks
 
-   update_median_feed();
+   update_median_feed(); // only run every STEEMIT_FEED_INTERVAL_BLOCKS
    // QUESTION: another update_virtual_supply in next 10 lines?
    update_virtual_supply();
 
    clear_null_account_balance();
    process_funds();
    process_conversions();
-   process_comment_cashout();
+   process_comment_cashout(); // TODO: complicated function, need to be refactoried.
    process_vesting_withdrawals();
    process_savings_withdraws();
    pay_liquidity_reward();
@@ -2780,9 +2780,9 @@ void database::_apply_block( const signed_block& next_block )
    expire_escrow_ratification();
    process_decline_voting_rights();
 
-   // For WEKU, all hardforks before hardfork_20 are applied just after block 1 is saved to dish
-        // this process_hardforks is almost at the end of the process,
-        // which also means during process of block #1, there is only harfork 0.
+   // For WEKU, all hardforks before hardfork_20 (not include) are applied just after block 1 is saved to disk
+   // this process_hardforks is almost at the end of the process,
+   // which also means during process of block #1, there is only harfork 0.
    process_hardforks();
 
    // notify observers that the block has been applied
@@ -2805,7 +2805,7 @@ void database::process_header_extensions( const signed_block& next_block )
       {
          case 0: // void_t
             break;
-         case 1: // version
+         case 1: // version // QUESTION: for each block, can it have more than one version headers?
          {
             auto reported_version = itr->get< version >();
             const auto& signing_witness = get_witness( next_block.witness );
@@ -2820,7 +2820,7 @@ void database::process_header_extensions( const signed_block& next_block )
             }
             break;
          }
-         case 2: // hardfork_version vote
+         case 2: // hardfork_version_vote // QUESTION: for each block, can it have more than one hardfork_version vote headers?
          {
             auto hfv = itr->get< hardfork_version_vote >();
             const auto& signing_witness = get_witness( next_block.witness );
@@ -3034,7 +3034,7 @@ const witness_object& database::validate_block_header( uint32_t skip, const sign
 
 void database::create_block_summary(const signed_block& next_block)
 { try {
-   block_summary_id_type sid( next_block.block_num() & 0xffff );
+   block_summary_id_type sid( next_block.block_num() & 0xffff ); // % operation by 65535 = 2^16, block_summary_index acts like a cache/objects pool.
    modify( get< block_summary_object >( sid ), [&](block_summary_object& p) {
          p.block_id = next_block.id();
    });
@@ -3048,10 +3048,10 @@ void database::update_global_dynamic_data( const signed_block& b )
    uint32_t missed_blocks = 0;
    if( head_block_time() != fc::time_point_sec() )
    {
-      missed_blocks = get_slot_at_time( b.timestamp );
-      assert( missed_blocks != 0 );
-      missed_blocks--;
-      for( uint32_t i = 0; i < missed_blocks; ++i )
+      missed_blocks = get_slot_at_time( b.timestamp ); // for ex: head_block_time() = 1557342918, b.timestamp = 1557342921, then the miss_blocks = 1
+      assert( missed_blocks != 0 ); // The missed_blocks should be at lease 1, means the new block is on block advance than current head_block
+      missed_blocks--; // if missed_blocks-- equals 0, means no block is missed.
+      for( uint32_t i = 0; i < missed_blocks; ++i ) 
       {
          const auto& witness_missed = get_witness( get_scheduled_witness( i + 1 ) );
          if(  witness_missed.owner != b.witness )
@@ -3059,7 +3059,7 @@ void database::update_global_dynamic_data( const signed_block& b )
             modify( witness_missed, [&]( witness_object& w )
             {
                w.total_missed++;
-               if( has_hardfork( STEEMIT_HARDFORK_0_14__278 ) )
+               if( has_hardfork( STEEMIT_HARDFORK_0_14__278 ) ) // TODO: this check can be removed.
                {
                    // automatically de-active witnesses if it missed over one day' block.
                   if( head_block_num() - w.last_confirmed_block_num  > STEEMIT_BLOCKS_PER_DAY )
@@ -3109,7 +3109,7 @@ void database::update_virtual_supply()
 
       auto median_price = get_feed_history().current_median_history;
 
-      if( !median_price.is_null() && has_hardfork( STEEMIT_HARDFORK_0_14__230 ) )
+      if( !median_price.is_null() && has_hardfork( STEEMIT_HARDFORK_0_14__230 ) ) // at block #1, the median_price is null
       {
          auto percent_sbd = uint16_t( ( ( fc::uint128_t( ( dgp.current_sbd_supply * get_feed_history().current_median_history ).amount.value ) * STEEMIT_100_PERCENT )
             / dgp.virtual_supply.amount.value ).to_uint64() );
@@ -3127,7 +3127,7 @@ void database::update_virtual_supply()
 void database::update_signing_witness(const witness_object& signing_witness, const signed_block& new_block)
 { try {
    const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-   uint64_t new_block_aslot = dpo.current_aslot + get_slot_at_time( new_block.timestamp );
+   uint64_t new_block_aslot = dpo.current_aslot + get_slot_at_time( new_block.timestamp ); // the dpo.current_aslot is already updated in previous process, so most of time, the new block_aslot should be equal to dpo.current_aslot.
 
    modify( signing_witness, [&]( witness_object& _wit )
    {
@@ -3183,12 +3183,9 @@ void database::update_last_irreversible_block()
          } );
 
       uint32_t new_last_irreversible_block_num = wit_objs[offset]->last_confirmed_block_num;
-
-      // TODO: Need to remove the hardcode here.
-      // only used to fix the two witnesses, and branch from each other and cannot reach concensus.
-      // Alexey: hard code here for fix the less witness bug
-      //if(offset < 1)
-      //    new_last_irreversible_block_num = wit_objs.back()->last_confirmed_block_num;
+      
+      if(!has_hardfork(STEEMIT_HARDFORK_0_22) && offset < 1) // to fix replay stuck at: block #4735073 / #4745073 issue
+          new_last_irreversible_block_num = wit_objs.back()->last_confirmed_block_num;
 
       //ilog("witness: ${a}", ("a", std::string(wit_objs[offset]->owner)));
       //ilog("before: new_last_irreversible_block_num: ${a}", ("a", new_last_irreversible_block_num));
@@ -3205,7 +3202,7 @@ void database::update_last_irreversible_block()
 
    //ilog("after: dpo.last_irreversible_block_num: ${a}", ("a", dpo.last_irreversible_block_num));
    // Discards all undo history prior to revision
-   commit( dpo.last_irreversible_block_num );
+   commit( dpo.last_irreversible_block_num ); // dpo.last_irreversible_block_num is 0 while head_block_num() < STEEMIT_START_MINER_VOTING_BLOCK is true.
 
    if( !( get_node_properties().skip_flags & skip_block_log ) )
    {
@@ -3234,7 +3231,7 @@ void database::update_last_irreversible_block()
 
    // QUESTION: not sure what exactly below function is doing
    // doing this will resize the max_size of fork_db, which in turn delete old items out of the range of new _max_size.
-   _fork_db.set_max_size( dpo.head_block_number - dpo.last_irreversible_block_num + 1 );
+   _fork_db.set_max_size( dpo.head_block_number - dpo.last_irreversible_block_num + 1 ); // normally, dpo.head_block_number will be equal to dpo.last_irreversible_block_num here, so the resutl of calculation will be 1.
 } FC_CAPTURE_AND_RETHROW() }
 
 
@@ -3704,42 +3701,28 @@ void database::process_hardforks() // head_block_time already updated before thi
 {
    try
    {
-      // If there are upcoming hardforks and the next one is later, do nothing
       const auto& hardforks = get_hardfork_property_object();
 
-      // only used for special cases.
-      while( hardforks.last_hardfork < STEEMIT_NUM_HARDFORKS
-             && _hardfork_times[ hardforks.last_hardfork + 1 ] <= head_block_time())
-      {
-         apply_hardfork( hardforks.last_hardfork + 1 );
-      }
-
-      // TODO: need to reopen below, and comment out above logic to enable "majority" function.
-      /*
-      if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) )
-      {
+      // Enable "majority" feature in hardfork 22, so set the condition to be hardfork 21, 
+      // which is just before hardfork 22. 
+      if( has_hardfork( STEEMIT_HARDFORK_0_21 ) ) // <== this runs after hf21 and before hf22
+      {// before hardfork #22, the hardforks.next_hardfork could be 0, and hardforks.next_hardfork_time could be in year 2018.
          while( _hardfork_versions[ hardforks.last_hardfork ] < hardforks.next_hardfork
             && hardforks.next_hardfork_time <= head_block_time() )
          {
-            if( hardforks.last_hardfork < STEEMIT_NUM_HARDFORKS ) {
-               apply_hardfork( hardforks.last_hardfork + 1 );
-            }
+            if( hardforks.last_hardfork < STEEMIT_NUM_HARDFORKS ) 
+               apply_hardfork( hardforks.last_hardfork + 1 );            
             else
                throw unknown_hardfork_exception();
          }
-      }
-      else
+       }
+      else // <== this runs for all hardforks before hardfork 21 (include hardfork 21)
       {
          while( hardforks.last_hardfork < STEEMIT_NUM_HARDFORKS
-               && _hardfork_times[ hardforks.last_hardfork + 1 ] <= head_block_time()
-                 )//&& hardforks.last_hardfork < STEEMIT_HARDFORK_0_5__54 )
-         {
-            apply_hardfork( hardforks.last_hardfork + 1 );
-         }
-      }*/
+               && _hardfork_times[ hardforks.last_hardfork + 1 ] <= head_block_time())
+               apply_hardfork( hardforks.last_hardfork + 1 ); // after apply_hardfork(21), the has_hardfork(21) starts to be true.
       }
-
-   FC_CAPTURE_AND_RETHROW()
+   }FC_CAPTURE_AND_RETHROW()
 }
 
 bool database::has_hardfork( uint32_t hardfork )const
@@ -4230,13 +4213,13 @@ void database::apply_hardfork( uint32_t hardfork )
 	    is something else.
 	    */  	
             auto gpo = get_dynamic_global_properties();
-	    auto hf_virtual = asset( gpo.current_sbd_supply.amount + gpo.current_supply.amount, STEEM_SYMBOL); // Option B 
+	         auto hf_virtual = asset( gpo.current_sbd_supply.amount + gpo.current_supply.amount, STEEM_SYMBOL); // Option B 
 		   
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
             {
-                gpo.total_vesting_shares = totalv;
-                gpo.pending_rewarded_vesting_shares = totalp;
-		gpo.virtual_supply = hf_virtual ;              // Corrected virtual supply from tally error carried from HF21
+               gpo.total_vesting_shares = totalv;
+               gpo.pending_rewarded_vesting_shares = totalp;
+		         gpo.virtual_supply = hf_virtual ;              // Corrected virtual supply from tally error carried from HF21
             }); 
             
             ilog( "Update Pending post payout rewards  ");              
