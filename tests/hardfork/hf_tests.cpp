@@ -1,4 +1,3 @@
-#ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
 #include <steemit/protocol/exceptions.hpp>
@@ -15,97 +14,162 @@
 
 #include "../common/database_fixture.hpp"
 
+using namespace fc;
 using namespace steemit;
 using namespace steemit::chain;
 using namespace steemit::protocol;
 
-#define TEST_SHARED_MEM_SIZE (1024 * 1024 * 8)
+struct new_hardfork_property_object{    // should be merge into gpo
+   static std::vector<fc::time_point_sec> hardfork_times; // TODO: add const later
 
-BOOST_AUTO_TEST_SUITE(block_tests)
+   uint32_t current_hardfork = 0; // updated by apply_hardfork
+   fc::time_point_sec head_block_time = STEEMIT_GENESIS_TIME; 
+   uint32_t next_hardfork    = 0; // updated by witness_schedule
+   fc::time_point_sec next_hardfork_time = time_point_sec::maximum(); // updated by witness_schedule
+};
 
-BOOST_FIXTURE_TEST_CASE( hardfork_test, database_fixture )
-{
-   try
-   {
-      try {
-      int argc = boost::unit_test::framework::master_test_suite().argc;
-      char** argv = boost::unit_test::framework::master_test_suite().argv;
-      for( int i=1; i<argc; i++ )
-      {
-         const std::string arg = argv[i];
-         if( arg == "--record-assert-trip" )
-            fc::enable_record_assert_trip = true;
-         if( arg == "--show-test-names" )
-            std::cout << "running test " << boost::unit_test::framework::current_test_case().p_name << std::endl;
-      }
-      auto ahplugin = app.register_plugin< steemit::account_history::account_history_plugin >();
-      db_plugin = app.register_plugin< steemit::plugin::debug_node::debug_node_plugin >();
-      init_account_pub_key = init_account_priv_key.get_public_key();
+std::vector<fc::time_point_sec> new_hardfork_property_object::hardfork_times{
+   fc::time_point_sec( STEEMIT_GENESIS_TIME ), // hardfork 0 for genesis
+   fc::time_point_sec( STEEMIT_HARDFORK_0_1_TIME ), // hardfork 1, starts at block #1
+   fc::time_point_sec( STEEMIT_HARDFORK_0_2_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_3_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_4_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_5_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_6_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_7_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_8_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_9_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_10_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_11_TIME ),   
+   fc::time_point_sec( STEEMIT_HARDFORK_0_12_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_13_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_14_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_15_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_16_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_17_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_18_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_19_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_20_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_21_TIME ),
+   fc::time_point_sec( STEEMIT_HARDFORK_0_22_TIME )
+};
 
-      boost::program_options::variables_map options;
+bool has_hardfork(const new_hardfork_property_object& hpo, uint32_t hardfork){
+   return hpo.current_hardfork >= hardfork;
+}
 
-      ahplugin->plugin_initialize( options );
-      db_plugin->plugin_initialize( options );
+// before hf22 (not include hf22), system uses current_hardfork and hardfork_times to trigger hardfork
+// after hf22( include hf22), system uses current_hardfork and next_hardfork to trigger hardfork.
+/* 
+bool should_hardfork_triggered(const new_hardfork_property_object& hpo){
+   if(has_hardfork(hpo, STEEMIT_HARDFORK_0_21))      
+      return hpo.current_hardfork < hpo.next_hardfork 
+         && hpo.head_block_time >= hpo.next_hardfork_time;
+   else
+      return hpo.current_hardfork < STEEMIT_HARDFORK_0_21 
+         // _hardfork_times[ hpo.current_hardfork + 1 ] means next_hardfork_time
+         && hpo.head_block_time >= new_hardfork_property_object::hardfork_times[ hpo.current_hardfork + 1 ]; 
+}*/
 
-      open_database(); // steps: init_genesis (set head_block_time() to genesis_time, push genesis time to hpo.processed_hardforks) -> init_hardforks
+void apply_hardfork(new_hardfork_property_object& hpo, uint32_t hardfork){
+   // other processes...
+   BOOST_TEST_MESSAGE("applied hardfork " << hardfork);
+   hpo.current_hardfork = hardfork;
+   //hpo.head_block_time = head_block_time();
+}
 
-      generate_blocks( 2 );
+void process_hardforks(new_hardfork_property_object& hpo){
+   // before finishing init_genesis, the process_hardforks should be never invoked.
+   if(hpo.head_block_time == time_point_sec(STEEMIT_GENESIS_TIME)) return;
+   
+      if(hpo.current_hardfork < STEEMIT_HARDFORK_0_21){
+         for(uint32_t i = 1; i <= STEEMIT_HARDFORK_0_21; i++)
+            if(hpo.current_hardfork < STEEMIT_HARDFORK_0_21
+               && hpo.head_block_time >= new_hardfork_property_object::hardfork_times[hpo.current_hardfork + 1])
+               apply_hardfork(hpo, hpo.current_hardfork + 1);   
+      }else{ // after hardfork 21 applied
+         for(uint32_t i = STEEMIT_HARDFORK_0_22; i <= STEEMIT_NUM_HARDFORKS; i++)
+            if(hpo.current_hardfork < hpo.next_hardfork && hpo.head_block_time >= hpo.next_hardfork_time)            
+               apply_hardfork(hpo, hpo.current_hardfork + 1);  
+      }  
+}
 
-      ahplugin->plugin_startup();
-      db_plugin->plugin_startup();
+BOOST_AUTO_TEST_SUITE(hardfork_tests)
 
-      vest( "initminer", 10000 );
+BOOST_AUTO_TEST_CASE (test_has_hardfork){
+   // simulate genesis operations
+   // during genesis, the STEEMIT_GENESIS_TIME is pushed into processed_hardfork
+   new_hardfork_property_object hpo;
+   
+   BOOST_REQUIRE(has_hardfork(hpo, 0));
+   BOOST_REQUIRE(!has_hardfork(hpo, 1));
+   BOOST_REQUIRE(!has_hardfork(hpo, 10));
+   BOOST_REQUIRE(!has_hardfork(hpo, STEEMIT_NUM_HARDFORKS));
+   BOOST_REQUIRE(!has_hardfork(hpo, STEEMIT_NUM_HARDFORKS + 1));
 
-      // Fill up the rest of the required miners
-      for( int i = STEEMIT_NUM_INIT_MINERS; i < STEEMIT_MAX_WITNESSES; i++ )
-      {
-         account_create( STEEMIT_INIT_MINER_NAME + fc::to_string( i ), init_account_pub_key );
-         fund( STEEMIT_INIT_MINER_NAME + fc::to_string( i ), STEEMIT_MIN_PRODUCER_REWARD.amount.value );
-         witness_create( STEEMIT_INIT_MINER_NAME + fc::to_string( i ), init_account_priv_key, "foo.bar", init_account_pub_key, STEEMIT_MIN_PRODUCER_REWARD.amount );
-      }
+   hpo.current_hardfork = 1;
+   BOOST_REQUIRE(has_hardfork(hpo, 0));
+   BOOST_REQUIRE(has_hardfork(hpo, 1));
+   BOOST_REQUIRE(!has_hardfork(hpo, 10));
+   BOOST_REQUIRE(!has_hardfork(hpo, STEEMIT_NUM_HARDFORKS));
+   BOOST_REQUIRE(!has_hardfork(hpo, STEEMIT_NUM_HARDFORKS + 1));
 
-      validate_database();
-      } catch ( const fc::exception& e )
-      {
-         edump( (e.to_detail_string()) );
-         throw;
-      }
+   hpo.current_hardfork = 10;
+   BOOST_REQUIRE(has_hardfork(hpo, 0));
+   BOOST_REQUIRE(has_hardfork(hpo, 1));
+   BOOST_REQUIRE(has_hardfork(hpo, 10));
+   BOOST_REQUIRE(!has_hardfork(hpo, STEEMIT_NUM_HARDFORKS));
+   BOOST_REQUIRE(!has_hardfork(hpo, STEEMIT_NUM_HARDFORKS  +1));
 
-      BOOST_TEST_MESSAGE( "Check hardfork not applied at genesis" );
-      BOOST_REQUIRE( db.has_hardfork( 0 ) );
-      BOOST_REQUIRE( !db.has_hardfork( STEEMIT_HARDFORK_0_1 ) );
+   hpo.current_hardfork = 22;
+   BOOST_REQUIRE(has_hardfork(hpo, 0));
+   BOOST_REQUIRE(has_hardfork(hpo, 1));
+   BOOST_REQUIRE(has_hardfork(hpo, 10));
+   BOOST_REQUIRE(has_hardfork(hpo, STEEMIT_NUM_HARDFORKS));
+   BOOST_REQUIRE(!has_hardfork(hpo, STEEMIT_NUM_HARDFORKS + 1));
+}
 
-      BOOST_TEST_MESSAGE( "Generate blocks up to the hardfork time and check hardfork still not applied" );
-      generate_blocks( fc::time_point_sec( STEEMIT_HARDFORK_0_1_TIME - STEEMIT_BLOCK_INTERVAL ), true );
+BOOST_AUTO_TEST_CASE (test_process_hardforks){
+   // scenario: on genesis   
+   // hpo.current_hardfork is set to 0 by default.
+   // hpo.head_block_time is set to STEEMIT_GENESIS_TIME by default.
+   // during init_genesis, the process_hardforks should be never invked.
+   new_hardfork_property_object hpo;
+   process_hardforks(hpo);
+   BOOST_REQUIRE(hpo.current_hardfork == 0);
 
-      BOOST_REQUIRE( db.has_hardfork( 0 ) );
-      BOOST_REQUIRE( !db.has_hardfork( STEEMIT_HARDFORK_0_1 ) );
+   // scenario: on block #1, should process through hardfork 19
+   hpo.head_block_time += 3;
+   process_hardforks(hpo);
+   BOOST_REQUIRE(hpo.current_hardfork == 19);
 
-      BOOST_TEST_MESSAGE( "Generate a block and check hardfork is applied" );
-      generate_block();
+   // scenario: hardfork 20
+   hpo.head_block_time = time_point_sec(STEEMIT_HARDFORK_0_20_TIME);
+   process_hardforks(hpo);
+   BOOST_REQUIRE(hpo.current_hardfork == 20);
 
-      string op_msg = "Testnet: Hardfork applied";
-      auto itr = db.get_index< account_history_index >().indices().get< by_id >().end();
-      itr--;
+   // scenario: hardfork 21
+   hpo.head_block_time = time_point_sec(STEEMIT_HARDFORK_0_21_TIME);
+   process_hardforks(hpo);
+   BOOST_REQUIRE(hpo.current_hardfork == 21);
 
-      BOOST_REQUIRE( db.has_hardfork( 0 ) );
-      BOOST_REQUIRE( db.has_hardfork( STEEMIT_HARDFORK_0_1 ) );
-      BOOST_REQUIRE( get_last_operations( 1 )[0].get< custom_operation >().data == vector< char >( op_msg.begin(), op_msg.end() ) );
-      BOOST_REQUIRE( db.get(itr->op).timestamp == db.head_block_time() );
+   // scenario: hardfork 22, just update time should not trigger the process.
+   hpo.head_block_time = time_point_sec(STEEMIT_HARDFORK_0_22_TIME);
+   process_hardforks(hpo);
+   BOOST_REQUIRE(hpo.current_hardfork != 22);
 
-      BOOST_TEST_MESSAGE( "Testing hardfork is only applied once" );
-      generate_block();
+   // scenario: hardfork 22, just update next_hardfork should not trigger the process.
+   hpo.head_block_time = time_point_sec(STEEMIT_HARDFORK_0_22_TIME);
+   hpo.next_hardfork = STEEMIT_HARDFORK_0_22;  
+   process_hardforks(hpo);
+   BOOST_REQUIRE(hpo.current_hardfork != 22);
 
-      itr = db.get_index< account_history_index >().indices().get< by_id >().end();
-      itr--;
-
-      BOOST_REQUIRE( db.has_hardfork( 0 ) );
-      BOOST_REQUIRE( db.has_hardfork( STEEMIT_HARDFORK_0_1 ) );
-      BOOST_REQUIRE( get_last_operations( 1 )[0].get< custom_operation >().data == vector< char >( op_msg.begin(), op_msg.end() ) );
-      BOOST_REQUIRE( db.get(itr->op).timestamp == db.head_block_time() - STEEMIT_BLOCK_INTERVAL );
-   }
-   FC_LOG_AND_RETHROW()
+   // scenario: hardfork 22
+   hpo.head_block_time = time_point_sec(STEEMIT_HARDFORK_0_22_TIME);
+   hpo.next_hardfork = STEEMIT_HARDFORK_0_22;  
+   hpo.next_hardfork_time =  time_point_sec(STEEMIT_HARDFORK_0_22_TIME);
+   process_hardforks(hpo);
+   BOOST_REQUIRE(hpo.current_hardfork == 22);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#endif
