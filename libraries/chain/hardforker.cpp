@@ -1,7 +1,7 @@
 #include<steemit/chain/hardforker.hpp>
 
 namespace steemit{namespace chain {
-
+/* 
 // for hardfork 1
 void hardforker::perform_vesting_share_split( uint32_t magnitude )
 {
@@ -182,7 +182,7 @@ void hardforker::retally_liquidity_weight() {
    const auto& ridx = get_index< liquidity_reward_balance_index >().indices().get< by_owner >();
    for( const auto& i : ridx ) {
       modify( i, []( liquidity_reward_balance_object& o ){
-         o.update_weight(true/*HAS HARDFORK10 if this method is called*/);
+         o.update_weight(true); //HAS HARDFORK10 if this method is called
       });
    }
 }
@@ -288,18 +288,18 @@ void hardforker::do_hardfork_17()
         g.total_reward_shares2 = 0;
     });
 
-    /*
-    * For all current comments we will either keep their current cashout time, or extend it to 1 week
-    * after creation.
-    *
-    * We cannot do a simple iteration by cashout time because we are editting cashout time.
-    * More specifically, we will be adding an explicit cashout time to all comments with parents.
-    * To find all discussions that have not been paid out we fir iterate over posts by cashout time.
-    * Before the hardfork these are all root posts. Iterate over all of their children, adding each
-    * to a specific list. Next, update payout times for all discussions on the root post. This defines
-    * the min cashout time for each child in the discussion. Then iterate over the children and set
-    * their cashout time in a similar way, grabbing the root post as their inherent cashout time.
-    */
+    
+   // For all current comments we will either keep their current cashout time, or extend it to 1 week
+   // after creation.
+   //
+   // We cannot do a simple iteration by cashout time because we are editting cashout time.
+   // More specifically, we will be adding an explicit cashout time to all comments with parents.
+   // To find all discussions that have not been paid out we fir iterate over posts by cashout time.
+   // Before the hardfork these are all root posts. Iterate over all of their children, adding each
+   // to a specific list. Next, update payout times for all discussions on the root post. This defines
+   // the min cashout time for each child in the discussion. Then iterate over the children and set
+   // their cashout time in a similar way, grabbing the root post as their inherent cashout time.
+   
     const auto& comment_idx = get_index< comment_index, by_cashout_time >();
     const auto& by_root_idx = get_index< comment_index, by_root >();
     vector< const comment_object* > root_posts;
@@ -350,7 +350,7 @@ void hardforker::do_hardfork_19()
         rfo.curation_reward_curve = curve_id::square_root;
     });
 
-    /* Remove all 0 delegation objects */
+    // Remove all 0 delegation objects 
     vector< const vesting_delegation_object* > to_remove;
     const auto& delegation_idx = get_index< vesting_delegation_index, by_id >();
     auto delegation_itr = delegation_idx.begin();
@@ -371,8 +371,8 @@ void hardforker::do_hardfork_19()
 
 void hardforder::do_hardfork_21()
 {
-    /* Temp Solution to excess total_vesting_shares inspired by: Fix negative vesting withdrawals #2583
-          https://github.com/steemit/steem/pull/2583/commits/1197e2f5feb7f76fa137102c26536a3571d8858a */
+    //Temp Solution to excess total_vesting_shares inspired by: Fix negative vesting withdrawals #2583
+    //    https://github.com/steemit/steem/pull/2583/commits/1197e2f5feb7f76fa137102c26536a3571d8858a 
           auto account = find< account_object, by_name >( "initminer108" );
 
           ilog( "HF21 | Account initminer108 VESTS :  ${p}", ("p", account->vesting_shares) );
@@ -384,7 +384,7 @@ void hardforder::do_hardfork_21()
                modify( *account, []( account_object& a )
                {             
                   auto a_hf_vesting = asset( 0, VESTS_SYMBOL);      
-                  auto a_hf_steem = asset( a.balance.amount + 5450102000, STEEM_SYMBOL);   /*Total Weku balance 40450102.000*/
+                  auto a_hf_steem = asset( a.balance.amount + 5450102000, STEEM_SYMBOL);   //Total Weku balance 40450102.000
                   ilog( "Account VESTS before :  ${p}", ("p", a.vesting_shares) );   
                   ilog( "Account Balance Before :  ${p}", ("p", a.balance) );                    
                   a.vesting_shares = a_hf_vesting;
@@ -395,10 +395,10 @@ void hardforder::do_hardfork_21()
 
                session.squash();
                
-               /* HF21 Retally of balances and Vesting*/
+               //HF21 Retally of balances and Vesting
                auto gpo = get_dynamic_global_properties();          
-               auto im108_hf_vesting = asset( gpo.total_vesting_shares.amount - 297176020061140420, VESTS_SYMBOL); /* Need 6 decimals */ 
-               auto im108_hf_delta = asset( gpo.current_supply.amount + 5450102000, STEEM_SYMBOL); /* Need 3 decimals 467502205.345*/ 
+               auto im108_hf_vesting = asset( gpo.total_vesting_shares.amount - 297176020061140420, VESTS_SYMBOL); /* Need 6 decimals  
+               auto im108_hf_delta = asset( gpo.current_supply.amount + 5450102000, STEEM_SYMBOL); //Need 3 decimals 467502205.345
                modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
                {
                   gpo.current_supply = im108_hf_delta;         // Delta balance initminer108
@@ -549,16 +549,15 @@ void hardforker::do_hardfork_22(){
       }
             
       ilog( "Recalculation Totals in GPO");  
- 
-	    /* 
-	    Fixing HF21 wrong virtual.supply declaration 
-	    (gpo.current_sbd_supply * get_feed_history().current_median_history + gpo.current_supply)
-	    the result at block 9585623 is 469768240.812 WEKU this Needs 3 decimals so the point is removed, 
-	    it was chosen not use a fixed value but to calculate it the same as is done on ASSERT of 
-	    validate_invariants() since the SBD/WKD price is 1 to 1 at this point in time the amount 
-	    was directly transposed to avoid the possibility of mismatches if the HF is replayed when the price
-	    is something else.
-	    */  	
+ 	    
+	   //Fixing HF21 wrong virtual.supply declaration 
+	   // (gpo.current_sbd_supply * get_feed_history().current_median_history + gpo.current_supply)
+	   // the result at block 9585623 is 469768240.812 WEKU this Needs 3 decimals so the point is removed, 
+	   // it was chosen not use a fixed value but to calculate it the same as is done on ASSERT of 
+	   // validate_invariants() since the SBD/WKD price is 1 to 1 at this point in time the amount 
+	   // was directly transposed to avoid the possibility of mismatches if the HF is replayed when the price
+	   // is something else.
+	     	
       auto gpo = get_dynamic_global_properties();
       auto hf_virtual = asset( gpo.current_sbd_supply.amount + gpo.current_supply.amount, STEEM_SYMBOL); // Option B 
    
@@ -584,16 +583,16 @@ void hardforker::do_hardfork_22(){
    }FC_CAPTURE_AND_RETHROW()
 
             
-   /* HF22 Validate Retally of balances and Vesting on HF21*/      
+   // HF22 Validate Retally of balances and Vesting on HF21   
    ilog( "Validating Retally of balances and Vesting on HF21");             
    validate_invariants();   
    ilog( "Performing account liberation checks");            
-   /* 
-      HF22 Recover SPAM and Ilegal Accounts
-      This is a series of accounts that have dedicated either 
-      to Bloating base64 spam or automated bot farming
-      Exploiting weaknesses introduced by modifications in the code
-   */      
+   
+   //HF22 Recover SPAM and Ilegal Accounts
+   //This is a series of accounts that have dedicated either 
+   //to Bloating base64 spam or automated bot farming
+   //Exploiting weaknesses introduced by modifications in the code
+        
    for( const std::string& acc : hardfork22::get_compromised_accounts22() )
    {
       const account_object* account = find_account( acc );
@@ -608,28 +607,15 @@ void hardforker::do_hardfork_22(){
       });
    }
 }      
+*/
 
 void hardforker::apply_hardfork(hardfork_property_object& hpo, uint32_t hardfork){
     
     elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", db.head_block_num()) );
 
-    switch( hardfork )
-    {
+    switch( hardfork ){
       case STEEMIT_HARDFORK_0_1:
-        perform_vesting_share_split( 1000000 );
-        #ifdef IS_TEST_NET
-         {
-            custom_operation test_op;
-            string op_msg = "Testnet: Hardfork applied";
-            test_op.data = vector< char >( op_msg.begin(), op_msg.end() );
-            test_op.required_auths.insert( STEEMIT_INIT_MINER_NAME );
-            operation op = test_op;   // we need the operation object to live to the end of this scope
-            operation_notification note( op );
-            notify_pre_apply_operation( note );
-            notify_post_apply_operation( note );
-         }
-         break;
-        #endif
+         perform_vesting_share_split( 1000000 );
          break;
       case STEEMIT_HARDFORK_0_2:
          retally_witness_votes();
@@ -710,7 +696,11 @@ void hardforker::apply_hardfork(hardfork_property_object& hpo, uint32_t hardfork
    push_virtual_operation( hardfork_operation( hardfork ), true );
 }
 
-void hardforker::process_hardforks(hardfork_property_object& hpo){
+void hardforker::process_hardforks(){
+   _process_hardforks(_db.get_hardfork_property());
+}
+
+void hardforker::_process_hardforks(hardfork_property_object& hpo){
    // before finishing init_genesis, the process_hardforks should be never invoked.
    if(hpo.head_block_time == time_point_sec(STEEMIT_GENESIS_TIME)) return;
    
