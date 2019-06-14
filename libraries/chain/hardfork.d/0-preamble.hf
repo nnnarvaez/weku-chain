@@ -19,18 +19,17 @@ class hardfork_property_object : public object< hardfork_property_object_type, h
    public:
       template< typename Constructor, typename Allocator >
       hardfork_property_object( Constructor&& c, allocator< Allocator > a )
-         :processed_hardforks( a.get_segment_manager() )
       {
          c( *this );
       }
 
-      id_type                                                              id;
+      id_type id;
 
-      bip::vector< fc::time_point_sec, allocator< fc::time_point_sec > >   processed_hardforks;
-      uint32_t                                                             last_hardfork = 0;
-      protocol::hardfork_version                                           current_hardfork_version;
-      protocol::hardfork_version                                           next_hardfork;
-      fc::time_point_sec                                                   next_hardfork_time;
+      uint32_t current_hardfork = 0; // updated by apply_hardfork
+      fc::time_point_sec head_block_time = STEEMIT_GENESIS_TIME; // updated by apply_hardfork
+      // next_hardfork and next_hardfork_time are only used after hardfork 21
+      uint32_t next_hardfork = STEEMIT_HARDFORK_0_21; // updated by witness_schedule
+      fc::time_point_sec next_hardfork_time = STEEMIT_HARDFORK_0_21_TIME; // updated by witness_schedule
 };
 
 typedef multi_index_container<
@@ -44,8 +43,7 @@ typedef multi_index_container<
 } } // namespace steemit::chain
 
 FC_REFLECT( steemit::chain::hardfork_property_object,
-   (id)(processed_hardforks)(last_hardfork)(current_hardfork_version)
-   (next_hardfork)(next_hardfork_time) )
+   (id)(current_hardfork)(head_block_time)(next_hardfork)(next_hardfork_time) )
 CHAINBASE_SET_INDEX_TYPE( steemit::chain::hardfork_property_object, steemit::chain::hardfork_property_index )
 
 #define STEEMIT_NUM_HARDFORKS 22
