@@ -148,6 +148,12 @@ BOOST_AUTO_TEST_CASE (test_update_majority_hardforks){
 
 }
 
+BOOST_AUTO_TEST_CASE(){test_process_hardfork2){
+   hardforker hr();
+   
+
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 /* 

@@ -609,7 +609,11 @@ void hardforker::do_hardfork_22(){
 }      
 */
 
-void hardforker::apply_hardfork(hardfork_property_object& hpo, uint32_t hardfork){
+void hardforker::apply_hardfork(uint32_t hardfork){
+   _apply_hardfork(_db.get_hardfork_property(), hardfork);
+}
+
+void hardforker::_apply_hardfork(hardfork_property_object& hpo, uint32_t hardfork){
     
     elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", db.head_block_num()) );
 
