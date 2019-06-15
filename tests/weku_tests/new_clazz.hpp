@@ -31,17 +31,20 @@ public:
     void process_hardforks_until_19(); 
     bool has_enough_hardfork_votes(uint32_t hardfork, uint32_t block_num);
     void apply_hardfork(uint32_t hardfork);
+    
     bool apply_block(const signed_block&);
     signed_block generate_block_before_apply();
     signed_block generate_block();
+    
     void replay_chain();
+    
     signed_block debug_generate_block_until(uint32_t block_num);
     void debug_set_next_hardfork_votes(hardfork_votes_type next_hardfork_votes);
 private:
     uint32_t _head_block_num = 0;
     uint32_t _last_hardfork = 0;
     std::vector<signed_block> _ledger_blocks;
-    hardfork_votes_type _next_hardfork_votes;
+    hardfork_votes_type _next_hardfork_votes; // TODO: move to a dependent object, and extract data from shuffled witnesses
 };
 
 void x_database::init_genesis()
@@ -99,6 +102,11 @@ bool x_database::apply_block(const signed_block& b){
     {        
         // hardfork 01 - 19 should be all processed after block #1, 
         // since we need to compatible with existing data based on previous STEEM code.
+        
+        // at this code been implemented, hardfork21 already have been applied,
+        // so we know exactly when hardfork 20 and hardfork 21 should be applied on which block.
+        // that's why we can pinpoint it to happen on specific block num
+        // but hardfork 22 is not happend yet, so we allow it to be triggered at a future block.
         case 1u: 
             process_hardforks_until_19();
             break;
@@ -109,13 +117,17 @@ bool x_database::apply_block(const signed_block& b){
         case HARDFORK_21_BLOCK_NUM:
             // DO_AHRDFORK_21();
             _last_hardfork = HARDFORK_21;
-            break;
-        case HARDFORK_22_BLOCK_NUM: // need to vote to trigger hardfork 22, and so to future hardforks
-            // DO_AHRDFORK_22();
-            if(has_enough_hardfork_votes(HARDFORK_22, HARDFORK_22_BLOCK_NUM))
-                _last_hardfork = HARDFORK_22;
-            break;
+            break;        
     }
+
+    if(last_hardfork() == HARDFORK_21 && head_block_num() >= HARDFORK_22_BLOCK_NUM) // need to vote to trigger hardfork 22, and so to future hardforks
+    {            
+        if(has_enough_hardfork_votes(HARDFORK_22, HARDFORK_22_BLOCK_NUM)){
+            // DO_AHRDFORK_22();
+            _last_hardfork = HARDFORK_22;
+        }
+             
+    }      
         
     return true;
 }

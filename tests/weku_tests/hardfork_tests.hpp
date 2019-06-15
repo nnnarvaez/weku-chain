@@ -64,17 +64,33 @@ BOOST_FIXTURE_TEST_CASE(process_hardfork_21_should_update_last_hardfork_to_21, x
     BOOST_REQUIRE(db.last_hardfork() == 21);
 }
 
-// BOOST_FIXTURE_TEST_CASE(hardfork_22_should_not_be_triggered_before_vote_less_than_17, x_database_fixture)
-// {
-//     db.debug_generate_block_until(HARDFORK_22_BLOCK_NUM + 1); 
-//     BOOST_REQUIRE(db.last_hardfork() == 21);
-// }
+BOOST_FIXTURE_TEST_CASE(hardfork_22_should_not_be_triggered_while_no_votes, x_database_fixture)
+{
+    db.debug_generate_block_until(HARDFORK_22_BLOCK_NUM + 1); 
+    BOOST_REQUIRE(db.last_hardfork() == 21);
+}
 
-BOOST_FIXTURE_TEST_CASE(hardfork_22_should_be_triggered_after_vote_greater_or_equal_than_17, x_database_fixture)
+BOOST_FIXTURE_TEST_CASE(hardfork_22_should_not_be_triggered_before_votes_less_than_17, x_database_fixture)
 {
     db.debug_generate_block_until(HARDFORK_22_BLOCK_NUM); 
     hardfork_votes_type votes;
-    for(int32_t i = 0; i < 17; i++) // vote for hf22 17 times
+    for(int32_t i = 0; i < REQUIRED_HARDFORK_VOTES - 1; i++) // vote for hf22 16 times
+    {
+        auto hardfork_and_block_num = std::make_pair(HARDFORK_22, HARDFORK_22_BLOCK_NUM);
+        votes.push_back(hardfork_and_block_num);
+    }    
+    db.debug_set_next_hardfork_votes(votes);
+
+    db.generate_block();
+
+    BOOST_REQUIRE(db.last_hardfork() == 21);
+}
+
+BOOST_FIXTURE_TEST_CASE(hardfork_22_should_be_triggered_after_votes_greater_or_equal_than_17, x_database_fixture)
+{
+    db.debug_generate_block_until(HARDFORK_22_BLOCK_NUM); 
+    hardfork_votes_type votes;
+    for(int32_t i = 0; i < REQUIRED_HARDFORK_VOTES; i++) // vote for hf22 17 times
     {
         auto hardfork_and_block_num = std::make_pair(HARDFORK_22, HARDFORK_22_BLOCK_NUM);
         votes.push_back(hardfork_and_block_num);
