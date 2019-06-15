@@ -41,4 +41,42 @@ BOOST_FIXTURE_TEST_CASE(head_block_num_should_be_increased_for_each_apply_block_
     }
 }
 
+BOOST_FIXTURE_TEST_CASE(last_hardfork_should_be_0_before_replay_chain, x_database_fixture)
+{
+    BOOST_REQUIRE(db.last_hardfork() == 0);
+}
+
+BOOST_FIXTURE_TEST_CASE(last_hardfork_should_be_19_after_replay_chain_to_block_1, x_database_fixture)
+{
+     db.generate_block();
+
+     db.replay_chain();
+     BOOST_REQUIRE(db.last_hardfork() == 19);
+}
+
+BOOST_FIXTURE_TEST_CASE(hardfork_to_19_should_only_happen_once_during_replay, x_database_fixture)
+{
+     db.generate_block();
+     db.replay_chain();
+     db.generate_block();
+     BOOST_REQUIRE(db.last_hardfork() == 19);
+}
+
+BOOST_FIXTURE_TEST_CASE(last_hardfork_should_be10_after_replay_chain_to_hardfork_20, x_database_fixture)
+{
+    db.debug_generate_block_until(HARDFORK_20_BLOCK_NUM + 1);
+    
+    db.replay_chain();
+    BOOST_REQUIRE(db.last_hardfork() == 20);
+}
+
+BOOST_FIXTURE_TEST_CASE(hardfork_20_should_only_happen_once_during_replay, x_database_fixture)
+{
+    db.debug_generate_block_until(HARDFORK_20_BLOCK_NUM + 1);
+    
+    db.replay_chain();
+    db.generate_block();
+    BOOST_REQUIRE(db.last_hardfork() == 20);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
