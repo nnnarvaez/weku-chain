@@ -50,7 +50,10 @@ namespace steemit { namespace chain {
          database();
          ~database();
 
-         virtual void foo() override{}
+         virtual uint32_t last_hardfork() override;
+         virtual void last_hardfork(uint32_t hardfork) override;
+         virtual hardfork_votes_type next_hardfork_votes() override;
+         virtual void next_hardfork_votes(hardfork_votes_type next_hardfork_votes) override;
 
          bool is_producing()const { return _is_producing; }
          void set_producing( bool p ) { _is_producing = p;  }
@@ -300,7 +303,7 @@ namespace steemit { namespace chain {
          void        adjust_savings_balance( const account_object& a, const asset& delta );
          void        adjust_reward_balance( const account_object& a, const asset& delta );
          void        adjust_supply( const asset& delta, bool adjust_vesting = false );
-         void        adjust_rshares2( const comment_object& comment, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 );
+         virtual void        adjust_rshares2( const comment_object& comment, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 ) override;
          void        update_owner_authority( const account_object& account, const authority& owner_authority );
 
          asset       get_balance( const account_object& a, asset_symbol_type symbol )const;
@@ -316,7 +319,7 @@ namespace steemit { namespace chain {
          void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 );
 
          /** this is called by `adjust_proxied_witness_votes` when account proxy to self */
-         void adjust_witness_votes( const account_object& a, share_type delta );
+         virtual void adjust_witness_votes( const account_object& a, share_type delta ) override;
 
          /** this updates the vote of a single witness as a result of a vote being added or removed*/
          void adjust_witness_vote( const witness_object& obj, share_type delta );
@@ -358,7 +361,7 @@ namespace steemit { namespace chain {
          asset to_steem( const asset& sbd )const;
 
          time_point_sec   head_block_time()const;
-         uint32_t         head_block_num()const;
+         virtual uint32_t head_block_num()const override;
          block_id_type    head_block_id()const;
 
          node_property_object& node_properties();
@@ -374,7 +377,7 @@ namespace steemit { namespace chain {
          void initialize_indexes();
          // TODO: init_schema is deprecated.
          void init_schema();
-         void init_genesis(uint64_t initial_supply = STEEMIT_INIT_SUPPLY );
+         virtual void init_genesis(uint64_t initial_supply = STEEMIT_INIT_SUPPLY ) override;
 
          /**
           *  This method validates transactions without adding it to the pending state.
@@ -391,13 +394,8 @@ namespace steemit { namespace chain {
          bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
          void cancel_order( const limit_order_object& obj );
          int  match( const limit_order_object& bid, const limit_order_object& ask, const price& trade_price );
-
-         void perform_vesting_share_split( uint32_t magnitude );
-         void perform_vesting_share_scale_down( uint32_t magnitude );
-         void retally_comment_children();
-         void retally_witness_votes();
+                                   
          
-         void retally_liquidity_weight();
          void update_virtual_supply();
 
          bool has_hardfork( uint32_t hardfork )const;
@@ -406,7 +404,7 @@ namespace steemit { namespace chain {
             with id N, applies all hardforks with id <= N */
          void set_hardfork( uint32_t hardfork, bool process_now = true );
 
-         void validate_invariants()const;
+         virtual void validate_invariants()const override;
          /**
           * @}
           */
@@ -428,9 +426,10 @@ namespace steemit { namespace chain {
          void notify_changed_objects();
 
       private:
+         hardfork_votes_type _next_hardfork_votes;
          optional< chainbase::database::session > _pending_tx_session;
 
-         void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing );
+         virtual void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing ) override;
          void apply_transaction( const signed_transaction& trx, uint32_t skip = skip_nothing );
          void _apply_block( const signed_block& next_block );
          void _apply_transaction( const signed_transaction& trx );
