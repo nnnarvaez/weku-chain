@@ -609,115 +609,115 @@ void hardforker::do_hardfork_22(){
 }      
 */
 
-void hardforker::apply_hardfork(uint32_t hardfork){
-   _apply_hardfork(_db.get_hardfork_property(), hardfork);
-}
+// void hardforker::apply_hardfork(uint32_t hardfork){
+//    _apply_hardfork(_db.get_hardfork_property(), hardfork);
+// }
 
-void hardforker::_apply_hardfork(hardfork_property_object& hpo, uint32_t hardfork){
+// void hardforker::_apply_hardfork(hardfork_property_object& hpo, uint32_t hardfork){
     
-    elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", db.head_block_num()) );
+//     elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", db.head_block_num()) );
 
-    switch( hardfork ){
-      case STEEMIT_HARDFORK_0_1:
-         perform_vesting_share_split( 1000000 );
-         break;
-      case STEEMIT_HARDFORK_0_2:
-         retally_witness_votes();
-         break;
-      case STEEMIT_HARDFORK_0_3:
-         retally_witness_votes();
-         break;
-      case STEEMIT_HARDFORK_0_4:
-         reset_virtual_schedule_time(*this);
-         break;
-      case STEEMIT_HARDFORK_0_5:
-         break;
-      case STEEMIT_HARDFORK_0_6:
-         retally_witness_vote_counts();
-         retally_comment_children();
-         break;
-      case STEEMIT_HARDFORK_0_7:
-         break;
-      case STEEMIT_HARDFORK_0_8:
-         retally_witness_vote_counts(true);
-         break;
-      case STEEMIT_HARDFORK_0_9:
-         do_hardfork_9();
-         break;
-      case STEEMIT_HARDFORK_0_10:
-         retally_liquidity_weight();
-         break;
-      case STEEMIT_HARDFORK_0_11:
-         break;
-      case STEEMIT_HARDFORK_0_12:
-         do_hardfork_12();
-         break;
-      case STEEMIT_HARDFORK_0_13:
-         break;
-      case STEEMIT_HARDFORK_0_14:
-         break;
-      case STEEMIT_HARDFORK_0_15:
-         break;
-      case STEEMIT_HARDFORK_0_16:
-         do_hardfork_16();
-         break;
-      case STEEMIT_HARDFORK_0_17:
-         do_hardfork_17();
-         break;
-      case STEEMIT_HARDFORK_0_18:
-         break;
-      case STEEMIT_HARDFORK_0_19:
-         do_hardfork_19();
-         break;
-      case STEEMIT_HARDFORK_0_20:
-         break;
-      case STEEMIT_HARDFORK_0_21:
-      {
-         #ifdef IS_TEST_NET
-            // ignore process of hardfork 21 for testnet,
-            // since testnet doesn't have account "initminer108"
-            break;
-         #endif
+//     switch( hardfork ){
+//       case STEEMIT_HARDFORK_0_1:
+//          perform_vesting_share_split( 1000000 );
+//          break;
+//       case STEEMIT_HARDFORK_0_2:
+//          retally_witness_votes();
+//          break;
+//       case STEEMIT_HARDFORK_0_3:
+//          retally_witness_votes();
+//          break;
+//       case STEEMIT_HARDFORK_0_4:
+//          reset_virtual_schedule_time(*this);
+//          break;
+//       case STEEMIT_HARDFORK_0_5:
+//          break;
+//       case STEEMIT_HARDFORK_0_6:
+//          retally_witness_vote_counts();
+//          retally_comment_children();
+//          break;
+//       case STEEMIT_HARDFORK_0_7:
+//          break;
+//       case STEEMIT_HARDFORK_0_8:
+//          retally_witness_vote_counts(true);
+//          break;
+//       case STEEMIT_HARDFORK_0_9:
+//          do_hardfork_9();
+//          break;
+//       case STEEMIT_HARDFORK_0_10:
+//          retally_liquidity_weight();
+//          break;
+//       case STEEMIT_HARDFORK_0_11:
+//          break;
+//       case STEEMIT_HARDFORK_0_12:
+//          do_hardfork_12();
+//          break;
+//       case STEEMIT_HARDFORK_0_13:
+//          break;
+//       case STEEMIT_HARDFORK_0_14:
+//          break;
+//       case STEEMIT_HARDFORK_0_15:
+//          break;
+//       case STEEMIT_HARDFORK_0_16:
+//          do_hardfork_16();
+//          break;
+//       case STEEMIT_HARDFORK_0_17:
+//          do_hardfork_17();
+//          break;
+//       case STEEMIT_HARDFORK_0_18:
+//          break;
+//       case STEEMIT_HARDFORK_0_19:
+//          do_hardfork_19();
+//          break;
+//       case STEEMIT_HARDFORK_0_20:
+//          break;
+//       case STEEMIT_HARDFORK_0_21:
+//       {
+//          #ifdef IS_TEST_NET
+//             // ignore process of hardfork 21 for testnet,
+//             // since testnet doesn't have account "initminer108"
+//             break;
+//          #endif
       
-        do_hardfork_21();
-        break;
+//         do_hardfork_21();
+//         break;
          
-      case STEEMIT_HARDFORK_0_22:
-         do_hardfork_22();  
-         break;
-      default:
-         break;
-   }
+//       case STEEMIT_HARDFORK_0_22:
+//          do_hardfork_22();  
+//          break;
+//       default:
+//          break;
+//    }
 
-   db.modify( get_hardfork_property_object(), [&]( hardfork_property_object& hpo )
-   {
-      FC_ASSERT( hardfork == hpo.current_hardfork + 1, "Hardfork being applied out of order", 
-        ("hardfork",hardfork)("hfp.last_hardfork",hpo.current_hardfork) );
-      hpo.current_hardfork = hardfork;
-      hpo.head_block_time = db.head_block_time();      
-   });
+//    db.modify( get_hardfork_property_object(), [&]( hardfork_property_object& hpo )
+//    {
+//       FC_ASSERT( hardfork == hpo.current_hardfork + 1, "Hardfork being applied out of order", 
+//         ("hardfork",hardfork)("hfp.last_hardfork",hpo.current_hardfork) );
+//       hpo.current_hardfork = hardfork;
+//       hpo.head_block_time = db.head_block_time();      
+//    });
 
-   push_virtual_operation( hardfork_operation( hardfork ), true );
-}
+//    push_virtual_operation( hardfork_operation( hardfork ), true );
+// }
 
-void hardforker::process_hardforks(){
-   _process_hardforks(_db.get_hardfork_property());
-}
+// void hardforker::process_hardforks(){
+//    _process_hardforks(_db.get_hardfork_property());
+// }
 
-void hardforker::_process_hardforks(hardfork_property_object& hpo){
-   // before finishing init_genesis, the process_hardforks should be never invoked.
-   if(hpo.head_block_time == time_point_sec(STEEMIT_GENESIS_TIME)) return;
+// void hardforker::_process_hardforks(hardfork_property_object& hpo){
+//    // before finishing init_genesis, the process_hardforks should be never invoked.
+//    if(hpo.head_block_time == time_point_sec(STEEMIT_GENESIS_TIME)) return;
    
-      if(hpo.current_hardfork < STEEMIT_HARDFORK_0_21){
-         for(uint32_t i = 1; i <= STEEMIT_HARDFORK_0_21; i++)
-            if(hpo.current_hardfork < STEEMIT_HARDFORK_0_21
-               && hpo.head_block_time >= hardfork_times[hpo.current_hardfork + 1])
-               apply_hardfork(hpo, hpo.current_hardfork + 1);   
-      }else{ // after hardfork 21 applied
-         for(uint32_t i = STEEMIT_HARDFORK_0_22; i <= STEEMIT_NUM_HARDFORKS; i++)
-            if(hpo.current_hardfork < hpo.next_hardfork && hpo.head_block_time >= hpo.next_hardfork_time)            
-               apply_hardfork(hpo, hpo.current_hardfork + 1);  
-      }  
-}
+//       if(hpo.current_hardfork < STEEMIT_HARDFORK_0_21){
+//          for(uint32_t i = 1; i <= STEEMIT_HARDFORK_0_21; i++)
+//             if(hpo.current_hardfork < STEEMIT_HARDFORK_0_21
+//                && hpo.head_block_time >= hardfork_times[hpo.current_hardfork + 1])
+//                apply_hardfork(hpo, hpo.current_hardfork + 1);   
+//       }else{ // after hardfork 21 applied
+//          for(uint32_t i = STEEMIT_HARDFORK_0_22; i <= STEEMIT_NUM_HARDFORKS; i++)
+//             if(hpo.current_hardfork < hpo.next_hardfork && hpo.head_block_time >= hpo.next_hardfork_time)            
+//                apply_hardfork(hpo, hpo.current_hardfork + 1);  
+//       }  
+// }
 
-}}
+// }}

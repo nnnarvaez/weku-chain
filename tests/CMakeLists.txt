@@ -22,7 +22,7 @@ include_directories(/usr/local/Cellar/boost@1.60/1.60.0/include)
 
 file(GLOB WEKU_TESTS "weku_tests/*.cpp")
 add_executable( weku_test ${WEKU_TESTS} ${COMMON_SOURCES} )
-#target_link_libraries( weku_test fc ${PLATFORM_SPECIFIC_LIBS} )
+target_link_libraries( weku_test wk_chain_new ${PLATFORM_SPECIFIC_LIBS} )
 
 #if(MSVC)
 #  set_source_files_properties( tests/serialization_tests.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )

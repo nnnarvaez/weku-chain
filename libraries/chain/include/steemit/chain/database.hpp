@@ -389,10 +389,20 @@ namespace steemit { namespace chain {
          bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
          void cancel_order( const limit_order_object& obj );
          int  match( const limit_order_object& bid, const limit_order_object& ask, const price& trade_price );
-      
+
+         void perform_vesting_share_split( uint32_t magnitude );
+         void perform_vesting_share_scale_down( uint32_t magnitude );
+         void retally_comment_children();
+         void retally_witness_votes();
+         void retally_witness_vote_counts( bool force = false );
+         void retally_liquidity_weight();
          void update_virtual_supply();
 
          bool has_hardfork( uint32_t hardfork )const;
+
+         /* For testing and debugging only. Given a hardfork
+            with id N, applies all hardforks with id <= N */
+         void set_hardfork( uint32_t hardfork, bool process_now = true );
 
          void validate_invariants()const;
          /**
@@ -440,14 +450,18 @@ namespace steemit { namespace chain {
          void clear_expired_orders();
          void clear_expired_delegations();
          void process_header_extensions( const signed_block& next_block );
-         
-         void process_hardforks();      
+
+         void init_hardforks();
+         void process_hardforks();
+         void apply_hardfork( uint32_t hardfork );
 
          ///@}
 
          std::unique_ptr< database_impl > _my;
 
          fork_database                 _fork_db;
+         fc::time_point_sec            _hardfork_times[ STEEMIT_NUM_HARDFORKS + 1 ];
+         protocol::hardfork_version    _hardfork_versions[ STEEMIT_NUM_HARDFORKS + 1 ];
 
          block_log                     _block_log;
 

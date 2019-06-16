@@ -22,7 +22,6 @@
 #include <steemit/chain/util/reward.hpp>
 #include <steemit/chain/util/uint256.hpp>
 #include <steemit/chain/util/reward.hpp>
-#include <steemit/chain/hardforker.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
@@ -37,6 +36,8 @@
 #include <functional>
 
 namespace steemit { namespace chain {
+
+//namespace db2 = graphene::db2;
 
 struct object_schema_repr
 {
@@ -1269,9 +1270,9 @@ void database::clear_witness_votes( const account_object& a )
 }
 
 // get called for every block creation.
-void database::clear_null_account_balance() // will return immediatly at block #1
+void database::clear_null_account_balance()
 {
-   if( !has_hardfork( STEEMIT_HARDFORK_0_14__327 ) ) return; // can be replace to hardfork19
+   if( !has_hardfork( STEEMIT_HARDFORK_0_14__327 ) ) return;
 
    const auto& null_account = get_account( STEEMIT_NULL_ACCOUNT );
    asset total_steem( 0, STEEM_SYMBOL );
@@ -1851,7 +1852,7 @@ void database::process_funds()
    const auto& wso = get_witness_schedule_object();
 
     // since process_funds happens before process_hardfork, so block #1 will not have hardfork_0_16_551 (any hardfork)
-   if( has_hardfork( STEEMIT_HARDFORK_0_16__551) ) // at block #1, it would not be true.
+   if( has_hardfork( STEEMIT_HARDFORK_0_16__551) )
    {
       /**
        * At block 7,000,000 have a 9.5% instantaneous inflation rate, decreasing to 0.95% at a rate of 0.01%
@@ -1867,18 +1868,18 @@ void database::process_funds()
       auto new_steem = ( props.virtual_supply.amount * current_inflation_rate ) / ( int64_t( STEEMIT_100_PERCENT ) * int64_t( STEEMIT_BLOCKS_PER_YEAR ) );
 
       // hardfork 20 fixes the inflation rate at 5%
-      if(has_hardfork(STEEMIT_HARDFORK_0_20__11)) // VERY IMPORTANT !
+      if(has_hardfork(STEEMIT_HARDFORK_0_20__11))
          new_steem = ( share_type(STEEMIT_INIT_SUPPLY) * int64_t(STEEMIT_INFLATION_RATE_PERCENT_0_20) ) / ( int64_t( STEEMIT_100_PERCENT ) * int64_t( STEEMIT_BLOCKS_PER_YEAR ) );
 
       auto content_reward = ( new_steem * STEEMIT_CONTENT_REWARD_PERCENT ) / STEEMIT_100_PERCENT;
-      if( has_hardfork( STEEMIT_HARDFORK_0_17__774 ) ) // TODO: can be removed
+      if( has_hardfork( STEEMIT_HARDFORK_0_17__774 ) )
           // distribute the content_reward to all participants according to their percentage.
          content_reward = pay_reward_funds( content_reward ); /// 75% to content creator
       auto vesting_reward = ( new_steem * STEEMIT_VESTING_FUND_PERCENT ) / STEEMIT_100_PERCENT; /// 15% to vesting fund
       auto witness_reward = new_steem - content_reward - vesting_reward; /// Remaining 10% to witness pay
 
       const auto& cwit = get_witness( props.current_witness );
-      witness_reward *= STEEMIT_MAX_WITNESSES; // this multiply of witness_reward will change the new_steem dramatically, not sure why we do this?
+      witness_reward *= STEEMIT_MAX_WITNESSES;
 
       if( cwit.schedule == witness_object::timeshare )
          witness_reward *= wso.timeshare_weight;
@@ -1901,7 +1902,7 @@ void database::process_funds()
           // note: price = total vesting / total vesting fund
           // basically, vesting_reward will benefit power up users by reducing the price.
          p.total_vesting_fund_steem += asset( vesting_reward, STEEM_SYMBOL );
-         if( !has_hardfork( STEEMIT_HARDFORK_0_17__774 ) ) // TODO: hf check can be cleaned.
+         if( !has_hardfork( STEEMIT_HARDFORK_0_17__774 ) )
             p.total_reward_fund_steem  += asset( content_reward, STEEM_SYMBOL );
          p.current_supply           += asset( new_steem, STEEM_SYMBOL );
          p.virtual_supply           += asset( new_steem, STEEM_SYMBOL );
@@ -1911,7 +1912,7 @@ void database::process_funds()
       push_virtual_operation( producer_reward_operation( cwit.owner, producer_reward ) );
 
    }
-   else // block #1 runs below else branch.
+   else
    {
       auto content_reward = get_content_reward();
       auto curate_reward = get_curation_reward();
@@ -2471,7 +2472,7 @@ void database::init_genesis( uint64_t init_supply )
          auth.active.weight_threshold = 0;
       });
 
-       // currently, the system will only create one initminer in below loop
+       // currently, the system will only create on initminer in below loop
       for( int i = 0; i < STEEMIT_NUM_INIT_MINERS; ++i )
       {
 
@@ -2515,7 +2516,7 @@ void database::init_genesis( uint64_t init_supply )
       // QUESTION: Does this actually save and empty feed_history_object into index/container?
       create< feed_history_object >( [&]( feed_history_object& o ) {});
       // QUESTION: Does it necessary to create all these empty objects?
-      for( int i = 0; i < 0x10000; i++ ) // used as objects pool? very likely just used for objects pooling for fast searching.
+      for( int i = 0; i < 0x10000; i++ )
          create< block_summary_object >( [&]( block_summary_object& ) {});
       create< hardfork_property_object >( [&](hardfork_property_object& hpo )
       {
@@ -2623,7 +2624,7 @@ void database::apply_block( const signed_block& next_block, uint32_t skip )
    //fc::microseconds dt = end_time - begin_time;
 
    // QUESTION: What is below section of code for?
-   if( _flush_blocks != 0 ) // normally set to 10000
+   if( _flush_blocks != 0 )
    {
       if( _next_flush_block == 0 )
       {
@@ -2705,12 +2706,12 @@ void database::_apply_block( const signed_block& next_block )
 
    const auto& gprops = get_dynamic_global_properties();
    auto block_size = fc::raw::pack_size( next_block );
-   if( has_hardfork( STEEMIT_HARDFORK_0_12 ) ) // TODO: this check can be safely removed
+   if( has_hardfork( STEEMIT_HARDFORK_0_12 ) )
    {
       FC_ASSERT( block_size <= gprops.maximum_block_size, "Block Size is too Big", ("next_block_num",next_block_num)("block_size", block_size)("max",gprops.maximum_block_size) );
    }
 
-   if( block_size < STEEMIT_MIN_BLOCK_SIZE ) // 115 bytes
+   if( block_size < STEEMIT_MIN_BLOCK_SIZE )
    {
       elog( "Block size is too small",
          ("next_block_num",next_block_num)("block_size", block_size)("min",STEEMIT_MIN_BLOCK_SIZE)
@@ -2720,7 +2721,7 @@ void database::_apply_block( const signed_block& next_block )
    /// modify current witness so transaction evaluators can know who included the transaction,
    /// this is mostly for POW operations which must pay the current_witness
    modify( gprops, [&]( dynamic_global_property_object& dgp ){
-      dgp.current_witness = next_block.witness; // TODO: should be moved to update_global_dynamic_data? or has to be updated here, since below operations might need it?
+      dgp.current_witness = next_block.witness;
    });
 
    /// parse witness version reporting
@@ -2729,7 +2730,7 @@ void database::_apply_block( const signed_block& next_block )
    // TODO: Below section of code should not be here, will replace it soon.
    // NATHAN: Check reimplemented on HF22
    
-   if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork 
+   if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork
    {
       const auto& witness = get_witness( next_block.witness );
       const auto& hardfork_state = get_hardfork_property_object();
@@ -2760,16 +2761,16 @@ void database::_apply_block( const signed_block& next_block )
    clear_expired_transactions();
    clear_expired_orders();
    clear_expired_delegations();
-   update_witness_schedule(*this); // only run every 21 blocks
+   update_witness_schedule(*this);
 
-   update_median_feed(); // only run every STEEMIT_FEED_INTERVAL_BLOCKS
+   update_median_feed();
    // QUESTION: another update_virtual_supply in next 10 lines?
    update_virtual_supply();
 
    clear_null_account_balance();
    process_funds();
    process_conversions();
-   process_comment_cashout(); // TODO: complicated function, need to be refactoried.
+   process_comment_cashout();
    process_vesting_withdrawals();
    process_savings_withdraws();
    pay_liquidity_reward();
@@ -2779,9 +2780,9 @@ void database::_apply_block( const signed_block& next_block )
    expire_escrow_ratification();
    process_decline_voting_rights();
 
-   // For WEKU, all hardforks before hardfork_20 (not include) are applied just after block 1 is saved to disk
-   // this process_hardforks is almost at the end of the process,
-   // which also means during process of block #1, there is only harfork 0.
+   // For WEKU, all hardforks before hardfork_20 are applied just after block 1 is saved to dish
+        // this process_hardforks is almost at the end of the process,
+        // which also means during process of block #1, there is only harfork 0.
    process_hardforks();
 
    // notify observers that the block has been applied
@@ -2804,7 +2805,7 @@ void database::process_header_extensions( const signed_block& next_block )
       {
          case 0: // void_t
             break;
-         case 1: // version // QUESTION: for each block, can it have more than one version headers?
+         case 1: // version
          {
             auto reported_version = itr->get< version >();
             const auto& signing_witness = get_witness( next_block.witness );
@@ -2819,7 +2820,7 @@ void database::process_header_extensions( const signed_block& next_block )
             }
             break;
          }
-         case 2: // hardfork_version_vote // QUESTION: for each block, can it have more than one hardfork_version vote headers?
+         case 2: // hardfork_version vote
          {
             auto hfv = itr->get< hardfork_version_vote >();
             const auto& signing_witness = get_witness( next_block.witness );
@@ -3033,7 +3034,7 @@ const witness_object& database::validate_block_header( uint32_t skip, const sign
 
 void database::create_block_summary(const signed_block& next_block)
 { try {
-   block_summary_id_type sid( next_block.block_num() & 0xffff ); // % operation by 65535 = 2^16, block_summary_index acts like a cache/objects pool.
+   block_summary_id_type sid( next_block.block_num() & 0xffff );
    modify( get< block_summary_object >( sid ), [&](block_summary_object& p) {
          p.block_id = next_block.id();
    });
@@ -3047,10 +3048,10 @@ void database::update_global_dynamic_data( const signed_block& b )
    uint32_t missed_blocks = 0;
    if( head_block_time() != fc::time_point_sec() )
    {
-      missed_blocks = get_slot_at_time( b.timestamp ); // for ex: head_block_time() = 1557342918, b.timestamp = 1557342921, then the miss_blocks = 1
-      assert( missed_blocks != 0 ); // The missed_blocks should be at lease 1, means the new block is on block advance than current head_block
-      missed_blocks--; // if missed_blocks-- equals 0, means no block is missed.
-      for( uint32_t i = 0; i < missed_blocks; ++i ) 
+      missed_blocks = get_slot_at_time( b.timestamp );
+      assert( missed_blocks != 0 );
+      missed_blocks--;
+      for( uint32_t i = 0; i < missed_blocks; ++i )
       {
          const auto& witness_missed = get_witness( get_scheduled_witness( i + 1 ) );
          if(  witness_missed.owner != b.witness )
@@ -3058,7 +3059,7 @@ void database::update_global_dynamic_data( const signed_block& b )
             modify( witness_missed, [&]( witness_object& w )
             {
                w.total_missed++;
-               if( has_hardfork( STEEMIT_HARDFORK_0_14__278 ) ) // TODO: this check can be removed.
+               if( has_hardfork( STEEMIT_HARDFORK_0_14__278 ) )
                {
                    // automatically de-active witnesses if it missed over one day' block.
                   if( head_block_num() - w.last_confirmed_block_num  > STEEMIT_BLOCKS_PER_DAY )
@@ -3108,7 +3109,7 @@ void database::update_virtual_supply()
 
       auto median_price = get_feed_history().current_median_history;
 
-      if( !median_price.is_null() && has_hardfork( STEEMIT_HARDFORK_0_14__230 ) ) // at block #1, the median_price is null
+      if( !median_price.is_null() && has_hardfork( STEEMIT_HARDFORK_0_14__230 ) )
       {
          auto percent_sbd = uint16_t( ( ( fc::uint128_t( ( dgp.current_sbd_supply * get_feed_history().current_median_history ).amount.value ) * STEEMIT_100_PERCENT )
             / dgp.virtual_supply.amount.value ).to_uint64() );
@@ -3126,7 +3127,7 @@ void database::update_virtual_supply()
 void database::update_signing_witness(const witness_object& signing_witness, const signed_block& new_block)
 { try {
    const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-   uint64_t new_block_aslot = dpo.current_aslot + get_slot_at_time( new_block.timestamp ); // the dpo.current_aslot is already updated in previous process, so most of time, the new block_aslot should be equal to dpo.current_aslot.
+   uint64_t new_block_aslot = dpo.current_aslot + get_slot_at_time( new_block.timestamp );
 
    modify( signing_witness, [&]( witness_object& _wit )
    {
@@ -3182,9 +3183,12 @@ void database::update_last_irreversible_block()
          } );
 
       uint32_t new_last_irreversible_block_num = wit_objs[offset]->last_confirmed_block_num;
-      
-      if(!has_hardfork(STEEMIT_HARDFORK_0_22) && offset < 1) // to fix replay stuck at: block #4735073 / #4745073 issue
-          new_last_irreversible_block_num = wit_objs.back()->last_confirmed_block_num;
+
+      // TODO: Need to remove the hardcode here.
+      // only used to fix the two witnesses, and branch from each other and cannot reach concensus.
+      // Alexey: hard code here for fix the less witness bug
+      //if(offset < 1)
+      //    new_last_irreversible_block_num = wit_objs.back()->last_confirmed_block_num;
 
       //ilog("witness: ${a}", ("a", std::string(wit_objs[offset]->owner)));
       //ilog("before: new_last_irreversible_block_num: ${a}", ("a", new_last_irreversible_block_num));
@@ -3201,7 +3205,7 @@ void database::update_last_irreversible_block()
 
    //ilog("after: dpo.last_irreversible_block_num: ${a}", ("a", dpo.last_irreversible_block_num));
    // Discards all undo history prior to revision
-   commit( dpo.last_irreversible_block_num ); // dpo.last_irreversible_block_num is 0 while head_block_num() < STEEMIT_START_MINER_VOTING_BLOCK is true.
+   commit( dpo.last_irreversible_block_num );
 
    if( !( get_node_properties().skip_flags & skip_block_log ) )
    {
@@ -3230,7 +3234,7 @@ void database::update_last_irreversible_block()
 
    // QUESTION: not sure what exactly below function is doing
    // doing this will resize the max_size of fork_db, which in turn delete old items out of the range of new _max_size.
-   _fork_db.set_max_size( dpo.head_block_number - dpo.last_irreversible_block_num + 1 ); // normally, dpo.head_block_number will be equal to dpo.last_irreversible_block_num here, so the resutl of calculation will be 1.
+   _fork_db.set_max_size( dpo.head_block_number - dpo.last_irreversible_block_num + 1 );
 } FC_CAPTURE_AND_RETHROW() }
 
 
@@ -3615,18 +3619,690 @@ asset database::get_savings_balance( const account_object& a, asset_symbol_type 
    }
 }
 
+void database::init_hardforks() // happens after init_genesis
+{
+   _hardfork_times[ 0 ] = fc::time_point_sec( STEEMIT_GENESIS_TIME );
+   _hardfork_versions[ 0 ] = hardfork_version( 0, 0 );
+
+   FC_ASSERT( STEEMIT_HARDFORK_0_1 == 1, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_1 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_1_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_1 ] = STEEMIT_HARDFORK_0_1_VERSION;
+
+   FC_ASSERT( STEEMIT_HARDFORK_0_2 == 2, "Invlaid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_2 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_2_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_2 ] = STEEMIT_HARDFORK_0_2_VERSION;
+
+   FC_ASSERT( STEEMIT_HARDFORK_0_3 == 3, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_3 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_3_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_3 ] = STEEMIT_HARDFORK_0_3_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_4 == 4, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_4 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_4_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_4 ] = STEEMIT_HARDFORK_0_4_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_5 == 5, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_5 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_5_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_5 ] = STEEMIT_HARDFORK_0_5_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_6 == 6, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_6 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_6_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_6 ] = STEEMIT_HARDFORK_0_6_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_7 == 7, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_7 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_7_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_7 ] = STEEMIT_HARDFORK_0_7_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_8 == 8, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_8 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_8_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_8 ] = STEEMIT_HARDFORK_0_8_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_9 == 9, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_9 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_9_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_9 ] = STEEMIT_HARDFORK_0_9_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_10 == 10, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_10 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_10_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_10 ] = STEEMIT_HARDFORK_0_10_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_11 == 11, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_11 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_11_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_11 ] = STEEMIT_HARDFORK_0_11_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_12 == 12, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_12 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_12_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_12 ] = STEEMIT_HARDFORK_0_12_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_13 == 13, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_13 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_13_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_13 ] = STEEMIT_HARDFORK_0_13_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_14 == 14, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_14 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_14_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_14 ] = STEEMIT_HARDFORK_0_14_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_15 == 15, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_15 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_15_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_15 ] = STEEMIT_HARDFORK_0_15_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_16 == 16, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_16 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_16_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_16 ] = STEEMIT_HARDFORK_0_16_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_17 == 17, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_17 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_17_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_17 ] = STEEMIT_HARDFORK_0_17_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_18 == 18, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_18 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_18_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_18 ] = STEEMIT_HARDFORK_0_18_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_19 == 19, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_19 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_19_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_19 ] = STEEMIT_HARDFORK_0_19_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_20 == 20, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_20 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_20_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_20 ] = STEEMIT_HARDFORK_0_20_VERSION;
+   FC_ASSERT( STEEMIT_HARDFORK_0_21 == 21, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_21 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_21_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_21 ] = STEEMIT_HARDFORK_0_21_VERSION;
+
+   FC_ASSERT( STEEMIT_HARDFORK_0_22 == 22, "Invalid hardfork configuration" );
+   _hardfork_times[ STEEMIT_HARDFORK_0_22 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_22_TIME );
+   _hardfork_versions[ STEEMIT_HARDFORK_0_22 ] = STEEMIT_HARDFORK_0_22_VERSION;
+
+   const auto& hardforks = get_hardfork_property_object();
+   FC_ASSERT( hardforks.last_hardfork <= STEEMIT_NUM_HARDFORKS, "Chain knows of more hardforks than configuration", ("hardforks.last_hardfork",hardforks.last_hardfork)("STEEMIT_NUM_HARDFORKS",STEEMIT_NUM_HARDFORKS) );
+   FC_ASSERT( _hardfork_versions[ hardforks.last_hardfork ] <= STEEMIT_BLOCKCHAIN_VERSION, "Blockchain version is older than last applied hardfork" );
+   FC_ASSERT( STEEMIT_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions[ STEEMIT_NUM_HARDFORKS ] );
+}
+
 void database::process_hardforks() // head_block_time already updated before this point
 {
    try
    {
-      hardforker h(*this);
-      h.process_hardforks();      
-   }FC_CAPTURE_AND_RETHROW()
+      // If there are upcoming hardforks and the next one is later, do nothing
+      const auto& hardforks = get_hardfork_property_object();
+
+      // only used for special cases.
+      while( hardforks.last_hardfork < STEEMIT_NUM_HARDFORKS
+             && _hardfork_times[ hardforks.last_hardfork + 1 ] <= head_block_time())
+      {
+         apply_hardfork( hardforks.last_hardfork + 1 );
+      }
+
+      // TODO: need to reopen below, and comment out above logic to enable "majority" function.
+      /*
+      if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) )
+      {
+         while( _hardfork_versions[ hardforks.last_hardfork ] < hardforks.next_hardfork
+            && hardforks.next_hardfork_time <= head_block_time() )
+         {
+            if( hardforks.last_hardfork < STEEMIT_NUM_HARDFORKS ) {
+               apply_hardfork( hardforks.last_hardfork + 1 );
+            }
+            else
+               throw unknown_hardfork_exception();
+         }
+      }
+      else
+      {
+         while( hardforks.last_hardfork < STEEMIT_NUM_HARDFORKS
+               && _hardfork_times[ hardforks.last_hardfork + 1 ] <= head_block_time()
+                 )//&& hardforks.last_hardfork < STEEMIT_HARDFORK_0_5__54 )
+         {
+            apply_hardfork( hardforks.last_hardfork + 1 );
+         }
+      }*/
+      }
+
+   FC_CAPTURE_AND_RETHROW()
 }
 
 bool database::has_hardfork( uint32_t hardfork )const
 {
-   return get_hardfork_property_object().current_hardfork >= hardfork;
+   return get_hardfork_property_object().processed_hardforks.size() > hardfork;
+}
+
+// for testing only, no production code should use this function.
+void database::set_hardfork( uint32_t hardfork, bool apply_now )
+{
+   auto const& hardforks = get_hardfork_property_object();
+
+   for( uint32_t i = hardforks.last_hardfork + 1; i <= hardfork && i <= STEEMIT_NUM_HARDFORKS; i++ )
+   {
+      if( i <= STEEMIT_HARDFORK_0_5__54 )
+         _hardfork_times[i] = head_block_time();
+      else
+      {
+         modify( hardforks, [&]( hardfork_property_object& hpo )
+         {
+            hpo.next_hardfork = _hardfork_versions[i];
+            hpo.next_hardfork_time = head_block_time();
+         } );
+      }
+
+      if( apply_now )
+         apply_hardfork( i );
+   }
+}
+
+void database::apply_hardfork( uint32_t hardfork )
+{
+   if( _log_hardforks )
+      elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", head_block_num()) );
+
+   switch( hardfork )
+   {
+      case STEEMIT_HARDFORK_0_1:
+         perform_vesting_share_split( 1000000 );
+#ifdef IS_TEST_NET
+         {
+            custom_operation test_op;
+            string op_msg = "Testnet: Hardfork applied";
+            test_op.data = vector< char >( op_msg.begin(), op_msg.end() );
+            test_op.required_auths.insert( STEEMIT_INIT_MINER_NAME );
+            operation op = test_op;   // we need the operation object to live to the end of this scope
+            operation_notification note( op );
+            notify_pre_apply_operation( note );
+            notify_post_apply_operation( note );
+         }
+         break;
+#endif
+         break;
+      case STEEMIT_HARDFORK_0_2:
+         retally_witness_votes();
+         break;
+      case STEEMIT_HARDFORK_0_3:
+         retally_witness_votes();
+         break;
+      case STEEMIT_HARDFORK_0_4:
+         reset_virtual_schedule_time(*this);
+         break;
+      case STEEMIT_HARDFORK_0_5:
+         break;
+      case STEEMIT_HARDFORK_0_6:
+         retally_witness_vote_counts();
+         retally_comment_children();
+         break;
+      case STEEMIT_HARDFORK_0_7:
+         break;
+      case STEEMIT_HARDFORK_0_8:
+         retally_witness_vote_counts(true);
+         break;
+      case STEEMIT_HARDFORK_0_9:
+         {
+            for( const std::string& acc : hardfork9::get_compromised_accounts() )
+            {
+               const account_object* account = find_account( acc );
+               if( account == nullptr )
+                  continue;
+
+               update_owner_authority( *account, authority( 1, public_key_type( "STM7sw22HqsXbz7D2CmJfmMwt9rimtk518dRzsR1f8Cgw52dQR1pR" ), 1 ) );
+
+               modify( get< account_authority_object, by_account >( account->name ), [&]( account_authority_object& auth )
+               {
+                  auth.active  = authority( 1, public_key_type( "STM7sw22HqsXbz7D2CmJfmMwt9rimtk518dRzsR1f8Cgw52dQR1pR" ), 1 );
+                  auth.posting = authority( 1, public_key_type( "STM7sw22HqsXbz7D2CmJfmMwt9rimtk518dRzsR1f8Cgw52dQR1pR" ), 1 );
+               });
+            }
+         }
+         break;
+      case STEEMIT_HARDFORK_0_10:
+         retally_liquidity_weight();
+         break;
+      case STEEMIT_HARDFORK_0_11:
+         break;
+      case STEEMIT_HARDFORK_0_12:
+         {
+            const auto& comment_idx = get_index< comment_index >().indices();
+
+            for( auto itr = comment_idx.begin(); itr != comment_idx.end(); ++itr )
+            {
+               // At the hardfork time, all new posts with no votes get their cashout time set to +12 hrs from head block time.
+               // All posts with a payout get their cashout time set to +30 days. This hardfork takes place within 30 days
+               // initial payout so we don't have to handle the case of posts that should be frozen that aren't
+               if( itr->parent_author == STEEMIT_ROOT_POST_PARENT )
+               {
+                  // Post has not been paid out and has no votes (cashout_time == 0 === net_rshares == 0, under current semmantics)
+                  if( itr->last_payout == fc::time_point_sec::min() && itr->cashout_time == fc::time_point_sec::maximum() )
+                  {
+                     modify( *itr, [&]( comment_object & c )
+                     {
+                        c.cashout_time = head_block_time() + STEEMIT_CASHOUT_WINDOW_SECONDS_PRE_HF17;
+                     });
+                  }
+                  // Has been paid out, needs to be on second cashout window
+                  else if( itr->last_payout > fc::time_point_sec() )
+                  {
+                     modify( *itr, [&]( comment_object& c )
+                     {
+                        c.cashout_time = c.last_payout + STEEMIT_SECOND_CASHOUT_WINDOW;
+                     });
+                  }
+               }
+            }
+
+            modify( get< account_authority_object, by_account >( STEEMIT_MINER_ACCOUNT ), [&]( account_authority_object& auth )
+            {
+               auth.posting = authority();
+               auth.posting.weight_threshold = 1;
+            });
+
+            modify( get< account_authority_object, by_account >( STEEMIT_NULL_ACCOUNT ), [&]( account_authority_object& auth )
+            {
+               auth.posting = authority();
+               auth.posting.weight_threshold = 1;
+            });
+
+            modify( get< account_authority_object, by_account >( STEEMIT_TEMP_ACCOUNT ), [&]( account_authority_object& auth )
+            {
+               auth.posting = authority();
+               auth.posting.weight_threshold = 1;
+            });
+         }
+         break;
+      case STEEMIT_HARDFORK_0_13:
+         break;
+      case STEEMIT_HARDFORK_0_14:
+         break;
+      case STEEMIT_HARDFORK_0_15:
+         break;
+      case STEEMIT_HARDFORK_0_16:
+         {
+            modify( get_feed_history(), [&]( feed_history_object& fho )
+            {
+               while( fho.price_history.size() > STEEMIT_FEED_HISTORY_WINDOW )
+                  fho.price_history.pop_front();
+            });
+         }
+         break;
+      case STEEMIT_HARDFORK_0_17:
+         {
+            static_assert(
+               STEEMIT_MAX_VOTED_WITNESSES_HF0 + STEEMIT_MAX_MINER_WITNESSES_HF0 + STEEMIT_MAX_RUNNER_WITNESSES_HF0 == STEEMIT_MAX_WITNESSES,
+               "HF0 witness counts must add up to STEEMIT_MAX_WITNESSES" );
+            static_assert(
+               STEEMIT_MAX_VOTED_WITNESSES_HF17 + STEEMIT_MAX_MINER_WITNESSES_HF17 + STEEMIT_MAX_RUNNER_WITNESSES_HF17 == STEEMIT_MAX_WITNESSES,
+               "HF17 witness counts must add up to STEEMIT_MAX_WITNESSES" );
+
+            modify( get_witness_schedule_object(), [&]( witness_schedule_object& wso )
+            {
+               wso.max_voted_witnesses = STEEMIT_MAX_VOTED_WITNESSES_HF17;
+               wso.max_miner_witnesses = STEEMIT_MAX_MINER_WITNESSES_HF17;
+               wso.max_runner_witnesses = STEEMIT_MAX_RUNNER_WITNESSES_HF17;
+            });
+
+            const auto& gpo = get_dynamic_global_properties();
+
+            auto post_rf = create< reward_fund_object >( [&]( reward_fund_object& rfo )
+            {
+               rfo.name = STEEMIT_POST_REWARD_FUND_NAME;
+               rfo.last_update = head_block_time();
+               rfo.content_constant = STEEMIT_CONTENT_CONSTANT_HF0;
+               rfo.percent_curation_rewards = STEEMIT_1_PERCENT * 25;
+               rfo.percent_content_rewards = STEEMIT_100_PERCENT;
+               rfo.reward_balance = gpo.total_reward_fund_steem;
+#ifndef IS_TEST_NET
+               rfo.recent_claims = STEEMIT_HF_17_RECENT_CLAIMS;
+#endif
+               rfo.author_reward_curve = curve_id::quadratic;
+               rfo.curation_reward_curve = curve_id::quadratic_curation;
+            });
+
+            // As a shortcut in payout processing, we use the id as an array index.
+            // The IDs must be assigned this way. The assertion is a dummy check to ensure this happens.
+            FC_ASSERT( post_rf.id._id == 0 );
+
+            modify( gpo, [&]( dynamic_global_property_object& g )
+            {
+               g.total_reward_fund_steem = asset( 0, STEEM_SYMBOL );
+               g.total_reward_shares2 = 0;
+            });
+
+            /*
+            * For all current comments we will either keep their current cashout time, or extend it to 1 week
+            * after creation.
+            *
+            * We cannot do a simple iteration by cashout time because we are editting cashout time.
+            * More specifically, we will be adding an explicit cashout time to all comments with parents.
+            * To find all discussions that have not been paid out we fir iterate over posts by cashout time.
+            * Before the hardfork these are all root posts. Iterate over all of their children, adding each
+            * to a specific list. Next, update payout times for all discussions on the root post. This defines
+            * the min cashout time for each child in the discussion. Then iterate over the children and set
+            * their cashout time in a similar way, grabbing the root post as their inherent cashout time.
+            */
+            const auto& comment_idx = get_index< comment_index, by_cashout_time >();
+            const auto& by_root_idx = get_index< comment_index, by_root >();
+            vector< const comment_object* > root_posts;
+            root_posts.reserve( STEEMIT_HF_17_NUM_POSTS );
+            vector< const comment_object* > replies;
+            replies.reserve( STEEMIT_HF_17_NUM_REPLIES );
+
+            for( auto itr = comment_idx.begin(); itr != comment_idx.end() && itr->cashout_time < fc::time_point_sec::maximum(); ++itr )
+            {
+               root_posts.push_back( &(*itr) );
+
+               for( auto reply_itr = by_root_idx.lower_bound( itr->id ); reply_itr != by_root_idx.end() && reply_itr->root_comment == itr->id; ++reply_itr )
+               {
+                  replies.push_back( &(*reply_itr) );
+               }
+            }
+
+            for( auto itr : root_posts )
+            {
+               modify( *itr, [&]( comment_object& c )
+               {
+                  c.cashout_time = std::max( c.created + STEEMIT_CASHOUT_WINDOW_SECONDS, c.cashout_time );
+               });
+            }
+
+            for( auto itr : replies )
+            {
+               modify( *itr, [&]( comment_object& c )
+               {
+                  c.cashout_time = std::max( calculate_discussion_payout_time( c ), c.created + STEEMIT_CASHOUT_WINDOW_SECONDS );
+               });
+            }
+         }
+         break;
+      case STEEMIT_HARDFORK_0_18:
+         break;
+      case STEEMIT_HARDFORK_0_19:
+         {
+            modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+            {
+               gpo.vote_power_reserve_rate = 10;
+            });
+
+            modify( get< reward_fund_object, by_name >( STEEMIT_POST_REWARD_FUND_NAME ), [&]( reward_fund_object &rfo )
+            {
+#ifndef IS_TEST_NET
+               rfo.recent_claims = STEEMIT_HF_19_RECENT_CLAIMS;
+#endif
+               rfo.author_reward_curve = curve_id::linear;
+               rfo.curation_reward_curve = curve_id::square_root;
+            });
+
+            /* Remove all 0 delegation objects */
+            vector< const vesting_delegation_object* > to_remove;
+            const auto& delegation_idx = get_index< vesting_delegation_index, by_id >();
+            auto delegation_itr = delegation_idx.begin();
+
+            while( delegation_itr != delegation_idx.end() )
+            {
+               if( delegation_itr->vesting_shares.amount == 0 )
+                  to_remove.push_back( &(*delegation_itr) );
+
+               ++delegation_itr;
+            }
+
+            for( const vesting_delegation_object* delegation_ptr: to_remove )
+            {
+               remove( *delegation_ptr );
+            }
+         }
+         break;
+      case STEEMIT_HARDFORK_0_20:
+         break;
+      case STEEMIT_HARDFORK_0_21:
+      {
+         #ifdef IS_TEST_NET
+            // ignore process of hardfork 21 for testnet,
+            // since testnet doesn't have account "initminer108"
+            break;
+         #endif
+      
+         /* Temp Solution to excess total_vesting_shares inspired by: Fix negative vesting withdrawals #2583
+          https://github.com/steemit/steem/pull/2583/commits/1197e2f5feb7f76fa137102c26536a3571d8858a */
+          auto account = find< account_object, by_name >( "initminer108" );
+
+          ilog( "HF21 | Account initminer108 VESTS :  ${p}", ("p", account->vesting_shares) );
+
+          if( account != nullptr && account->vesting_shares.amount > 0 )
+          {
+               auto session = start_undo_session( true );
+
+               modify( *account, []( account_object& a )
+               {             
+                  auto a_hf_vesting = asset( 0, VESTS_SYMBOL);      
+                  auto a_hf_steem = asset( a.balance.amount + 5450102000, STEEM_SYMBOL);   /*Total Weku balance 40450102.000*/
+                  ilog( "Account VESTS before :  ${p}", ("p", a.vesting_shares) );   
+                  ilog( "Account Balance Before :  ${p}", ("p", a.balance) );                    
+                  a.vesting_shares = a_hf_vesting;
+                  a.balance = a_hf_steem;            
+                  ilog( "Account VESTS After :  ${p}", ("p", a.vesting_shares) );   
+                  ilog( "Account Weku Balance After :  ${p}", ("p", a.balance) );              
+               });
+
+               session.squash();
+               
+               /* HF21 Retally of balances and Vesting*/
+               auto gpo = get_dynamic_global_properties();          
+               auto im108_hf_vesting = asset( gpo.total_vesting_shares.amount - 297176020061140420, VESTS_SYMBOL); /* Need 6 decimals */ 
+               auto im108_hf_delta = asset( gpo.current_supply.amount + 5450102000, STEEM_SYMBOL); /* Need 3 decimals 467502205.345*/ 
+               modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+               {
+                  gpo.current_supply = im108_hf_delta;         // Delta balance initminer108
+                  gpo.virtual_supply = im108_hf_delta;         // Delta balance initminer108
+                  gpo.total_vesting_shares = im108_hf_vesting; // Total removed vesting from initminer108
+               });
+
+               // Remove active witnesses
+               // We know that initminer is in witness_index and not in active witness list
+               // by doing this we can deactive other witnesses and only activate initminer.
+               const auto &widx = get_index<witness_index>().indices().get<by_name>();
+               for (auto itr = widx.begin(); itr != widx.end(); ++itr) {
+                     modify(*itr, [&](witness_object &wo) {
+                        if(wo.owner == account_name_type(STEEMIT_INIT_MINER_NAME)){
+                           wo.signing_key = public_key_type(STEEMIT_INIT_PUBLIC_KEY);
+                           wo.schedule = witness_object::miner;
+                        }
+                        else
+                           wo.signing_key = public_key_type();
+                     });
+               }
+
+               // Update witness schedule object
+               const witness_schedule_object &wso = get_witness_schedule_object();
+               modify(wso, [&](witness_schedule_object &_wso) {
+                     for (size_t i = 0; i < STEEMIT_MAX_WITNESSES; i++) {
+                        _wso.current_shuffled_witnesses[i] = account_name_type();
+                     }
+                     _wso.current_shuffled_witnesses[0] = STEEMIT_INIT_MINER_NAME;
+                     // by update value to 1, so the % operation will return 0,
+                     // which matches the index of initminer in current_shuffled_witnesses
+                     _wso.num_scheduled_witnesses = 1;
+               });
+
+               }
+            }  
+            break;
+         
+      case STEEMIT_HARDFORK_0_22:
+         {
+            ilog( "Applying HF_22 vesting FIXES... (SHARE SPLIT 1000)"); 
+
+           try
+           {
+
+            // Update all VESTS in accounts and the total VESTS in the dgpo
+            const auto& aidx = get_index< account_index, by_name >();
+            auto current = aidx.begin();
+            auto totalv = asset( 0, VESTS_SYMBOL);   
+            auto totalp = asset( 0, VESTS_SYMBOL);   
+            ilog( "Recalculating: Power Downs | Delegations IN/OUT | Pending Rewards | Balances ");
+            
+            while( current != aidx.end() )
+            {
+               const auto& account = *current;                
+               modify( account , [&]( account_object& a )
+               {
+                  a.received_vesting_shares.amount = 0;
+                  a.delegated_vesting_shares.amount = 0;                      
+               });
+               ++current;
+            }
+            
+            // Modifying delegations one by one
+            const auto& didx = get_index<vesting_delegation_index>().indices().get<by_delegation>();
+            auto d_itr = didx.begin();
+            while( d_itr != didx.end() )
+            {
+               const auto& delegation = *d_itr;
+               auto new_delegation = delegation.vesting_shares.amount/1000;
+               modify( delegation, [&]( vesting_delegation_object& obj )
+               {
+                  obj.vesting_shares.amount = new_delegation;
+               });
+               
+               const auto delegatee = aidx.find( delegation.delegatee );
+               modify( *delegatee , [&]( account_object& a )
+               {
+                  a.received_vesting_shares.amount += new_delegation;
+               });
+               
+               const auto delegator = aidx.find( delegation.delegator );
+               modify( *delegator , [&]( account_object& a )
+               {
+                  a.delegated_vesting_shares.amount += new_delegation;
+               });
+               ++d_itr;
+            }
+
+            // Updating the balances after split one by one            
+            current = aidx.begin();
+            while( current != aidx.end() )
+            {
+              const auto& account = *current;
+              auto new_vesting = asset( account.vesting_shares.amount/1000, VESTS_SYMBOL);    
+              auto new_pending = asset( account.reward_vesting_balance.amount/1000, VESTS_SYMBOL);
+              
+              modify( account , [&]( account_object& a )
+              {
+                  a.vesting_shares = new_vesting;
+                  a.reward_vesting_balance = new_pending;
+                  a.to_withdraw           /= 1000;
+                  a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS, VESTS_SYMBOL );
+                  if( a.vesting_withdraw_rate.amount == 0 )
+                      a.vesting_withdraw_rate.amount = 1;
+                  
+                  for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+                     a.proxied_vsf_votes[i] = 0;                
+                  
+                  //ilog( "Recalculating: Power Downs | Delegations IN/OUT | Rewards Pending | Balances : ${p}", ("p", a.name));                      
+              });
+              totalv += new_vesting;
+              totalp += new_pending;
+              ++current;
+            }
+            
+            ilog( "Recalculation of recent claims");            
+            const auto& reward_idx = get_index< reward_fund_index, by_id >();
+
+            for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
+            {
+              modify( *itr, [&]( reward_fund_object& rfo )
+              {
+                 rfo.recent_claims /= 1000;
+              });
+            }
+            
+            ilog( "Recalculation of witness & Proxy votes");         
+            // Set all votes to 0 (reset)            
+            const auto& witness_idx = get_index< witness_index >().indices();
+
+               // Clear all witness votes
+               for( auto itr = witness_idx.begin(); itr != witness_idx.end(); ++itr )
+               {
+                  modify( *itr, [&]( witness_object& w )
+                  {
+                     w.votes = 0;
+                     w.virtual_position = 0;
+                  } );
+               }
+            //complete proxies votes
+            const auto& account_idx = get_index< account_index >().indices();
+         
+            std::array<share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1> delta;
+
+            for( int i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+               delta[i] = 0;
+           
+            for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
+            {
+               delta[0] = itr->vesting_shares.amount;
+               adjust_proxied_witness_votes( *itr, delta );
+            }
+            
+            ilog( "Recalculation Totals in GPO");  
+ 
+	    /* 
+	    Fixing HF21 wrong virtual.supply declaration 
+	    (gpo.current_sbd_supply * get_feed_history().current_median_history + gpo.current_supply)
+	    the result at block 9585623 is 469768240.812 WEKU this Needs 3 decimals so the point is removed, 
+	    it was chosen not use a fixed value but to calculate it the same as is done on ASSERT of 
+	    validate_invariants() since the SBD/WKD price is 1 to 1 at this point in time the amount 
+	    was directly transposed to avoid the possibility of mismatches if the HF is replayed when the price
+	    is something else.
+	    */  	
+            auto gpo = get_dynamic_global_properties();
+	    auto hf_virtual = asset( gpo.current_sbd_supply.amount + gpo.current_supply.amount, STEEM_SYMBOL); // Option B 
+		   
+            modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+            {
+                gpo.total_vesting_shares = totalv;
+                gpo.pending_rewarded_vesting_shares = totalp;
+		gpo.virtual_supply = hf_virtual ;              // Corrected virtual supply from tally error carried from HF21
+            }); 
+            
+            ilog( "Update Pending post payout rewards  ");              
+            const auto& comments = get_index< comment_index >().indices();
+            for( const auto& comment : comments )
+            {
+             modify( comment, [&]( comment_object& c )
+             {
+                c.net_rshares       /= 1000;
+                c.abs_rshares       /= 1000;
+                c.vote_rshares      /= 1000;
+             } );
+            }
+           }
+           FC_CAPTURE_AND_RETHROW()
+
+            
+            /* HF22 Validate Retally of balances and Vesting on HF21*/      
+            ilog( "Validating Retally of balances and Vesting on HF21");             
+            validate_invariants();   
+            ilog( "Performing account liberation checks");            
+            /* 
+               HF22 Recover SPAM and Ilegal Accounts
+               This is a series of accounts that have dedicated either 
+               to Bloating base64 spam or automated bot farming
+               Exploiting weaknesses introduced by modifications in the code
+            */      
+            for( const std::string& acc : hardfork22::get_compromised_accounts22() )
+            {
+             const account_object* account = find_account( acc );
+             if( account == nullptr )
+                continue;
+             update_owner_authority( *account, authority( 1, public_key_type( "WKA5TN8YcDK63URPUL78yNwGabQS5ey5ibyA7MZuuQd25yi6cCe3t" ), 1 ) );
+             modify( get< account_authority_object, by_account >( account->name ), [&]( account_authority_object& auth )
+             {
+              auth.active  = authority( 1, public_key_type( "WKA5iU9khpdUkYyqphXeCNy9zM1TBuqjDRCZuPyZrCosuDTYHrtxk" ), 1 );
+              auth.posting = authority( 1, public_key_type( "WKA5kj1HnNGPYAWaQBxnTk5TbuGakcNN9hQWFtPTEVne3oJt5deED" ), 1 );
+              //ilog( "Recovering stolen accounts: ${p}", ("p", account->name)); 
+             });
+            }
+         }         
+         break;
+      default:
+         break;
+   }
+
+   modify( get_hardfork_property_object(), [&]( hardfork_property_object& hfp )
+   {
+      FC_ASSERT( hardfork == hfp.last_hardfork + 1, "Hardfork being applied out of order", ("hardfork",hardfork)("hfp.last_hardfork",hfp.last_hardfork) );
+      FC_ASSERT( hfp.processed_hardforks.size() == hardfork, "Hardfork being applied out of order" );
+      hfp.processed_hardforks.push_back( _hardfork_times[ hardfork ] );
+      hfp.last_hardfork = hardfork;
+      hfp.current_hardfork_version = _hardfork_versions[ hardfork ];
+      FC_ASSERT( hfp.processed_hardforks[ hfp.last_hardfork ] == _hardfork_times[ hfp.last_hardfork ], "Hardfork processing failed sanity check..." );
+   } );
+
+   push_virtual_operation( hardfork_operation( hardfork ), true );
+}
+
+void database::retally_liquidity_weight() {
+   const auto& ridx = get_index< liquidity_reward_balance_index >().indices().get< by_owner >();
+   for( const auto& i : ridx ) {
+      modify( i, []( liquidity_reward_balance_object& o ){
+         o.update_weight(true/*HAS HARDFORK10 if this method is called*/);
+      });
+   }
 }
 
 /**
@@ -3757,6 +4433,223 @@ void database::validate_invariants()const
       }
    }
    FC_CAPTURE_LOG_AND_RETHROW( (head_block_num()) );
+}
+
+void database::perform_vesting_share_split( uint32_t magnitude )
+{
+   try
+   {
+      modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
+      {
+         d.total_vesting_shares.amount *= magnitude;
+         // will be adjusted at bottom by function: adjust_rshares2
+         d.total_reward_shares2 = 0;
+      } );
+
+      // Need to update all VESTS in accounts and the total VESTS in the dgpo
+      for( const auto& account : get_index<account_index>().indices() )
+      {
+         modify( account, [&]( account_object& a )
+         {
+            a.vesting_shares.amount *= magnitude;
+            a.withdrawn             *= magnitude;
+            a.to_withdraw           *= magnitude;
+            a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
+            if( a.vesting_withdraw_rate.amount == 0 )
+               a.vesting_withdraw_rate.amount = 1;
+
+            for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+               a.proxied_vsf_votes[i] *= magnitude;
+         } );
+      }
+
+      const auto& comments = get_index< comment_index >().indices();
+      for( const auto& comment : comments )
+      {
+         modify( comment, [&]( comment_object& c )
+         {
+            c.net_rshares       *= magnitude;
+            c.abs_rshares       *= magnitude;
+            c.vote_rshares      *= magnitude;
+         } );
+      }
+
+      for( const auto& c : comments )
+      {
+         if( c.net_rshares.value > 0 )
+            adjust_rshares2( c, 0, util::evaluate_reward_curve( c.net_rshares.value ) );
+      }
+
+   }
+   FC_CAPTURE_AND_RETHROW()
+}
+
+// only used for hardfork_22
+void database::perform_vesting_share_scale_down( uint32_t denom )
+{
+   try
+   {
+      asset total_vesting = asset(0, VESTS_SYMBOL);
+      asset total_pending = asset(0, VESTS_SYMBOL);
+      share_type temp_vesting = 0;
+      share_type temp_pending = 0;
+      // update related shares in all accounts
+      for( const auto& account : get_index<account_index>().indices() )
+      {
+         temp_vesting = account.vesting_shares.amount / denom;
+         temp_pending = account.reward_vesting_balance.amount / denom;
+         total_vesting.amount += temp_vesting;
+         total_pending.amount += temp_pending;
+
+         modify( account, [&]( account_object& a )
+         {
+               a.vesting_shares.amount = temp_vesting;
+               a.reward_vesting_balance.amount = temp_pending;
+               a.withdrawn             /= denom;
+               a.to_withdraw           /= denom;
+               a.vesting_withdraw_rate  = asset( a.to_withdraw / STEEMIT_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
+               if( a.vesting_withdraw_rate.amount == 0 )
+                  a.vesting_withdraw_rate.amount = 1;
+
+               for( uint32_t i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+                  a.proxied_vsf_votes[i] /= denom;
+         } );
+      }
+
+      fc::uint128 total_rshares2 = 0;
+      share_type  temp_rshares2 = 0;
+      // update related shares in all comments
+      const auto& comments = get_index< comment_index >().indices();
+      for( const auto& comment : comments )
+      {
+         temp_rshares2 = comment.net_rshares / denom;
+         if(temp_rshares2 > 0)
+            total_rshares2 += util::evaluate_reward_curve( temp_rshares2.value ) ;
+         
+         modify( comment, [&]( comment_object& c )
+         {
+               c.net_rshares        = temp_rshares2;
+               c.abs_rshares       /= denom;
+               c.vote_rshares      /= denom;
+         } );
+      }
+
+      // adjust total_vesting_shares
+      modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
+      {
+         d.total_vesting_shares = total_vesting;
+         d.pending_rewarded_vesting_shares = total_pending;
+         d.total_reward_shares2 = total_rshares2;
+      } );
+
+      // re-validate the whole system
+      validate_invariants();
+
+   }FC_CAPTURE_AND_RETHROW()
+}
+
+void database::retally_comment_children()
+{
+   const auto& cidx = get_index< comment_index >().indices();
+
+   // Clear children counts
+   for( auto itr = cidx.begin(); itr != cidx.end(); ++itr )
+   {
+      modify( *itr, [&]( comment_object& c )
+      {
+         c.children = 0;
+      });
+   }
+
+   for( auto itr = cidx.begin(); itr != cidx.end(); ++itr )
+   {
+      if( itr->parent_author != STEEMIT_ROOT_POST_PARENT )
+      {
+// Low memory nodes only need immediate child count, full nodes track total children
+#ifdef IS_LOW_MEM
+         modify( get_comment( itr->parent_author, itr->parent_permlink ), [&]( comment_object& c )
+         {
+            c.children++;
+         });
+#else
+         const comment_object* parent = &get_comment( itr->parent_author, itr->parent_permlink );
+         while( parent )
+         {
+            modify( *parent, [&]( comment_object& c )
+            {
+               c.children++;
+            });
+
+            if( parent->parent_author != STEEMIT_ROOT_POST_PARENT )
+               parent = &get_comment( parent->parent_author, parent->parent_permlink );
+            else
+               parent = nullptr;
+         }
+#endif
+      }
+   }
+}
+
+void database::retally_witness_votes()
+{
+   const auto& witness_idx = get_index< witness_index >().indices();
+
+   // Clear all witness votes
+   for( auto itr = witness_idx.begin(); itr != witness_idx.end(); ++itr )
+   {
+      modify( *itr, [&]( witness_object& w )
+      {
+         w.votes = 0;
+         w.virtual_position = 0;
+      } );
+   }
+
+   const auto& account_idx = get_index< account_index >().indices();
+
+   // Apply all existing votes by account
+   for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
+   {
+      if( itr->proxy != STEEMIT_PROXY_TO_SELF_ACCOUNT ) continue;
+
+      const auto& a = *itr;
+
+      const auto& vidx = get_index<witness_vote_index>().indices().get<by_account_witness>();
+      auto wit_itr = vidx.lower_bound( boost::make_tuple( a.id, witness_id_type() ) );
+      while( wit_itr != vidx.end() && wit_itr->account == a.id )
+      {
+         adjust_witness_vote( get(wit_itr->witness), a.witness_vote_weight() );
+         ++wit_itr;
+      }
+   }
+}
+
+void database::retally_witness_vote_counts( bool force )
+{
+   const auto& account_idx = get_index< account_index >().indices();
+
+   // Check all existing votes by account
+   for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
+   {
+      const auto& a = *itr;
+      uint16_t witnesses_voted_for = 0;
+      if( force || (a.proxy != STEEMIT_PROXY_TO_SELF_ACCOUNT  ) )
+      {
+        const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
+        auto wit_itr = vidx.lower_bound( boost::make_tuple( a.id, witness_id_type() ) );
+        while( wit_itr != vidx.end() && wit_itr->account == a.id )
+        {
+           ++witnesses_voted_for;
+           ++wit_itr;
+        }
+      }
+      if( a.witnesses_voted_for != witnesses_voted_for )
+      {
+         modify( a, [&]( account_object& account )
+         {
+            account.witnesses_voted_for = witnesses_voted_for;
+         } );
+      }
+   }
 }
 
 } } //steemit::chain
