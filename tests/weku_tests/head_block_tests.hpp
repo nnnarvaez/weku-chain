@@ -1,7 +1,7 @@
 #pragma once
 
 #include <boost/test/unit_test.hpp>
-#include "new_clazz.hpp"
+#include "main_tests.hpp"
 
 BOOST_AUTO_TEST_SUITE(head_block_tests)
 
