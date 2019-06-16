@@ -25,7 +25,7 @@ void hardforker::process(idatabase& db)
         // so we know exactly when hardfork 20 and hardfork 21 should be applied on which block.
         // that's why we can pinpoint it to happen on specific block num
         // but hardfork 22 is not happend yet, so we allow it to be triggered at a future block.
-        case 1u: 
+        case 1: 
             //apply_hardforks_to_19(db);
             db.last_hardfork(HARDFORK_19);
             break;

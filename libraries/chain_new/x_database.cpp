@@ -23,19 +23,12 @@ const hardfork_votes_type& x_database::next_hardfork_votes() const
     return _next_hardfork_votes;
 }
 
-// void x_database::apply_hardfork(uint32_t hardfork)
-// {
-//     if (hardfork == 0)
-//         throw std::runtime_error("cannot apply hardfork 0");
-//     _last_hardfork = hardfork;
-// }
-
 bool x_database::apply_block(const signed_block& b, uint32_t skip){
 
     _ledger_blocks.push_back(b);
 
     _head_block_num++;
-    
+
     hardforker hf;
     hf.process(*this);
         

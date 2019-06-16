@@ -394,7 +394,7 @@ namespace steemit { namespace chain {
          void perform_vesting_share_scale_down( uint32_t magnitude );
          void retally_comment_children();
          void retally_witness_votes();
-         void retally_witness_vote_counts( bool force = false );
+         
          void retally_liquidity_weight();
          void update_virtual_supply();
 

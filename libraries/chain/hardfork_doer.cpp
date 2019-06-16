@@ -1,6 +1,36 @@
-#include<steemit/chain/hardforker.hpp>
+#include<steemit/chain/hardfork_doer.hpp>
 
 namespace steemit{namespace chain {
+
+void hardfork_doer::retally_witness_vote_counts( bool force )
+{
+   const auto& account_idx = _db.get_index< account_index >().indices();
+
+   // Check all existing votes by account
+   for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
+   {
+      const auto& a = *itr;
+      uint16_t witnesses_voted_for = 0;
+      if( force || (a.proxy != STEEMIT_PROXY_TO_SELF_ACCOUNT  ) )
+      {
+        const auto& vidx = _db.get_index< witness_vote_index >().indices().get< by_account_witness >();
+        auto wit_itr = vidx.lower_bound( boost::make_tuple( a.id, witness_id_type() ) );
+        while( wit_itr != vidx.end() && wit_itr->account == a.id )
+        {
+           ++witnesses_voted_for;
+           ++wit_itr;
+        }
+      }
+      if( a.witnesses_voted_for != witnesses_voted_for )
+      {
+         _db.modify( a, [&]( account_object& account )
+         {
+            account.witnesses_voted_for = witnesses_voted_for;
+         } );
+      }
+   }
+}
+
 /* 
 // for hardfork 1
 void hardforker::perform_vesting_share_split( uint32_t magnitude )
@@ -86,35 +116,8 @@ void hardforker::retally_witness_votes()
    }
 }
 
-// for hardfork 6 and 8
-void hardforker::retally_witness_vote_counts( bool force )
-{
-   const auto& account_idx = get_index< account_index >().indices();
 
-   // Check all existing votes by account
-   for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
-   {
-      const auto& a = *itr;
-      uint16_t witnesses_voted_for = 0;
-      if( force || (a.proxy != STEEMIT_PROXY_TO_SELF_ACCOUNT  ) )
-      {
-        const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
-        auto wit_itr = vidx.lower_bound( boost::make_tuple( a.id, witness_id_type() ) );
-        while( wit_itr != vidx.end() && wit_itr->account == a.id )
-        {
-           ++witnesses_voted_for;
-           ++wit_itr;
-        }
-      }
-      if( a.witnesses_voted_for != witnesses_voted_for )
-      {
-         modify( a, [&]( account_object& account )
-         {
-            account.witnesses_voted_for = witnesses_voted_for;
-         } );
-      }
-   }
-}
+
 
 // for hardfork 06
 void hardforker::retally_comment_children()
@@ -704,20 +707,5 @@ void hardforker::do_hardfork_22(){
 //    _process_hardforks(_db.get_hardfork_property());
 // }
 
-// void hardforker::_process_hardforks(hardfork_property_object& hpo){
-//    // before finishing init_genesis, the process_hardforks should be never invoked.
-//    if(hpo.head_block_time == time_point_sec(STEEMIT_GENESIS_TIME)) return;
-   
-//       if(hpo.current_hardfork < STEEMIT_HARDFORK_0_21){
-//          for(uint32_t i = 1; i <= STEEMIT_HARDFORK_0_21; i++)
-//             if(hpo.current_hardfork < STEEMIT_HARDFORK_0_21
-//                && hpo.head_block_time >= hardfork_times[hpo.current_hardfork + 1])
-//                apply_hardfork(hpo, hpo.current_hardfork + 1);   
-//       }else{ // after hardfork 21 applied
-//          for(uint32_t i = STEEMIT_HARDFORK_0_22; i <= STEEMIT_NUM_HARDFORKS; i++)
-//             if(hpo.current_hardfork < hpo.next_hardfork && hpo.head_block_time >= hpo.next_hardfork_time)            
-//                apply_hardfork(hpo, hpo.current_hardfork + 1);  
-//       }  
-// }
 
-// }}
+}}
