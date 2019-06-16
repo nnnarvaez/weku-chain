@@ -8,7 +8,7 @@ namespace steemit{namespace chain{
         hardfork_doer(itemp_database& db):_db(db){}
 
         // for hardfork 6 and 8
-        void retally_witness_vote_counts( bool force );
+        void retally_witness_vote_counts( bool force = false );
 
         private:
             itemp_database& _db;

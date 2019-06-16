@@ -8,7 +8,7 @@
 #include <steemit/chain/fork_database.hpp>
 #include <steemit/chain/block_log.hpp>
 #include <steemit/chain/operation_notification.hpp>
-
+#include <steemit/chain/itemp_database.hpp>
 #include <steemit/protocol/protocol.hpp>
 
 //#include <graphene/db2/database.hpp>
@@ -44,11 +44,13 @@ namespace steemit { namespace chain {
     *   database is an object database in memory, db has multiple containers (named index here, kind of table)
     *   each container(index) has many same type objects.
     */
-   class database : public chainbase::database
+   class database : public itemp_database //chainbase::database
    {
       public:
          database();
          ~database();
+
+         virtual void foo() override{}
 
          bool is_producing()const { return _is_producing; }
          void set_producing( bool p ) { _is_producing = p;  }

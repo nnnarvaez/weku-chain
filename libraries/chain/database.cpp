@@ -22,6 +22,7 @@
 #include <steemit/chain/util/reward.hpp>
 #include <steemit/chain/util/uint256.hpp>
 #include <steemit/chain/util/reward.hpp>
+#include <steemit/chain/hardfork_doer.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
@@ -3774,6 +3775,7 @@ void database::apply_hardfork( uint32_t hardfork )
 {
    if( _log_hardforks )
       elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", head_block_num()) );
+   hardfork_doer hfdoer(*this);
 
    switch( hardfork )
    {
@@ -3805,13 +3807,13 @@ void database::apply_hardfork( uint32_t hardfork )
       case STEEMIT_HARDFORK_0_5:
          break;
       case STEEMIT_HARDFORK_0_6:
-         retally_witness_vote_counts();
+         hfdoer.retally_witness_vote_counts();
          retally_comment_children();
          break;
       case STEEMIT_HARDFORK_0_7:
          break;
       case STEEMIT_HARDFORK_0_8:
-         retally_witness_vote_counts(true);
+         hfdoer.retally_witness_vote_counts(true);
          break;
       case STEEMIT_HARDFORK_0_9:
          {
