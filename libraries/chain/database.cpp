@@ -273,6 +273,7 @@ void database::last_hardfork(uint32_t hardfork)
 hardfork_votes_type database::next_hardfork_votes(){
    return _next_hardfork_votes;
 }
+
 void database::next_hardfork_votes(hardfork_votes_type next_hardfork_votes)
 {
     _next_hardfork_votes = next_hardfork_votes;
@@ -333,7 +334,6 @@ block_id_type database::get_block_id_for_num( uint32_t block_num )const
    FC_ASSERT( bid != block_id_type() );
    return bid;
 }
-
 
 optional<signed_block> database::fetch_block_by_id( const block_id_type& id )const
 { try {
@@ -482,12 +482,6 @@ const savings_withdraw_object* database::find_savings_withdraw( const account_na
    return find< savings_withdraw_object, by_from_rid >( boost::make_tuple( owner, request_id ) );
 }
 
-const dynamic_global_property_object&database::get_dynamic_global_properties() const
-{ try {
-    // should we embeded gpo as npo(as below) in database instead of index/table which only has one object?
-   return get< dynamic_global_property_object >();
-} FC_CAPTURE_AND_RETHROW() }
-
 const node_property_object& database::get_node_properties() const
 {
    return _node_property_object;
@@ -496,6 +490,12 @@ const node_property_object& database::get_node_properties() const
 const feed_history_object& database::get_feed_history()const
 { try {
    return get< feed_history_object >();
+} FC_CAPTURE_AND_RETHROW() }
+
+const dynamic_global_property_object&database::get_dynamic_global_properties() const
+{ try {
+    // should we embeded gpo as npo(as below) in database instead of index/table which only has one object?
+   return get< dynamic_global_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
 const witness_schedule_object& database::get_witness_schedule_object()const
@@ -1725,9 +1725,9 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
          }
          else
          {
-#ifdef CLEAR_VOTES
+            #ifdef CLEAR_VOTES
             remove( cur_vote );
-#endif
+            #endif
          }
       }
 
@@ -2036,11 +2036,11 @@ asset database::get_pow_reward()const
 {
    const auto& props = get_dynamic_global_properties();
 
-#ifndef IS_TEST_NET
+   #ifndef IS_TEST_NET
    /// 0 block rewards until at least STEEMIT_MAX_WITNESSES have produced a POW
    if( props.num_pow_witnesses < STEEMIT_MAX_WITNESSES && props.head_block_number < STEEMIT_START_VESTING_BLOCK )
       return asset( 0, STEEM_SYMBOL );
-#endif
+   #endif
 
    static_assert( STEEMIT_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
    static_assert( STEEMIT_MAX_WITNESSES == 21, "this code assumes 21 per round" );
@@ -2048,13 +2048,12 @@ asset database::get_pow_reward()const
    return std::max( percent, STEEMIT_MIN_POW_REWARD );
 }
 
-
 void database::pay_liquidity_reward()
 {
-#ifdef IS_TEST_NET
+   #ifdef IS_TEST_NET
    if( !liquidity_rewards_enabled )
       return;
-#endif
+   #endif
 
    if( (head_block_num() % STEEMIT_LIQUIDITY_REWARD_BLOCKS) == 0 )
    {

@@ -1,6 +1,6 @@
 #include <wk/chain_new/mock_hardforker.hpp>
 
-namespace wk {namespace chain_new {
+namespace wk {namespace chain {
 
 bool mock_hardforker::has_enough_hardfork_votes(const hardfork_votes_type& next_hardfork_votes, 
     uint32_t hardfork, uint32_t block_num) const

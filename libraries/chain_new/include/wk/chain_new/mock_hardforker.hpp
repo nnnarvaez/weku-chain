@@ -2,7 +2,7 @@
 
 #include <wk/chain_new/ihardforker.hpp>
 
-namespace wk {namespace chain_new {
+namespace wk {namespace chain {
 
 class mock_hardforker: public ihardforker{
     public:    

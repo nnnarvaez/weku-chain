@@ -14,7 +14,7 @@
 typedef std::vector<std::pair<uint32_t, uint32_t> > hardfork_votes_type;
 struct signed_block{};
 
-namespace wk { namespace chain_new {
+namespace wk { namespace chain {
 class idatabase // interface database
 {
 public:

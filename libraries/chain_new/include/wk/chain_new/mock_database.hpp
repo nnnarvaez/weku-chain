@@ -1,7 +1,7 @@
 #pragma once
 #include "idatabase.hpp"
 
-namespace wk{namespace chain_new{
+namespace wk{namespace chain{
 
 class mock_database: public idatabase
 {

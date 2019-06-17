@@ -2,7 +2,7 @@
 
 #include <wk/chain_new/idatabase.hpp>
 
-namespace wk {namespace chain_new {
+namespace wk {namespace chain {
     class ihardforker{
         public:
         virtual ~ihardforker() = default;

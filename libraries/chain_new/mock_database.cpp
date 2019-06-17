@@ -2,7 +2,7 @@
 #include <wk/chain_new/mock_database.hpp>
 #include <wk/chain_new/mock_hardforker.hpp>
 
-namespace wk{namespace chain_new{
+namespace wk{namespace chain{
 
 void mock_database::init_genesis(uint64_t initial_supply)
 {
