@@ -7,13 +7,13 @@ BOOST_AUTO_TEST_SUITE(head_block_tests)
 
 BOOST_AUTO_TEST_CASE(head_block_num_should_be_0_after_database_init)
 {
-    x_database db;
+    mock_database db;
     BOOST_REQUIRE(db.head_block_num() == 0);
 }
 
 BOOST_AUTO_TEST_CASE(head_block_num_should_be_0_after_genesis)
 {
-    x_database db;
+    mock_database db;
     db.init_genesis();
     BOOST_REQUIRE(db.head_block_num() == 0);
 }

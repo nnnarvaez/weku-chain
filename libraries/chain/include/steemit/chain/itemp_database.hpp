@@ -14,7 +14,9 @@ namespace steemit{ namespace chain{
 
         virtual uint32_t head_block_num()const;
         virtual uint32_t last_hardfork();
-        virtual void last_hardfork(uint32_t hardfork);     
+        virtual void last_hardfork(uint32_t hardfork);  
+        virtual bool has_hardfork( uint32_t hardfork )const;
+
         virtual hardfork_votes_type next_hardfork_votes();
         virtual void next_hardfork_votes(hardfork_votes_type next_hardfork_votes);
 

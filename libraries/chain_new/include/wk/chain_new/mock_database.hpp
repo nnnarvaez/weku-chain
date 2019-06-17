@@ -3,7 +3,7 @@
 
 namespace wk{namespace chain_new{
 
-class x_database: public idatabase
+class mock_database: public idatabase
 {
 public:
     virtual void init_genesis(uint64_t initial_supply = 0) override;

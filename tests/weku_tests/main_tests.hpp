@@ -1,11 +1,11 @@
 #pragma once
 
-#include <wk/chain_new/x_database.hpp>
+#include <wk/chain_new/mock_database.hpp>
 
 using namespace wk::chain_new;
 
 struct x_database_fixture{
-    x_database db;
+    mock_database db;
 
     x_database_fixture()
     {

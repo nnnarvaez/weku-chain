@@ -1,8 +1,8 @@
-#include <wk/chain_new/hardforker.hpp>
+#include <wk/chain_new/mock_hardforker.hpp>
 
 namespace wk {namespace chain_new {
 
-bool hardforker::has_enough_hardfork_votes(const hardfork_votes_type& next_hardfork_votes, 
+bool mock_hardforker::has_enough_hardfork_votes(const hardfork_votes_type& next_hardfork_votes, 
     uint32_t hardfork, uint32_t block_num) const
 {
     const auto& search_target = std::make_pair(hardfork, block_num);
@@ -14,7 +14,7 @@ bool hardforker::has_enough_hardfork_votes(const hardfork_votes_type& next_hardf
     return votes >= REQUIRED_HARDFORK_VOTES;
 }
 
-void hardforker::process(idatabase& db)
+void mock_hardforker::process(idatabase& db)
 {
     switch(db.head_block_num())
     {        
