@@ -3,12 +3,12 @@
  */
 #pragma once
 #include <steemit/chain/global_property_object.hpp>
-#include <steemit/chain/hardfork.hpp>
+
 #include <steemit/chain/node_property_object.hpp>
 #include <steemit/chain/fork_database.hpp>
 #include <steemit/chain/block_log.hpp>
 #include <steemit/chain/operation_notification.hpp>
-#include <steemit/chain/itemp_database.hpp>
+#include <wk/chain_refactory/itemp_database.hpp>
 #include <steemit/protocol/protocol.hpp>
 
 //#include <graphene/db2/database.hpp>
@@ -26,6 +26,7 @@ namespace steemit { namespace chain {
    using steemit::protocol::asset;
    using steemit::protocol::asset_symbol_type;
    using steemit::protocol::price;
+  
 
    class database_impl;
    class custom_operation_interpreter;
@@ -149,10 +150,10 @@ namespace steemit { namespace chain {
          const savings_withdraw_object& get_savings_withdraw(  const account_name_type& owner, uint32_t request_id )const;
          const savings_withdraw_object* find_savings_withdraw( const account_name_type& owner, uint32_t request_id )const;
 
-         const dynamic_global_property_object&  get_dynamic_global_properties()const;
+         virtual const dynamic_global_property_object&  get_dynamic_global_properties()const override;
          const node_property_object&            get_node_properties()const;
          const feed_history_object&             get_feed_history()const;
-         const witness_schedule_object&         get_witness_schedule_object()const;
+         virtual const witness_schedule_object&         get_witness_schedule_object()const override;
          const hardfork_property_object&        get_hardfork_property_object()const;
 
          const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const;
@@ -311,9 +312,9 @@ namespace steemit { namespace chain {
          asset       get_balance( const string& aname, asset_symbol_type symbol )const { return get_balance( get_account(aname), symbol ); }
 
          /** this updates the votes for witnesses as a result of account voting proxy changing */
-         void adjust_proxied_witness_votes( const account_object& a,
+         virtual void adjust_proxied_witness_votes( const account_object& a,
                                             const std::array< share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
-                                            int depth = 0 );
+                                            int depth = 0 ) override;
 
          /** this updates the votes for all witnesses as a result of account VESTS changing */
          void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 );
@@ -322,7 +323,7 @@ namespace steemit { namespace chain {
          virtual void adjust_witness_votes( const account_object& a, share_type delta ) override;
 
          /** this updates the vote of a single witness as a result of a vote being added or removed*/
-         void adjust_witness_vote( const witness_object& obj, share_type delta );
+         virtual void adjust_witness_vote( const witness_object& obj, share_type delta ) override;
 
          /** clears all vote records for a particular account but does not update the
           * witness vote totals.  Vote totals should be updated first via a call to
@@ -360,7 +361,7 @@ namespace steemit { namespace chain {
          asset to_sbd( const asset& steem )const;
          asset to_steem( const asset& sbd )const;
 
-         time_point_sec   head_block_time()const;
+         virtual time_point_sec   head_block_time()const override;
          virtual uint32_t head_block_num()const override;
          block_id_type    head_block_id()const;
 

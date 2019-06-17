@@ -1,7 +1,9 @@
-file(GLOB HEADERS "include/steemit/chain_refactory/*.hpp")
-file(GLOB SRCS "*.cpp")
+include_directories(../chain/include)
+include_directories(../fc/include)
 
-add_library( wk_chain_new ${SRCS} ${HEADERS} )
+file(GLOB HEADERS "include/wk/chain_refactory/*.hpp")
+file(GLOB SRCS "*.cpp")
+add_library( wk_chain_refactory ${SRCS} ${HEADERS} )
 
 add_dependencies( wk_chain_refactory steemit_protocol )
 target_link_libraries( wk_chain_refactory steemit_protocol fc chainbase graphene_schema ${PATCH_MERGE_LIB} )

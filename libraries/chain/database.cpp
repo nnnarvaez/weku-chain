@@ -23,7 +23,6 @@
 #include <steemit/chain/util/reward.hpp>
 #include <steemit/chain/util/uint256.hpp>
 #include <steemit/chain/util/reward.hpp>
-#include <steemit/chain/hardfork_doer.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
