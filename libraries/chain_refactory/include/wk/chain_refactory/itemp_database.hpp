@@ -12,6 +12,8 @@
 #include <fc/uint128.hpp>
 #include <steemit/chain/witness_schedule.hpp>
 
+#include <wk/chain_refactory/hardfork_constants.hpp>
+
 // #include <steemit/chain/block_summary_object.hpp>
 // #include <steemit/chain/compound.hpp>
 // #include <steemit/chain/custom_operation_interpreter.hpp>
