@@ -205,7 +205,8 @@ namespace steemit { namespace chain {
           */
          void notify_pre_apply_operation( operation_notification& note );
          void notify_post_apply_operation( const operation_notification& note );
-         inline const void push_virtual_operation( const operation& op, bool force = false ); // vops are not needed for low mem. Force will push them on low mem.
+         // vops are not needed for low mem. Force will push them on low mem.
+         virtual const void push_virtual_operation( const operation& op, bool force = false ) override; 
          void notify_applied_block( const signed_block& block );
          void notify_on_pending_transaction( const signed_transaction& tx );
          void notify_on_pre_apply_transaction( const signed_transaction& tx );
@@ -299,8 +300,8 @@ namespace steemit { namespace chain {
          asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false );
          void adjust_total_payout( const comment_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value );
 
-         void        adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_bid );
-         void        adjust_balance( const account_object& a, const asset& delta );
+         virtual void        adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_bid ) override;
+         virtual void        adjust_balance( const account_object& a, const asset& delta ) override;
          void        adjust_savings_balance( const account_object& a, const asset& delta );
          void        adjust_reward_balance( const account_object& a, const asset& delta );
          void        adjust_supply( const asset& delta, bool adjust_vesting = false );

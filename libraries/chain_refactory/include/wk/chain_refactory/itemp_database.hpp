@@ -33,10 +33,10 @@ using namespace steemit::chain;
 
 namespace wk{ namespace chain{
 
-// TODO: need to find hardfork 21 number
+// TODO: need to find hardfork numbers
 #define HARDFORK_20_BLOCK_NUM 100
 #define HARDFORK_21_BLOCK_NUM 200
-#define HARDFORK_22_BLOCK_NUM_FROM 15000000U
+#define HARDFORK_22_BLOCK_NUM_FROM 15000000u
 
 typedef std::vector<std::pair<uint32_t, uint32_t> > hardfork_votes_type;
 
@@ -80,13 +80,18 @@ class itemp_database: public chainbase::database
     virtual void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing );
 
     virtual fc::time_point_sec   head_block_time()const;
-
+    virtual void        adjust_balance( const account_object& a, const asset& delta );
     virtual void adjust_witness_votes( const account_object& a, share_type delta );
     virtual void adjust_witness_vote( const witness_object& obj, share_type delta );
     virtual void adjust_rshares2( const comment_object& comment, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 );
     virtual void adjust_proxied_witness_votes( const account_object& a,
                                             const std::array< share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                                             int depth = 0 );
+    virtual void adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_bid );
+    virtual const void push_virtual_operation( const operation& op, bool force = false ); 
+    
+    virtual void cancel_order( const limit_order_object& obj );
+
     virtual void validate_invariants()const;
 };
 

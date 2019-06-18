@@ -218,8 +218,8 @@ void hardforker::do_hardfork_21()
    ilog( "HF21 | Account initminer108 VESTS :  ${p}", ("p", account->vesting_shares) );
 
    if( account != nullptr && account->vesting_shares.amount > 0 )
-   {
-      //auto session = _db.start_undo_session( true );
+   {      
+      auto session = _db.start_undo_session( true );
 
       _db.modify( *account, []( account_object& a )
       {             
@@ -233,7 +233,7 @@ void hardforker::do_hardfork_21()
          ilog( "Account Weku Balance After :  ${p}", ("p", a.balance) );              
       });
 
-      //_db.session.squash();
+      session.squash();
       
       //HF21 Retally of balances and Vesting
       auto gpo = _db.get_dynamic_global_properties();          
