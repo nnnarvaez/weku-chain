@@ -1634,26 +1634,24 @@ void database::_apply_block( const signed_block& next_block )
       ++_current_trx_in_block;
    }
 
-   gpo_processor gp(*this);
-   // update head_block_time during this operation
-   gp.update_global_dynamic_data(next_block);
-   
    block_applier applier(*this);
+   
+   // update head_block_time during this operation
+   applier.update_global_dynamic_data(next_block); 
    applier.update_signing_witness(signing_witness, next_block);
-
    applier.update_last_irreversible_block();
-
-   create_block_summary(next_block);
+   applier.create_block_summary(next_block);
    applier.clear_expired_transactions();
-   clear_expired_orders();
-   clear_expired_delegations();
+   applier.clear_expired_orders();
+   applier.clear_expired_delegations();
+
    update_witness_schedule(*this);
 
    median_feed_updator mfu(*this);
    mfu.update_median_feed();
    
    // QUESTION: another update_virtual_supply in next 10 lines?
-   update_virtual_supply();
+   applier.update_virtual_supply();
 
    null_account_cleaner nac(*this);
    nac.clear_null_account_balance();
@@ -1675,7 +1673,7 @@ void database::_apply_block( const signed_block& next_block )
    reward_processor rp(*this);
    rp.pay_liquidity_reward();
 
-   update_virtual_supply();
+   applier.update_virtual_supply();
 
    account_recovery_processor arp(*this);
    arp.account_recovery_processing();
@@ -1843,37 +1841,8 @@ void database::apply_operation(const operation& op)
    notify_post_apply_operation( note );
 }
 
-void database::create_block_summary(const signed_block& next_block)
-{ try {
-   block_summary_id_type sid( next_block.block_num() & 0xffff );
-   modify( get< block_summary_object >( sid ), [&](block_summary_object& p) {
-         p.block_id = next_block.id();
-   });
-} FC_CAPTURE_AND_RETHROW() }
 
-void database::update_virtual_supply()
-{ try {
-   modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgp )
-   {
-      dgp.virtual_supply = dgp.current_supply
-         + ( get_feed_history().current_median_history.is_null() ? asset( 0, STEEM_SYMBOL ) : dgp.current_sbd_supply * get_feed_history().current_median_history );
 
-      auto median_price = get_feed_history().current_median_history;
-
-      if( !median_price.is_null() && has_hardfork( STEEMIT_HARDFORK_0_14__230 ) )
-      {
-         auto percent_sbd = uint16_t( ( ( fc::uint128_t( ( dgp.current_sbd_supply * get_feed_history().current_median_history ).amount.value ) * STEEMIT_100_PERCENT )
-            / dgp.virtual_supply.amount.value ).to_uint64() );
-
-         if( percent_sbd <= STEEMIT_SBD_START_PERCENT )
-            dgp.sbd_print_rate = STEEMIT_100_PERCENT;
-         else if( percent_sbd >= STEEMIT_SBD_STOP_PERCENT )
-            dgp.sbd_print_rate = 0;
-         else
-            dgp.sbd_print_rate = ( ( STEEMIT_SBD_STOP_PERCENT - percent_sbd ) * STEEMIT_100_PERCENT ) / ( STEEMIT_SBD_STOP_PERCENT - STEEMIT_SBD_START_PERCENT );
-      }
-   });
-} FC_CAPTURE_AND_RETHROW() }
 
 
 bool database::apply_order( const limit_order_object& new_order_object )
@@ -1907,34 +1876,6 @@ void database::cancel_order( const limit_order_object& order )
    remove(order);
 }
 
-
-
-
-void database::clear_expired_orders()
-{
-   order_processor op(*this);
-   op.clear_expired_orders();
-}
-
-void database::clear_expired_delegations()
-{
-   auto now = head_block_time();
-   const auto& delegations_by_exp = get_index< vesting_delegation_expiration_index, by_expiration >();
-   auto itr = delegations_by_exp.begin();
-   while( itr != delegations_by_exp.end() && itr->expiration < now )
-   {
-      modify( get_account( itr->delegator ), [&]( account_object& a )
-      {
-         a.delegated_vesting_shares -= itr->vesting_shares;
-      });
-
-      push_virtual_operation( return_vesting_delegation_operation( itr->delegator, itr->vesting_shares ) );
-
-      remove( *itr );
-      itr = delegations_by_exp.begin();
-   }
-}
-
 void database::adjust_balance( const account_object& a, const asset& delta )
 {
    balance_processor bp(*this);
@@ -1948,20 +1889,17 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
    bp.adjust_savings_balance(account_object, delta);
 }
 
-
 void database::adjust_reward_balance( const account_object& a, const asset& delta )
 {
    balance_processor bp(*this);
    bp.adjust_reward_balance(account_object, delta);
 }
 
-
 void database::adjust_supply( const asset& delta, bool adjust_vesting )
 {
    balance_processor bp(*this);
    bp.adjust_supply(delta, adjust_vesting);   
 }
-
 
 asset database::get_balance( const account_object& a, asset_symbol_type symbol )const
 {
@@ -1995,9 +1933,7 @@ bool database::has_hardfork( uint32_t hardfork )const
 }
 
 // TODO: should be removed, for testing only, no production code should use this function.
-void database::set_hardfork( uint32_t hardfork, bool apply_now )
-{   
-}
+void database::set_hardfork( uint32_t hardfork, bool apply_now ){}
 
 void database::validate_invariants()const
 {

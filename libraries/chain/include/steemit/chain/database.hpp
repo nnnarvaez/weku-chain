@@ -384,7 +384,7 @@ namespace steemit { namespace chain {
          int  match( const limit_order_object& bid, const limit_order_object& ask, const price& trade_price );
                                    
          
-         void update_virtual_supply();
+         
 
          virtual bool has_hardfork( uint32_t hardfork )const override;
 
@@ -423,13 +423,8 @@ namespace steemit { namespace chain {
          ///@{
 
          
-         void create_block_summary(const signed_block& next_block);
-                  
          
          
-         
-         void clear_expired_orders();
-         void clear_expired_delegations();
          void process_header_extensions( const signed_block& next_block );
          ///@}
 

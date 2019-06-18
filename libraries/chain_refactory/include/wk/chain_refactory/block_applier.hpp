@@ -12,6 +12,11 @@ class block_applier{
         void expire_escrow_ratification();
         void process_decline_voting_rights();
         void clear_expired_transactions();
+        void clear_expired_delegations();
+        void clear_expired_orders();
+        void create_block_summary(const signed_block& next_block);
+        void update_global_dynamic_data( const signed_block& b );
+        void update_virtual_supply();
     private:
         itemp_database& _db;
 };

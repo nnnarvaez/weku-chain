@@ -1,8 +1,84 @@
 #include <wk/chain_refactory/block_applier.hpp>
+#include <wk/chain_refactory/gpo_processor.hpp>
 
 using namespace steemit::chain;
 
 namespace wk{namespace chain{
+
+void block_applier::update_virtual_supply()
+{ 
+    try {
+        _db.modify( _db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgp )
+        {
+            dgp.virtual_supply = dgp.current_supply
+                + ( _db.get_feed_history().current_median_history.is_null() 
+                ? asset( 0, STEEM_SYMBOL ) 
+                : dgp.current_sbd_supply * _db.get_feed_history().current_median_history );
+
+            auto median_price = _db.get_feed_history().current_median_history;
+
+            if( !median_price.is_null() && _db.has_hardfork( STEEMIT_HARDFORK_0_14 ) )
+            {
+                auto percent_sbd = uint16_t( ( ( fc::uint128_t( ( dgp.current_sbd_supply * _db.get_feed_history().current_median_history ).amount.value ) * STEEMIT_100_PERCENT )
+                    / dgp.virtual_supply.amount.value ).to_uint64() );
+
+                if( percent_sbd <= STEEMIT_SBD_START_PERCENT )
+                    dgp.sbd_print_rate = STEEMIT_100_PERCENT;
+                else if( percent_sbd >= STEEMIT_SBD_STOP_PERCENT )
+                    dgp.sbd_print_rate = 0;
+                else
+                    dgp.sbd_print_rate = ( ( STEEMIT_SBD_STOP_PERCENT - percent_sbd ) * STEEMIT_100_PERCENT ) / ( STEEMIT_SBD_STOP_PERCENT - STEEMIT_SBD_START_PERCENT );
+            }
+        });
+    } FC_CAPTURE_AND_RETHROW() 
+}
+
+
+void block_applier::update_global_dynamic_data( const signed_block& b )
+{ 
+    gpo_processor gp(_db);
+   // update head_block_time during this operation
+   gp.update_global_dynamic_data(next_block);
+}
+
+void block_applier::create_block_summary(const signed_block& next_block)
+{ try {
+   block_summary_id_type sid( next_block.block_num() & 0xffff );
+   _db.modify( _db.get< block_summary_object >( sid ), [&](block_summary_object& p) {
+         p.block_id = next_block.id();
+   });
+} FC_CAPTURE_AND_RETHROW() }
+
+void block_applier::clear_expired_orders()
+{
+   auto now = _db.head_block_time();
+   const auto& orders_by_exp = _db.get_index<limit_order_index>().indices().get<by_expiration>();
+   auto itr = orders_by_exp.begin();
+   while( itr != orders_by_exp.end() && itr->expiration < now )
+   {
+      _db.cancel_order( *itr );
+      itr = orders_by_exp.begin();
+   }
+}
+
+void block_applier::clear_expired_delegations()
+{
+   auto now = _db.head_block_time();
+   const auto& delegations_by_exp = _db.get_index< vesting_delegation_expiration_index, by_expiration >();
+   auto itr = delegations_by_exp.begin();
+   while( itr != delegations_by_exp.end() && itr->expiration < now )
+   {
+      _db.modify( _db.get_account( itr->delegator ), [&]( account_object& a )
+      {
+         a.delegated_vesting_shares -= itr->vesting_shares;
+      });
+
+      _db.push_virtual_operation( return_vesting_delegation_operation( itr->delegator, itr->vesting_shares ) );
+
+      _db.remove( *itr );
+      itr = delegations_by_exp.begin();
+   }
+}
 
 void block_applier::clear_expired_transactions()
 {

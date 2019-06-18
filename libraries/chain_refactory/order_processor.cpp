@@ -4,18 +4,6 @@ using namespace steemit::chain;
 
 namespace wk{namespace chain{
 
-void order_processor::clear_expired_orders()
-{
-   auto now = _db.head_block_time();
-   const auto& orders_by_exp = _db.get_index<limit_order_index>().indices().get<by_expiration>();
-   auto itr = orders_by_exp.begin();
-   while( itr != orders_by_exp.end() && itr->expiration < now )
-   {
-      _db.cancel_order( *itr );
-      itr = orders_by_exp.begin();
-   }
-}
-
 bool order_processor::fill_order( const limit_order_object& order, const asset& pays, const asset& receives )
 {
    try
