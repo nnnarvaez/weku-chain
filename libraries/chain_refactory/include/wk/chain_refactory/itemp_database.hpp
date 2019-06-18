@@ -125,6 +125,9 @@ class itemp_database: public chainbase::database
     virtual account_name_type get_scheduled_witness(uint32_t slot_num)const;
     virtual uint32_t get_slot_at_time(fc::time_point_sec when)const;
     virtual const node_property_object& get_node_properties()const;
+
+    virtual block_log block_log(); 
+    virtual fork_database fork_db();
 };
 
 }}

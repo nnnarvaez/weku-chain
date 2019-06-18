@@ -192,6 +192,9 @@ namespace steemit { namespace chain {
          void pop_block();
          void clear_pending();
 
+         virtual block_log block_log() override {return _block_log;}
+         virtual fork_database fork_db() override {return _fork_db;}
+
          /**
           *  This method is used to track applied operations during the evaluation of a block, these
           *  operations should include any operation actually included in a transaction as well
@@ -432,8 +435,8 @@ namespace steemit { namespace chain {
          
          void create_block_summary(const signed_block& next_block);
                   
-         void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
-         void update_last_irreversible_block();
+         
+         
          void clear_expired_transactions();
          void clear_expired_orders();
          void clear_expired_delegations();
@@ -446,7 +449,7 @@ namespace steemit { namespace chain {
          fc::time_point_sec            _hardfork_times[ STEEMIT_NUM_HARDFORKS + 1 ];
          protocol::hardfork_version    _hardfork_versions[ STEEMIT_NUM_HARDFORKS + 1 ];
 
-         block_log                     _block_log;
+         block_log                     _block_log;         
 
          // this function needs access to _plugin_index_signal
          template< typename MultiIndexType >
