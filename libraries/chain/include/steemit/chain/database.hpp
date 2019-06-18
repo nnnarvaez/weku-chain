@@ -156,8 +156,8 @@ namespace steemit { namespace chain {
          virtual const witness_schedule_object&         get_witness_schedule_object()const override;
          const hardfork_property_object&        get_hardfork_property_object()const;
 
-         const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const;
-         const reward_fund_object&              get_reward_fund( const comment_object& c )const;
+         virtual const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const override;
+         virtual const reward_fund_object&              get_reward_fund( const comment_object& c )const override;
 
          /**
           *  Deducts fee from the account and the share supply
@@ -296,9 +296,9 @@ namespace steemit { namespace chain {
          uint32_t get_slot_at_time(fc::time_point_sec when)const;
 
          /** @return the sbd created and deposited to_account, may return STEEM if there is no median feed */
-         std::pair< asset, asset > create_sbd( const account_object& to_account, asset steem, bool to_reward_balance=false );
-         asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false );
-         void adjust_total_payout( const comment_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value );
+         virtual std::pair< asset, asset > create_sbd( const account_object& to_account, asset steem, bool to_reward_balance=false ) override;
+         virtual asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false ) override;
+         virtual void adjust_total_payout( const comment_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value ) override;
 
          virtual void        adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_bid ) override;
          virtual void        adjust_balance( const account_object& a, const asset& delta ) override;
@@ -332,8 +332,8 @@ namespace steemit { namespace chain {
           */
          void clear_witness_votes( const account_object& a );
          void process_vesting_withdrawals();
-         share_type pay_curators( const comment_object& c, share_type& max_rewards );
-         share_type cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment );
+         virtual share_type pay_curators( const comment_object& c, share_type& max_rewards ) override;
+         
          void process_comment_cashout();
          void process_funds();
          void process_conversions();
@@ -349,7 +349,7 @@ namespace steemit { namespace chain {
          asset get_curation_reward()const;
          asset get_pow_reward()const;
 
-         uint16_t get_curation_rewards_percent( const comment_object& c ) const;
+         virtual uint16_t get_curation_rewards_percent( const comment_object& c ) const override;
 
          share_type pay_reward_funds( share_type reward );
 
@@ -377,8 +377,6 @@ namespace steemit { namespace chain {
 
          /// Reset the object graph in-memory
          void initialize_indexes();
-         // TODO: init_schema is deprecated.
-         void init_schema();
          virtual void init_genesis(uint64_t initial_supply = STEEMIT_INIT_SUPPLY ) override;
 
          /**

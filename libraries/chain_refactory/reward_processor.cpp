@@ -24,13 +24,13 @@ void reward_processor::adjust_liquidity_reward( const account_object& owner, con
          else
             r.steem_volume += volume.amount.value;
 
-         r.update_weight( _db.has_hardfork( STEEMIT_HARDFORK_0_10__141 ) );
+         r.update_weight( _db.has_hardfork( STEEMIT_HARDFORK_0_10 ) );
          r.last_update = _db.head_block_time();
       } );
    }
    else
    {
-      create<liquidity_reward_balance_object>( [&](liquidity_reward_balance_object& r )
+      _db.create<liquidity_reward_balance_object>( [&](liquidity_reward_balance_object& r )
       {
          r.owner = owner.id;
          if( is_sdb )
@@ -38,7 +38,7 @@ void reward_processor::adjust_liquidity_reward( const account_object& owner, con
          else
             r.steem_volume = volume.amount.value;
 
-         r.update_weight( _db.has_hardfork( STEEMIT_HARDFORK_0_9__141 ) );
+         r.update_weight( _db.has_hardfork( STEEMIT_HARDFORK_0_9 ) );
          r.last_update = _db.head_block_time();
       } );
    }

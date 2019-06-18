@@ -98,7 +98,15 @@ class itemp_database: public chainbase::database
     
     virtual void cancel_order( const limit_order_object& obj );
 
+    virtual const reward_fund_object& get_reward_fund( const comment_object& c )const;
+    virtual uint16_t get_curation_rewards_percent( const comment_object& c ) const;
+    virtual share_type pay_curators( const comment_object& c, share_type& max_rewards );
+    virtual asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false );
+    virtual std::pair< asset, asset > create_sbd( const account_object& to_account, asset steem, bool to_reward_balance=false );
+    
+    virtual void adjust_total_payout( const comment_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value );
     virtual void validate_invariants()const;
+    virtual const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const;
 };
 
 }}

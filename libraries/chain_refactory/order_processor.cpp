@@ -115,7 +115,7 @@ int order_processor::match(
            old_order_pays == old_order.amount_for_sale() );
 
    auto age = _db.head_block_time() - old_order.created;
-   if( !_db.has_hardfork( STEEMIT_HARDFORK_0_12__178 ) &&
+   if( !_db.has_hardfork( STEEMIT_HARDFORK_0_12 ) &&
        ( (age >= STEEMIT_MIN_LIQUIDITY_REWARD_PERIOD_SEC && !_db.has_hardfork( STEEMIT_HARDFORK_0_10)) ||
        (age >= STEEMIT_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10 && _db.has_hardfork( STEEMIT_HARDFORK_0_10) ) ) )
    {

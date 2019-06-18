@@ -1,6 +1,6 @@
 #pragma once
 
-#include <fc/times.hpp>
+#include <fc/time.hpp>
 
 namespace wk { namespace chain {
 
@@ -140,3 +140,5 @@ namespace wk { namespace chain {
 #define STEEMIT_HARDFORK_0_9 9
 #define STEEMIT_HARDFORK_0_9_TIME 1468454400 // 2016-07-14T00:00:00 UTC
 #endif
+
+}}
