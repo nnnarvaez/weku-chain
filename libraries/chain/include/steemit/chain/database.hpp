@@ -151,18 +151,13 @@ namespace steemit { namespace chain {
          const savings_withdraw_object* find_savings_withdraw( const account_name_type& owner, uint32_t request_id )const;
 
          virtual const dynamic_global_property_object&  get_dynamic_global_properties()const override;
-         const node_property_object&            get_node_properties()const;
+         virtual const node_property_object&            get_node_properties()const override;
          virtual const feed_history_object&             get_feed_history()const override;
          virtual const witness_schedule_object&         get_witness_schedule_object()const override;
          const hardfork_property_object&        get_hardfork_property_object()const;
 
          virtual const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const override;
          virtual const reward_fund_object&              get_reward_fund( const comment_object& c )const override;
-
-         /**
-          *  Deducts fee from the account and the share supply
-          */
-         void pay_fee( const account_object& a, asset fee );
 
          void max_bandwidth_per_share()const;
 
@@ -273,7 +268,7 @@ namespace steemit { namespace chain {
           *
           * Passing slot_num == 0 returns STEEMIT_NULL_WITNESS
           */
-         account_name_type get_scheduled_witness(uint32_t slot_num)const;
+         virtual account_name_type get_scheduled_witness(uint32_t slot_num)const override;
 
          /**
           * Get the time at which the given slot occurs.
@@ -293,7 +288,7 @@ namespace steemit { namespace chain {
           *
           * If no such N exists, return 0.
           */
-         uint32_t get_slot_at_time(fc::time_point_sec when)const;
+         virtual uint32_t get_slot_at_time(fc::time_point_sec when)const override;
 
          /** @return the sbd created and deposited to_account, may return STEEM if there is no median feed */
          virtual std::pair< asset, asset > create_sbd( const account_object& to_account, asset steem, bool to_reward_balance=false ) override;
@@ -443,18 +438,13 @@ namespace steemit { namespace chain {
 
          void clear_null_account_balance();
 
-         void update_global_dynamic_data( const signed_block& b );
+         
          void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
          void update_last_irreversible_block();
          void clear_expired_transactions();
          void clear_expired_orders();
          void clear_expired_delegations();
          void process_header_extensions( const signed_block& next_block );
-
-         void init_hardforks();
-         void process_hardforks();
-         void apply_hardfork( uint32_t hardfork );
-
          ///@}
 
          std::unique_ptr< database_impl > _my;

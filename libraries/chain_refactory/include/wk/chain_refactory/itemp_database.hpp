@@ -17,7 +17,7 @@
 
 #include <wk/chain_refactory/hardfork_constants.hpp>
  #include <steemit/chain/compound.hpp>
- 
+
 // #include <steemit/chain/block_summary_object.hpp>
 //
 // #include <steemit/chain/custom_operation_interpreter.hpp>
@@ -87,8 +87,7 @@ class itemp_database: public chainbase::database
     virtual const account_object&  get_account(  const account_name_type& name )const;
     virtual const account_object*  find_account( const account_name_type& name )const;
     virtual const witness_object&  get_witness(  const account_name_type& name )const;
-         virtual const witness_object*  find_witness( const account_name_type& name )const;
-
+    virtual const witness_object*  find_witness( const account_name_type& name )const;
 
     virtual void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing );
 
@@ -114,14 +113,17 @@ class itemp_database: public chainbase::database
     
     virtual void adjust_total_payout( const comment_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value );
     virtual void validate_invariants()const;
-    virtual const fc::time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const;
+    virtual const fc::time_point_sec calculate_discussion_payout_time( const comment_object& comment )const;
     virtual asset to_sbd( const asset& steem )const;
     virtual share_type pay_reward_funds( share_type reward );
 
     virtual asset get_content_reward()const ;
-         virtual asset get_producer_reward() ;
-         virtual asset get_curation_reward()const ;
-         virtual asset get_pow_reward()const ;
+    virtual asset get_producer_reward() ;
+    virtual asset get_curation_reward()const ;
+    virtual asset get_pow_reward()const ;
+    virtual account_name_type get_scheduled_witness(uint32_t slot_num)const;
+    virtual uint32_t get_slot_at_time(fc::time_point_sec when)const;
+    virtual const node_property_object& get_node_properties()const;
 };
 
 }}

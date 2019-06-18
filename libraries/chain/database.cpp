@@ -113,13 +113,7 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
             // copy the current head_block into ford_db's internal index/table as first/head object/record?
             _fork_db.start_block( *head_block );
          }
-      }
-
-      with_read_lock( [&]()
-      {
-         // init hardforks, genesis will be inited as hardfork "0"
-         init_hardforks(); // Writes to local state, but reads from db
-      });
+      }      
    }
    FC_CAPTURE_LOG_AND_RETHROW( (data_dir)(shared_mem_dir)(shared_file_size) )
 }
@@ -420,7 +414,7 @@ const escrow_object* database::find_escrow( const account_name_type& name, uint3
 
 const limit_order_object& database::get_limit_order( const account_name_type& name, uint32_t orderid )const
 { try {
-   if( !has_hardfork( STEEMIT_HARDFORK_0_6__127 ) )
+   if( !has_hardfork( STEEMIT_HARDFORK_0_6 ) )
       orderid = orderid & 0x0000FFFF;
 
    return get< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
@@ -428,7 +422,7 @@ const limit_order_object& database::get_limit_order( const account_name_type& na
 
 const limit_order_object* database::find_limit_order( const account_name_type& name, uint32_t orderid )const
 {
-   if( !has_hardfork( STEEMIT_HARDFORK_0_6__127 ) )
+   if( !has_hardfork( STEEMIT_HARDFORK_0_6 ) )
       orderid = orderid & 0x0000FFFF;
 
    return find< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
@@ -455,8 +449,7 @@ const feed_history_object& database::get_feed_history()const
 } FC_CAPTURE_AND_RETHROW() }
 
 const dynamic_global_property_object&database::get_dynamic_global_properties() const
-{ try {
-    // should we embeded gpo as npo(as below) in database instead of index/table which only has one object?
+{ try {    
    return get< dynamic_global_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
@@ -473,7 +466,7 @@ const hardfork_property_object& database::get_hardfork_property_object()const
 // not doing actual calc, just get data, should be renamed to get_discussion_payout_time
 const time_point_sec database::calculate_discussion_payout_time( const comment_object& comment )const
 {
-   if( has_hardfork( STEEMIT_HARDFORK_0_17__769 ) || comment.parent_author == STEEMIT_ROOT_POST_PARENT )
+   if( has_hardfork( STEEMIT_HARDFORK_0_17 ) || comment.parent_author == STEEMIT_ROOT_POST_PARENT )
       return comment.cashout_time;
    else
       return get< comment_object >( comment.root_comment ).cashout_time;
@@ -482,19 +475,6 @@ const time_point_sec database::calculate_discussion_payout_time( const comment_o
 const reward_fund_object& database::get_reward_fund( const comment_object& c ) const
 {
    return get< reward_fund_object, by_name >( STEEMIT_POST_REWARD_FUND_NAME );
-}
-
-// looks like this function is not used.
-// TODO: remove it later.
-void database::pay_fee( const account_object& account, asset fee )
-{
-   FC_ASSERT( fee.amount >= 0 ); /// NOTE if this fails then validate() on some operation is probably wrong
-   if( fee.amount == 0 )
-      return;
-
-   FC_ASSERT( account.balance >= fee );
-   adjust_balance( account, -fee );
-   adjust_supply( -fee );
 }
 
 uint32_t database::witness_participation_rate()const
@@ -967,37 +947,14 @@ account_name_type database::get_scheduled_witness( uint32_t slot_num )const
 
 fc::time_point_sec database::get_slot_time(uint32_t slot_num)const
 {
-   if( slot_num == 0 )
-      return fc::time_point_sec();
-
-   auto interval = STEEMIT_BLOCK_INTERVAL;
-   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-
-    // means just complete the init_genesis, which at block #0, the block #1 is not generated yet at this point.
-   if( head_block_num() == 0 )
-   {
-      // n.b. first block is at genesis_time plus one block interval
-      fc::time_point_sec genesis_time = dpo.time;
-      return genesis_time + slot_num * interval;
-   }
-
-   int64_t head_block_abs_slot = head_block_time().sec_since_epoch() / interval;
-   // re-adjust head_slot_time to absolute slot time based on unix epoch.
-   fc::time_point_sec head_slot_time( head_block_abs_slot * interval );
-
-   // "slot 0" is head_slot_time
-   // "slot 1" is head_slot_time,
-   //   plus maint interval if head block is a maint block
-   //   plus block interval if head block is not a maint block
-   return head_slot_time + (slot_num * interval);
+   slot s(*this);
+   return s.get_slot_time(slot_num);
 }
 
 uint32_t database::get_slot_at_time(fc::time_point_sec when)const
 {
-   fc::time_point_sec first_slot_time = get_slot_time( 1 );
-   if( when < first_slot_time )
-      return 0;
-   return (when - first_slot_time).to_seconds() / STEEMIT_BLOCK_INTERVAL + 1;
+   slot s(*this);
+   return s.get_slot_at_time(when);
 }
 
 /**
@@ -2285,7 +2242,10 @@ void database::_apply_block( const signed_block& next_block )
       ++_current_trx_in_block;
    }
 
-   update_global_dynamic_data(next_block); // update head_block_time during this operation
+   gpo_processor gp(*this);
+   // update head_block_time during this operation
+   gp.update_global_dynamic_data(next_block);
+   
    update_signing_witness(signing_witness, next_block);
 
    update_last_irreversible_block();
@@ -2314,9 +2274,10 @@ void database::_apply_block( const signed_block& next_block )
    process_decline_voting_rights();
 
    // For WEKU, all hardforks before hardfork_20 are applied just after block 1 is saved to dish
-        // this process_hardforks is almost at the end of the process,
-        // which also means during process of block #1, there is only harfork 0.
-   process_hardforks();
+   // this hardfork process is almost at the end of the process,
+   // which also means during process of block #1, there is only harfork 0.
+   hardfork_doer hfd(*this);
+   hfd.process();  
 
    // notify observers that the block has been applied
    notify_applied_block( next_block );
@@ -2571,66 +2532,6 @@ void database::create_block_summary(const signed_block& next_block)
    modify( get< block_summary_object >( sid ), [&](block_summary_object& p) {
          p.block_id = next_block.id();
    });
-} FC_CAPTURE_AND_RETHROW() }
-
-void database::update_global_dynamic_data( const signed_block& b )
-{ try {
-   const dynamic_global_property_object& _dgp =
-      get_dynamic_global_properties();
-
-   uint32_t missed_blocks = 0;
-   if( head_block_time() != fc::time_point_sec() )
-   {
-      missed_blocks = get_slot_at_time( b.timestamp );
-      assert( missed_blocks != 0 );
-      missed_blocks--;
-      for( uint32_t i = 0; i < missed_blocks; ++i )
-      {
-         const auto& witness_missed = get_witness( get_scheduled_witness( i + 1 ) );
-         if(  witness_missed.owner != b.witness )
-         {
-            modify( witness_missed, [&]( witness_object& w )
-            {
-               w.total_missed++;
-               if( has_hardfork( STEEMIT_HARDFORK_0_14__278 ) )
-               {
-                   // automatically de-active witnesses if it missed over one day' block.
-                  if( head_block_num() - w.last_confirmed_block_num  > STEEMIT_BLOCKS_PER_DAY )
-                  {
-                     w.signing_key = public_key_type();
-                     push_virtual_operation( shutdown_witness_operation( w.owner ) );
-                  }
-               }
-            } );
-         }
-      }
-   }
-
-   // dynamic global properties updating
-   modify( _dgp, [&]( dynamic_global_property_object& dgp )
-   {
-      // This is constant time assuming 100% participation. It is O(B) otherwise (B = Num blocks between update)
-      for( uint32_t i = 0; i < missed_blocks + 1; i++ )
-      {
-         dgp.participation_count -= dgp.recent_slots_filled.hi & 0x8000000000000000ULL ? 1 : 0;
-         dgp.recent_slots_filled = ( dgp.recent_slots_filled << 1 ) + ( i == 0 ? 1 : 0 );
-         dgp.participation_count += ( i == 0 ? 1 : 0 );
-      }
-
-      dgp.head_block_number = b.block_num();
-      dgp.head_block_id = b.id();
-      dgp.time = b.timestamp;
-      dgp.current_aslot += missed_blocks+1;
-   } );
-
-   if( !(get_node_properties().skip_flags & skip_undo_history_check) )
-   {
-      STEEMIT_ASSERT( _dgp.head_block_number - _dgp.last_irreversible_block_num  < STEEMIT_MAX_UNDO_HISTORY, undo_database_exception,
-                 "The database does not have enough undo history to support a blockchain with so many missed blocks. "
-                 "Please add a checkpoint if you would like to continue applying blocks beyond this point.",
-                 ("last_irreversible_block_num",_dgp.last_irreversible_block_num)("head", _dgp.head_block_number)
-                 ("max_undo",STEEMIT_MAX_UNDO_HISTORY) );
-   }
 } FC_CAPTURE_AND_RETHROW() }
 
 void database::update_virtual_supply()
@@ -2892,96 +2793,6 @@ asset database::get_savings_balance( const account_object& a, asset_symbol_type 
    }
 }
 
-void database::init_hardforks() // happens after init_genesis
-{
-   _hardfork_times[ 0 ] = fc::time_point_sec( STEEMIT_GENESIS_TIME );
-   _hardfork_versions[ 0 ] = hardfork_version( 0, 0 );
-
-   FC_ASSERT( STEEMIT_HARDFORK_0_1 == 1, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_1 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_1_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_1 ] = STEEMIT_HARDFORK_0_1_VERSION;
-
-   FC_ASSERT( STEEMIT_HARDFORK_0_2 == 2, "Invlaid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_2 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_2_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_2 ] = STEEMIT_HARDFORK_0_2_VERSION;
-
-   FC_ASSERT( STEEMIT_HARDFORK_0_3 == 3, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_3 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_3_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_3 ] = STEEMIT_HARDFORK_0_3_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_4 == 4, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_4 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_4_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_4 ] = STEEMIT_HARDFORK_0_4_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_5 == 5, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_5 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_5_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_5 ] = STEEMIT_HARDFORK_0_5_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_6 == 6, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_6 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_6_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_6 ] = STEEMIT_HARDFORK_0_6_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_7 == 7, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_7 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_7_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_7 ] = STEEMIT_HARDFORK_0_7_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_8 == 8, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_8 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_8_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_8 ] = STEEMIT_HARDFORK_0_8_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_9 == 9, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_9 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_9_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_9 ] = STEEMIT_HARDFORK_0_9_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_10 == 10, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_10 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_10_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_10 ] = STEEMIT_HARDFORK_0_10_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_11 == 11, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_11 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_11_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_11 ] = STEEMIT_HARDFORK_0_11_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_12 == 12, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_12 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_12_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_12 ] = STEEMIT_HARDFORK_0_12_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_13 == 13, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_13 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_13_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_13 ] = STEEMIT_HARDFORK_0_13_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_14 == 14, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_14 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_14_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_14 ] = STEEMIT_HARDFORK_0_14_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_15 == 15, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_15 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_15_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_15 ] = STEEMIT_HARDFORK_0_15_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_16 == 16, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_16 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_16_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_16 ] = STEEMIT_HARDFORK_0_16_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_17 == 17, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_17 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_17_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_17 ] = STEEMIT_HARDFORK_0_17_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_18 == 18, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_18 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_18_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_18 ] = STEEMIT_HARDFORK_0_18_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_19 == 19, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_19 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_19_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_19 ] = STEEMIT_HARDFORK_0_19_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_20 == 20, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_20 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_20_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_20 ] = STEEMIT_HARDFORK_0_20_VERSION;
-   FC_ASSERT( STEEMIT_HARDFORK_0_21 == 21, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_21 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_21_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_21 ] = STEEMIT_HARDFORK_0_21_VERSION;
-
-   FC_ASSERT( STEEMIT_HARDFORK_0_22 == 22, "Invalid hardfork configuration" );
-   _hardfork_times[ STEEMIT_HARDFORK_0_22 ] = fc::time_point_sec( STEEMIT_HARDFORK_0_22_TIME );
-   _hardfork_versions[ STEEMIT_HARDFORK_0_22 ] = STEEMIT_HARDFORK_0_22_VERSION;
-
-   const auto& hardforks = get_hardfork_property_object();
-   FC_ASSERT( hardforks.last_hardfork <= STEEMIT_NUM_HARDFORKS, "Chain knows of more hardforks than configuration", ("hardforks.last_hardfork",hardforks.last_hardfork)("STEEMIT_NUM_HARDFORKS",STEEMIT_NUM_HARDFORKS) );
-   FC_ASSERT( _hardfork_versions[ hardforks.last_hardfork ] <= STEEMIT_BLOCKCHAIN_VERSION, "Blockchain version is older than last applied hardfork" );
-   FC_ASSERT( STEEMIT_BLOCKCHAIN_HARDFORK_VERSION == _hardfork_versions[ STEEMIT_NUM_HARDFORKS ] );
-}
-
-void database::process_hardforks() // head_block_time already updated before this point
-{
-   try
-   {
-      hardfork_doer hfd(*this);
-      hfd.process();      
-   }FC_CAPTURE_AND_RETHROW()
-}
-
 bool database::has_hardfork( uint32_t hardfork )const
 {
    return get_hardfork_property_object().last_hardfork >= hardfork;
@@ -2989,29 +2800,6 @@ bool database::has_hardfork( uint32_t hardfork )const
 
 // TODO: should be removed, for testing only, no production code should use this function.
 void database::set_hardfork( uint32_t hardfork, bool apply_now )
-{
-   auto const& hardforks = get_hardfork_property_object();
-
-   for( uint32_t i = hardforks.last_hardfork + 1; i <= hardfork && i <= STEEMIT_NUM_HARDFORKS; i++ )
-   {
-      if( i <= STEEMIT_HARDFORK_0_5__54 )
-         _hardfork_times[i] = head_block_time();
-      else
-      {
-         modify( hardforks, [&]( hardfork_property_object& hpo )
-         {
-            hpo.next_hardfork = _hardfork_versions[i];
-            hpo.next_hardfork_time = head_block_time();
-         } );
-      }
-
-      if( apply_now )
-         apply_hardfork( i );
-   }
-}
-
-// TODO: NOT USED ANY MORE
-void database::apply_hardfork( uint32_t hardfork )
 {   
 }
 

@@ -18,21 +18,6 @@ BOOST_AUTO_TEST_CASE(last_hardfork_should_be_0_after_genesis)
     BOOST_REQUIRE(db.last_hardfork() == 0);
 }
 
-// comment out, because unit test should only test behaviour instead of function
-// BOOST_FIXTURE_TEST_CASE(apply_hardfork_0_should_throw_exception, x_database_fixture)
-// {
-//     BOOST_REQUIRE_THROW(db.apply_hardfork(0), std::runtime_error);
-// }
-
-// BOOST_FIXTURE_TEST_CASE(apply_hardfork_should_increase_last_hardfork, x_database_fixture)
-// {
-//     for (uint32_t i = 1; i <= 22; i++)
-//     {
-//         db.apply_hardfork(i);
-//         BOOST_REQUIRE(db.last_hardfork() == i);
-//     }
-// }
-
 BOOST_FIXTURE_TEST_CASE(should_appied_to_hardfork_19_after_block_1, x_database_fixture)
 {    
     db.generate_block();

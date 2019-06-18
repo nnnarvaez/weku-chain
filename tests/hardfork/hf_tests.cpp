@@ -19,15 +19,6 @@ using namespace steemit;
 using namespace steemit::chain;
 using namespace steemit::protocol;
 
-/* 
-struct hardfork_property_object{    // should be merge into gpo
-   uint32_t current_hardfork = 0; // updated by apply_hardfork
-   fc::time_point_sec head_block_time = STEEMIT_GENESIS_TIME; 
-   uint32_t next_hardfork    = 0; // updated by witness_schedule
-   fc::time_point_sec next_hardfork_time = time_point_sec::maximum(); // updated by witness_schedule
-};
-*/
-
 struct hardfork_witness_object{
    uint32_t next_hardfork_vote = 0;
    time_point_sec next_hardfork_time_vote = time_point_sec::maximum();
