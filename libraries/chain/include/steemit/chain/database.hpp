@@ -330,8 +330,7 @@ namespace steemit { namespace chain {
          virtual share_type pay_curators( const comment_object& c, share_type& max_rewards ) override;
          
          void process_comment_cashout();
-         void process_funds();
-         void process_conversions();
+                  
          void process_savings_withdraws();
          void account_recovery_processing();
          void expire_escrow_ratification();

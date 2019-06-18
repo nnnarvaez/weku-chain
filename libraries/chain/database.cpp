@@ -1437,22 +1437,6 @@ void database::process_comment_cashout()
    cp.process_comment_cashout();
 }
 
-/**
- *  Overall the network has an inflation rate of 102% of virtual steem per year
- *  90% of inflation is directed to vesting shares
- *  10% of inflation is directed to subjective proof of work voting
- *  1% of inflation is directed to liquidity providers
- *  1% of inflation is directed to block producers
- *
- *  This method pays out vesting and reward shares every block, and liquidity shares once per day.
- *  This method does not pay out witnesses.
- */
-void database::process_funds()
-{
-   fund_processor fp(*this);
-   fp.process_funds();
-}
-
 void database::process_savings_withdraws()
 {
   const auto& idx = get_index< savings_withdraw_index >().indices().get< by_complete_from_rid >();
@@ -1553,49 +1537,7 @@ share_type database::pay_reward_funds( share_type reward )
    return rp.pay_reward_funds(reward);
 }
 
-/**
- *  Iterates over all conversion requests with a conversion date before
- *  the head block time and then converts them to/from steem/sbd at the
- *  current median price feed history price times the premium
- */
-void database::process_conversions()
-{
-   auto now = head_block_time();
-   const auto& request_by_date = get_index< convert_request_index >().indices().get< by_conversion_date >();
-   auto itr = request_by_date.begin();
 
-   const auto& fhistory = get_feed_history();
-   if( fhistory.current_median_history.is_null() )
-      return;
-
-   asset net_sbd( 0, SBD_SYMBOL );
-   asset net_steem( 0, STEEM_SYMBOL );
-
-   while( itr != request_by_date.end() && itr->conversion_date <= now )
-   {
-      const auto& user = get_account( itr->owner );
-      auto amount_to_issue = itr->amount * fhistory.current_median_history;
-
-      adjust_balance( user, amount_to_issue );
-
-      net_sbd   += itr->amount;
-      net_steem += amount_to_issue;
-
-      push_virtual_operation( fill_convert_request_operation ( user.name, itr->requestid, itr->amount, amount_to_issue ) );
-
-      remove( *itr );
-      itr = request_by_date.begin();
-   }
-
-   const auto& props = get_dynamic_global_properties();
-   modify( props, [&]( dynamic_global_property_object& p )
-   {
-       p.current_supply += net_steem;
-       p.current_sbd_supply -= net_sbd;
-       p.virtual_supply += net_steem;
-       p.virtual_supply -= net_sbd * get_feed_history().current_median_history;
-   } );
-}
 
 asset database::to_sbd( const asset& steem )const
 {
@@ -2175,8 +2117,12 @@ void database::_apply_block( const signed_block& next_block )
    null_account_cleaner nac(*this);
    nac.clear_null_account_balance();
 
-   process_funds();
-   process_conversions();
+   fund_processor fp(*this);
+   fp.process_funds();
+
+   conversion_processor(*this);
+   cp.process_conversions();
+   
    process_comment_cashout();
    process_vesting_withdrawals();
    process_savings_withdraws();
