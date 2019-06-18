@@ -27,7 +27,7 @@ void fund_processor::process_funds()
        * every 250k blocks. This narrowing will take approximately 20.5 years and will complete on block 220,750,000
        */
       int64_t start_inflation_rate = int64_t( STEEMIT_INFLATION_RATE_START_PERCENT );
-      int64_t inflation_rate_adjustment = int64_t( head_block_num() / STEEMIT_INFLATION_NARROWING_PERIOD );
+      int64_t inflation_rate_adjustment = int64_t( _db.head_block_num() / STEEMIT_INFLATION_NARROWING_PERIOD );
       int64_t inflation_rate_floor = int64_t( STEEMIT_INFLATION_RATE_STOP_PERCENT );
 
       // below subtraction cannot underflow int64_t because inflation_rate_adjustment is <2^32
@@ -70,7 +70,7 @@ void fund_processor::process_funds()
           // note: price = total vesting / total vesting fund
           // basically, vesting_reward will benefit power up users by reducing the price.
          p.total_vesting_fund_steem += asset( vesting_reward, STEEM_SYMBOL );
-         if( !has_hardfork( STEEMIT_HARDFORK_0_17 ) )
+         if( !_db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
             p.total_reward_fund_steem  += asset( content_reward, STEEM_SYMBOL );
          p.current_supply           += asset( new_steem, STEEM_SYMBOL );
          p.virtual_supply           += asset( new_steem, STEEM_SYMBOL );

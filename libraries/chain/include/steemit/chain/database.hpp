@@ -336,8 +336,7 @@ namespace steemit { namespace chain {
          void account_recovery_processing();
          void expire_escrow_ratification();
          void process_decline_voting_rights();
-         void update_median_feed();
-        
+                 
          virtual asset get_content_reward()const override;
          virtual asset get_producer_reward() override;
          virtual asset get_curation_reward()const override;
@@ -358,7 +357,7 @@ namespace steemit { namespace chain {
 
          virtual time_point_sec   head_block_time()const override;
          virtual uint32_t head_block_num()const override;
-         block_id_type    head_block_id()const;
+         virtual block_id_type    head_block_id()const override;
 
          node_property_object& node_properties();
 
@@ -433,12 +432,9 @@ namespace steemit { namespace chain {
          ///Steps involved in applying a new block
          ///@{
 
-         const witness_object& validate_block_header( uint32_t skip, const signed_block& next_block )const;
-         void create_block_summary(const signed_block& next_block);
-
-         void clear_null_account_balance();
-
          
+         void create_block_summary(const signed_block& next_block);
+                  
          void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
          void update_last_irreversible_block();
          void clear_expired_transactions();

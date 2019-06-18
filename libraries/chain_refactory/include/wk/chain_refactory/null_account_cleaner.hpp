@@ -4,12 +4,14 @@
 
 namespace wk{namespace chain{
 
-class fund_processor{
+class null_account_cleaner{
     public:
-        fund_processor(itemp_database& db):_db(db){}
-        void process_funds();
+        null_account_cleaner(itemp_database& db):_db(db){}
+        
+        void clear_null_account_balance();
     private:
         itemp_database& _db;
-};
+};  
 
 }}
+

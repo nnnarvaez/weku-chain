@@ -1211,97 +1211,6 @@ void database::clear_witness_votes( const account_object& a )
       });
 }
 
-// get called for every block creation.
-void database::clear_null_account_balance()
-{
-   if( !has_hardfork( STEEMIT_HARDFORK_0_14__327 ) ) return;
-
-   const auto& null_account = get_account( STEEMIT_NULL_ACCOUNT );
-   asset total_steem( 0, STEEM_SYMBOL );
-   asset total_sbd( 0, SBD_SYMBOL );
-
-   if( null_account.balance.amount > 0 )
-   {
-      total_steem += null_account.balance;
-      adjust_balance( null_account, -null_account.balance );
-   }
-
-   if( null_account.savings_balance.amount > 0 )
-   {
-      total_steem += null_account.savings_balance;
-      adjust_savings_balance( null_account, -null_account.savings_balance );
-   }
-
-   if( null_account.sbd_balance.amount > 0 )
-   {
-      total_sbd += null_account.sbd_balance;
-      adjust_balance( null_account, -null_account.sbd_balance );
-   }
-
-   if( null_account.savings_sbd_balance.amount > 0 )
-   {
-      total_sbd += null_account.savings_sbd_balance;
-      adjust_savings_balance( null_account, -null_account.savings_sbd_balance );
-   }
-
-   if( null_account.vesting_shares.amount > 0 )
-   {
-      const auto& gpo = get_dynamic_global_properties();
-      // TODO: need to confirm if below calc is correct or not.
-      // QUESTION: should below calc using divide instead of multiply?
-      auto converted_steem = null_account.vesting_shares * gpo.get_vesting_share_price();
-
-      modify( gpo, [&]( dynamic_global_property_object& g )
-      {
-         g.total_vesting_shares -= null_account.vesting_shares;
-         g.total_vesting_fund_steem -= converted_steem;
-      });
-
-      modify( null_account, [&]( account_object& a )
-      {
-         a.vesting_shares.amount = 0;
-      });
-
-      total_steem += converted_steem;
-   }
-
-   if( null_account.reward_steem_balance.amount > 0 )
-   {
-      total_steem += null_account.reward_steem_balance;
-      adjust_reward_balance( null_account, -null_account.reward_steem_balance );
-   }
-
-   if( null_account.reward_sbd_balance.amount > 0 )
-   {
-      total_sbd += null_account.reward_sbd_balance;
-      adjust_reward_balance( null_account, -null_account.reward_sbd_balance );
-   }
-
-   if( null_account.reward_vesting_balance.amount > 0 )
-   {
-      const auto& gpo = get_dynamic_global_properties();
-
-      total_steem += null_account.reward_vesting_steem;
-
-      modify( gpo, [&]( dynamic_global_property_object& g )
-      {
-         g.pending_rewarded_vesting_shares -= null_account.reward_vesting_balance;
-         g.pending_rewarded_vesting_steem -= null_account.reward_vesting_steem;
-      });
-
-      modify( null_account, [&]( account_object& a )
-      {
-         a.reward_vesting_steem.amount = 0;
-         a.reward_vesting_balance.amount = 0;
-      });
-   }
-
-   if( total_steem.amount > 0 )
-      adjust_supply( -total_steem );
-
-   if( total_sbd.amount > 0 )
-      adjust_supply( -total_sbd );
-}
 
 /**
  * This method updates total_reward_shares2 on DGPO, and children_rshares2 on comments, when a comment's rshares2 changes
@@ -2189,7 +2098,8 @@ void database::_apply_block( const signed_block& next_block )
       }
    }
 
-   const witness_object& signing_witness = validate_block_header(skip, next_block);
+   block_header_validator bhv(*this);
+   const witness_object& signing_witness = bhv.validate_block_header(skip, next_block);
 
    _current_block_num    = next_block_num;
    _current_trx_in_block = 0;
@@ -2256,11 +2166,15 @@ void database::_apply_block( const signed_block& next_block )
    clear_expired_delegations();
    update_witness_schedule(*this);
 
-   update_median_feed();
+   median_feed_updator mfu(*this);
+   mfu.update_median_feed();
+   
    // QUESTION: another update_virtual_supply in next 10 lines?
    update_virtual_supply();
 
-   clear_null_account_balance();
+   null_account_cleaner nac(*this);
+   nac.clear_null_account_balance();
+
    process_funds();
    process_conversions();
    process_comment_cashout();
@@ -2338,75 +2252,7 @@ void database::process_header_extensions( const signed_block& next_block )
 }
 
 
-// only update median feed once every hour.
-void database::update_median_feed() {
-try {
-   if( (head_block_num() % STEEMIT_FEED_INTERVAL_BLOCKS) != 0 )
-      return;
 
-   auto now = head_block_time();
-   const witness_schedule_object& wso = get_witness_schedule_object();
-   vector<price> feeds; feeds.reserve( wso.num_scheduled_witnesses );
-   for( int i = 0; i < wso.num_scheduled_witnesses; i++ )
-   {
-      const auto& wit = get_witness( wso.current_shuffled_witnesses[i] );
-      if( has_hardfork( STEEMIT_HARDFORK_0_19__822 ) )
-      {
-         if( now < wit.last_sbd_exchange_update + STEEMIT_MAX_FEED_AGE_SECONDS
-            && !wit.sbd_exchange_rate.is_null() )
-         {
-            feeds.push_back( wit.sbd_exchange_rate );
-         }
-      }
-      else if( wit.last_sbd_exchange_update < now + STEEMIT_MAX_FEED_AGE_SECONDS &&
-          !wit.sbd_exchange_rate.is_null() )
-      {
-         feeds.push_back( wit.sbd_exchange_rate );
-      }
-   }
-
-   if( feeds.size() >= STEEMIT_MIN_FEEDS )
-   {
-      std::sort( feeds.begin(), feeds.end() );
-      auto median_feed = feeds[feeds.size()/2];
-
-      modify( get_feed_history(), [&]( feed_history_object& fho )
-      {
-         fho.price_history.push_back( median_feed );
-         size_t steemit_feed_history_window = STEEMIT_FEED_HISTORY_WINDOW_PRE_HF_16;
-         if( has_hardfork( STEEMIT_HARDFORK_0_16__551) )
-            steemit_feed_history_window = STEEMIT_FEED_HISTORY_WINDOW;
-
-         if( fho.price_history.size() > steemit_feed_history_window )
-            fho.price_history.pop_front();
-
-         if( fho.price_history.size() )
-         {
-            std::deque< price > copy;
-            for( auto i : fho.price_history )
-            {
-               copy.push_back( i );
-            }
-
-            std::sort( copy.begin(), copy.end() ); /// TODO: use nth_item
-            fho.current_median_history = copy[copy.size()/2];
-
-            #ifdef IS_TEST_NET
-            if( skip_price_feed_limit_check )
-               return;
-            #endif
-            if( has_hardfork( STEEMIT_HARDFORK_0_14__230 ) )
-            {
-               const auto& gpo = get_dynamic_global_properties();
-               price min_price( asset( 9 * gpo.current_sbd_supply.amount, SBD_SYMBOL ), gpo.current_supply ); // This price limits SBD to 10% market cap
-
-               if( min_price > fho.current_median_history )
-                  fho.current_median_history = min_price;
-            }
-         }
-      });
-   }
-} FC_CAPTURE_AND_RETHROW() }
 
 void database::apply_transaction(const signed_transaction& trx, uint32_t skip)
 {
@@ -2503,28 +2349,7 @@ void database::apply_operation(const operation& op)
    notify_post_apply_operation( note );
 }
 
-const witness_object& database::validate_block_header( uint32_t skip, const signed_block& next_block )const
-{ try {
-   FC_ASSERT( head_block_id() == next_block.previous, "", ("head_block_id",head_block_id())("next.prev",next_block.previous) );
-   FC_ASSERT( head_block_time() < next_block.timestamp, "", ("head_block_time",head_block_time())("next",next_block.timestamp)("blocknum",next_block.block_num()) );
-   const witness_object& witness = get_witness( next_block.witness );
 
-   if( !(skip&skip_witness_signature) )
-      FC_ASSERT( next_block.validate_signee( witness.signing_key ) );
-
-   if( !(skip&skip_witness_schedule_check) )
-   {
-      uint32_t slot_num = get_slot_at_time( next_block.timestamp );
-      FC_ASSERT( slot_num > 0 );
-
-      string scheduled_witness = get_scheduled_witness( slot_num );
-
-      FC_ASSERT( witness.owner == scheduled_witness, "Witness produced block at wrong time",
-                 ("block witness",next_block.witness)("scheduled",scheduled_witness)("slot_num",slot_num) );
-   }
-
-   return witness;
-} FC_CAPTURE_AND_RETHROW() }
 
 void database::create_block_summary(const signed_block& next_block)
 { try {

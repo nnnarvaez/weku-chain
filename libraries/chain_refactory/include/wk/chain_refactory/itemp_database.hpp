@@ -1,38 +1,35 @@
 #pragma once
 
+#include <fc/uint128.hpp>
 #include <chainbase/chainbase.hpp>
-#include <steemit/chain/steem_object_types.hpp>
+
 #include <steemit/protocol/block.hpp>
-#include <steemit/chain/account_object.hpp>
 #include <steemit/protocol/steem_operations.hpp>
 #include <steemit/protocol/config.hpp>
+
+#include <steemit/chain/compound.hpp>
+#include <steemit/chain/steem_object_types.hpp>
+#include <steemit/chain/account_object.hpp>
 #include <steemit/chain/global_property_object.hpp>
 #include <steemit/chain/comment_object.hpp>
 #include <steemit/chain/steem_objects.hpp>
-#include <fc/uint128.hpp>
 #include <steemit/chain/witness_schedule.hpp>
+#include <steemit/chain/node_property_object.hpp>
+#include <steemit/chain/block_summary_object.hpp>
+#include <steemit/chain/database_exceptions.hpp>
+
 #include <steemit/chain/util/asset.hpp>
 #include <steemit/chain/util/reward.hpp>
 #include <steemit/chain/util/uint256.hpp>
 
 #include <wk/chain_refactory/hardfork_constants.hpp>
- #include <steemit/chain/compound.hpp>
 
-// #include <steemit/chain/block_summary_object.hpp>
-//
 // #include <steemit/chain/custom_operation_interpreter.hpp>
-// 
 // #include <steemit/chain/history_object.hpp>
 // #include <steemit/chain/index.hpp>
 // #include <steemit/chain/transaction_object.hpp>
 // #include <steemit/chain/shared_db_merkle.hpp>
 // #include <steemit/chain/operation_notification.hpp>
-// 
-
-// #include <steemit/chain/util/asset.hpp>
-// #include <steemit/chain/util/reward.hpp>
-// #include <steemit/chain/util/uint256.hpp>
-// #include <steemit/chain/util/reward.hpp>
 
 using namespace steemit::protocol;
 using namespace steemit::chain;
@@ -84,6 +81,9 @@ class itemp_database: public chainbase::database
     virtual const witness_schedule_object&         get_witness_schedule_object()const;
     virtual const feed_history_object&             get_feed_history()const;
 
+    virtual block_id_type head_block_id()const;
+    virtual fc::time_point_sec head_block_time()const;
+
     virtual const account_object&  get_account(  const account_name_type& name )const;
     virtual const account_object*  find_account( const account_name_type& name )const;
     virtual const witness_object&  get_witness(  const account_name_type& name )const;
@@ -91,7 +91,6 @@ class itemp_database: public chainbase::database
 
     virtual void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing );
 
-    virtual fc::time_point_sec   head_block_time()const;
     virtual void adjust_balance( const account_object& a, const asset& delta );
     virtual void adjust_supply( const asset& delta, bool adjust_vesting = false );
     virtual void adjust_witness_votes( const account_object& a, share_type delta );
