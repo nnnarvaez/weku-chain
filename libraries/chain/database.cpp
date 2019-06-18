@@ -1431,12 +1431,6 @@ share_type database::pay_curators( const comment_object& c, share_type& max_rewa
    } FC_CAPTURE_AND_RETHROW()
 }
 
-void database::process_comment_cashout()
-{
-   cashout_processor cp(*this);
-   cp.process_comment_cashout();
-}
-
 void database::process_savings_withdraws()
 {
   const auto& idx = get_index< savings_withdraw_index >().indices().get< by_complete_from_rid >();
@@ -2122,8 +2116,10 @@ void database::_apply_block( const signed_block& next_block )
 
    conversion_processor(*this);
    cp.process_conversions();
+
+   cashout_processor(*this);
+   cop.process_comment_cashout();
    
-   process_comment_cashout();
    process_vesting_withdrawals();
    process_savings_withdraws();
    pay_liquidity_reward();

@@ -91,6 +91,8 @@ class itemp_database: public chainbase::database
 
     virtual void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing );
 
+    virtual void adjust_savings_balance( const account_object& a, const asset& delta );
+    virtual void adjust_reward_balance( const account_object& a, const asset& delta );
     virtual void adjust_balance( const account_object& a, const asset& delta );
     virtual void adjust_supply( const asset& delta, bool adjust_vesting = false );
     virtual void adjust_witness_votes( const account_object& a, share_type delta );

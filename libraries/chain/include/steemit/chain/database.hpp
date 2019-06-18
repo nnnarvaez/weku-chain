@@ -297,8 +297,8 @@ namespace steemit { namespace chain {
 
          virtual void        adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_bid ) override;
          virtual void        adjust_balance( const account_object& a, const asset& delta ) override;
-         void        adjust_savings_balance( const account_object& a, const asset& delta );
-         void        adjust_reward_balance( const account_object& a, const asset& delta );
+         virtual void        adjust_savings_balance( const account_object& a, const asset& delta ) override;
+         virtual void        adjust_reward_balance( const account_object& a, const asset& delta ) override;
          virtual void        adjust_supply( const asset& delta, bool adjust_vesting = false ) override;
          virtual void        adjust_rshares2( const comment_object& comment, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 ) override;
          void        update_owner_authority( const account_object& account, const authority& owner_authority );
@@ -328,8 +328,6 @@ namespace steemit { namespace chain {
          void clear_witness_votes( const account_object& a );
          void process_vesting_withdrawals();
          virtual share_type pay_curators( const comment_object& c, share_type& max_rewards ) override;
-         
-         void process_comment_cashout();
                   
          void process_savings_withdraws();
          void account_recovery_processing();

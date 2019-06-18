@@ -18,7 +18,7 @@ const witness_object& block_header_validator::validate_block_header( uint32_t sk
       uint32_t slot_num = _db.get_slot_at_time( next_block.timestamp );
       FC_ASSERT( slot_num > 0 );
 
-      string scheduled_witness = _db.get_scheduled_witness( slot_num );
+      std::string scheduled_witness = _db.get_scheduled_witness( slot_num );
 
       FC_ASSERT( witness.owner == scheduled_witness, "Witness produced block at wrong time",
                  ("block witness",next_block.witness)("scheduled",scheduled_witness)("slot_num",slot_num) );
