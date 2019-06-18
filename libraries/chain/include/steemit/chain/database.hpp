@@ -316,7 +316,7 @@ namespace steemit { namespace chain {
                                             int depth = 0 ) override;
 
          /** this updates the votes for all witnesses as a result of account VESTS changing */
-         void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 );
+         virtual void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 ) override;
 
          /** this is called by `adjust_proxied_witness_votes` when account proxy to self */
          virtual void adjust_witness_votes( const account_object& a, share_type delta ) override;
@@ -328,14 +328,11 @@ namespace steemit { namespace chain {
           * witness vote totals.  Vote totals should be updated first via a call to
           * adjust_proxied_witness_votes( a, -a.witness_vote_weight() )
           */
-         void clear_witness_votes( const account_object& a );
-         void process_vesting_withdrawals();
+         virtual void clear_witness_votes( const account_object& a ) override;
+         
          virtual share_type pay_curators( const comment_object& c, share_type& max_rewards ) override;
                   
          void process_savings_withdraws();
-         void account_recovery_processing();
-         void expire_escrow_ratification();
-         void process_decline_voting_rights();
                  
          virtual asset get_content_reward()const override;
          virtual asset get_producer_reward() override;
@@ -345,8 +342,6 @@ namespace steemit { namespace chain {
          virtual uint16_t get_curation_rewards_percent( const comment_object& c ) const override;
 
          virtual share_type pay_reward_funds( share_type reward ) override;
-
-         void  pay_liquidity_reward();
 
          /**
           * Helper method to return the current sbd value of a given amount of

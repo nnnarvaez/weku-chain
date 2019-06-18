@@ -4,6 +4,54 @@ using namespace steemit::chain;
 
 namespace wk{namespace chain{
 
+void block_applier::process_decline_voting_rights()
+{
+   const auto& request_idx = _db.get_index< decline_voting_rights_request_index >().indices().get< by_effective_date >();
+   auto itr = request_idx.begin();
+
+   while( itr != request_idx.end() && itr->effective_date <= _db.head_block_time() )
+   {
+      const auto& account = _db.get(itr->account);
+
+      /// remove all current votes
+      std::array<share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1> delta;
+      delta[0] = -account.vesting_shares.amount;
+      for( int i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
+         delta[i+1] = -account.proxied_vsf_votes[i];
+      _db.adjust_proxied_witness_votes( account, delta );
+
+      _db.clear_witness_votes( account );
+
+      _db.modify( _db.get(itr->account), [&]( account_object& a )
+      {
+         a.can_vote = false;
+         a.proxy = STEEMIT_PROXY_TO_SELF_ACCOUNT;
+      });
+
+      _db.remove( *itr );
+      itr = request_idx.begin();
+   }
+}
+
+void block_applier::expire_escrow_ratification()
+{
+   const auto& escrow_idx = _db.get_index< escrow_index >().indices().get< by_ratification_deadline >();
+   auto escrow_itr = escrow_idx.lower_bound( false );
+
+   while( escrow_itr != escrow_idx.end() && !escrow_itr->is_approved() && escrow_itr->ratification_deadline <= _db.head_block_time() )
+   {
+      const auto& old_escrow = *escrow_itr;
+      ++escrow_itr;
+
+      const auto& from_account = _db.get_account( old_escrow.from );
+      _db.adjust_balance( from_account, old_escrow.steem_balance );
+      _db.adjust_balance( from_account, old_escrow.sbd_balance );
+      _db.adjust_balance( from_account, old_escrow.pending_fee );
+
+      _db.remove( old_escrow );
+   }
+}
+
 void block_applier::update_last_irreversible_block()
 { 
     try {
@@ -46,7 +94,7 @@ void block_applier::update_last_irreversible_block()
 
             uint32_t new_last_irreversible_block_num = wit_objs[offset]->last_confirmed_block_num;
 
-            if(!has_hardfork(STEEMIT_HARDFORK_0_22) && offset < 1) // to fix replay stuck at: block #4735073 / #4745073 issue
+            if(!_db.has_hardfork(STEEMIT_HARDFORK_0_22) && offset < 1) // to fix replay stuck at: block #4735073 / #4745073 issue
                 new_last_irreversible_block_num = wit_objs.back()->last_confirmed_block_num;
 
             //ilog("witness: ${a}", ("a", std::string(wit_objs[offset]->owner)));

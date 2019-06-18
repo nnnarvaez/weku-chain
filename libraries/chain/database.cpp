@@ -1247,127 +1247,6 @@ void database::update_owner_authority( const account_object& account, const auth
    });
 }
 
-void database::process_vesting_withdrawals()
-{
-   const auto& widx = get_index< account_index >().indices().get< by_next_vesting_withdrawal >();
-   const auto& didx = get_index< withdraw_vesting_route_index >().indices().get< by_withdraw_route >();
-   auto current = widx.begin();
-
-   const auto& cprops = get_dynamic_global_properties();
-
-   while( current != widx.end() && current->next_vesting_withdrawal <= head_block_time() )
-   {
-      const auto& from_account = *current; ++current;
-
-      /**
-      *  Let T = total tokens in vesting fund
-      *  Let V = total vesting shares
-      *  Let v = total vesting shares being cashed out
-      *
-      *  The user may withdraw  vT / V tokens
-      */
-      share_type to_withdraw;
-      if ( from_account.to_withdraw - from_account.withdrawn < from_account.vesting_withdraw_rate.amount )
-         to_withdraw = std::min( from_account.vesting_shares.amount, from_account.to_withdraw % from_account.vesting_withdraw_rate.amount ).value;
-      else
-         to_withdraw = std::min( from_account.vesting_shares.amount, from_account.vesting_withdraw_rate.amount ).value;
-
-      share_type vests_deposited_as_steem = 0;
-      share_type vests_deposited_as_vests = 0;
-      asset total_steem_converted = asset( 0, STEEM_SYMBOL );
-
-      // Do two passes, the first for vests, the second for steem. Try to maintain as much accuracy for vests as possible.
-      for( auto itr = didx.upper_bound( boost::make_tuple( from_account.id, account_id_type() ) );
-           itr != didx.end() && itr->from_account == from_account.id;
-           ++itr )
-      {
-         if( itr->auto_vest )
-         {
-            share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / STEEMIT_100_PERCENT ).to_uint64();
-            vests_deposited_as_vests += to_deposit;
-
-            if( to_deposit > 0 )
-            {
-               const auto& to_account = get(itr->to_account);
-
-               modify( to_account, [&]( account_object& a )
-               {
-                  a.vesting_shares.amount += to_deposit;
-               });
-
-               adjust_proxied_witness_votes( to_account, to_deposit );
-
-               push_virtual_operation( fill_vesting_withdraw_operation( from_account.name, to_account.name, asset( to_deposit, VESTS_SYMBOL ), asset( to_deposit, VESTS_SYMBOL ) ) );
-            }
-         }
-      }
-
-      for( auto itr = didx.upper_bound( boost::make_tuple( from_account.id, account_id_type() ) );
-           itr != didx.end() && itr->from_account == from_account.id;
-           ++itr )
-      {
-         if( !itr->auto_vest )
-         {
-            const auto& to_account = get(itr->to_account);
-
-            share_type to_deposit = ( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / STEEMIT_100_PERCENT ).to_uint64();
-            vests_deposited_as_steem += to_deposit;
-            auto converted_steem = asset( to_deposit, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
-            total_steem_converted += converted_steem;
-
-            if( to_deposit > 0 )
-            {
-               modify( to_account, [&]( account_object& a )
-               {
-                  a.balance += converted_steem;
-               });
-
-               modify( cprops, [&]( dynamic_global_property_object& o )
-               {
-                  o.total_vesting_fund_steem -= converted_steem;
-                  o.total_vesting_shares.amount -= to_deposit;
-               });
-
-               push_virtual_operation( fill_vesting_withdraw_operation( from_account.name, to_account.name, asset( to_deposit, VESTS_SYMBOL), converted_steem ) );
-            }
-         }
-      }
-
-      share_type to_convert = to_withdraw - vests_deposited_as_steem - vests_deposited_as_vests;
-      FC_ASSERT( to_convert >= 0, "Deposited more vests than were supposed to be withdrawn" );
-
-      auto converted_steem = asset( to_convert, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
-
-      modify( from_account, [&]( account_object& a )
-      {
-         a.vesting_shares.amount -= to_withdraw;
-         a.balance += converted_steem;
-         a.withdrawn += to_withdraw;
-
-         if( a.withdrawn >= a.to_withdraw || a.vesting_shares.amount == 0 )
-         {
-            a.vesting_withdraw_rate.amount = 0;
-            a.next_vesting_withdrawal = fc::time_point_sec::maximum();
-         }
-         else
-         {
-            a.next_vesting_withdrawal += fc::seconds( STEEMIT_VESTING_WITHDRAW_INTERVAL_SECONDS );
-         }
-      });
-
-      modify( cprops, [&]( dynamic_global_property_object& o )
-      {
-         o.total_vesting_fund_steem -= converted_steem;
-         o.total_vesting_shares.amount -= to_convert;
-      });
-
-      if( to_withdraw > 0 )
-         adjust_proxied_witness_votes( from_account, -to_withdraw );
-
-      push_virtual_operation( fill_vesting_withdraw_operation( from_account.name, from_account.name, asset( to_withdraw, VESTS_SYMBOL ), converted_steem ) );
-   }
-}
-
 void database::adjust_total_payout( const comment_object& cur, const asset& sbd_created, const asset& curator_sbd_value, const asset& beneficiary_value )
 {
    modify( cur, [&]( comment_object& c )
@@ -1509,12 +1388,6 @@ asset database::get_pow_reward()const
    return std::max( percent, STEEMIT_MIN_POW_REWARD );
 }
 
-void database::pay_liquidity_reward()
-{
-   reward_processor rp(*this);
-   rp.pay_liquidity_reward();
-}
-
 uint16_t database::get_curation_rewards_percent( const comment_object& c ) const
 {
    if( has_hardfork( STEEMIT_HARDFORK_0_17__774 ) )
@@ -1541,92 +1414,6 @@ asset database::to_sbd( const asset& steem )const
 asset database::to_steem( const asset& sbd )const
 {
    return util::to_steem( get_feed_history().current_median_history, sbd );
-}
-
-void database::account_recovery_processing()
-{
-   // Clear expired recovery requests
-   const auto& rec_req_idx = get_index< account_recovery_request_index >().indices().get< by_expiration >();
-   auto rec_req = rec_req_idx.begin();
-
-   while( rec_req != rec_req_idx.end() && rec_req->expires <= head_block_time() )
-   {
-      remove( *rec_req );
-      rec_req = rec_req_idx.begin();
-   }
-
-   // Clear invalid historical authorities
-   const auto& hist_idx = get_index< owner_authority_history_index >().indices(); //by id
-   auto hist = hist_idx.begin();
-
-   while( hist != hist_idx.end() && time_point_sec( hist->last_valid_time + STEEMIT_OWNER_AUTH_RECOVERY_PERIOD ) < head_block_time() )
-   {
-      remove( *hist );
-      hist = hist_idx.begin();
-   }
-
-   // Apply effective recovery_account changes
-   const auto& change_req_idx = get_index< change_recovery_account_request_index >().indices().get< by_effective_date >();
-   auto change_req = change_req_idx.begin();
-
-   while( change_req != change_req_idx.end() && change_req->effective_on <= head_block_time() )
-   {
-      modify( get_account( change_req->account_to_recover ), [&]( account_object& a )
-      {
-         a.recovery_account = change_req->recovery_account;
-      });
-
-      remove( *change_req );
-      change_req = change_req_idx.begin();
-   }
-}
-
-void database::expire_escrow_ratification()
-{
-   const auto& escrow_idx = get_index< escrow_index >().indices().get< by_ratification_deadline >();
-   auto escrow_itr = escrow_idx.lower_bound( false );
-
-   while( escrow_itr != escrow_idx.end() && !escrow_itr->is_approved() && escrow_itr->ratification_deadline <= head_block_time() )
-   {
-      const auto& old_escrow = *escrow_itr;
-      ++escrow_itr;
-
-      const auto& from_account = get_account( old_escrow.from );
-      adjust_balance( from_account, old_escrow.steem_balance );
-      adjust_balance( from_account, old_escrow.sbd_balance );
-      adjust_balance( from_account, old_escrow.pending_fee );
-
-      remove( old_escrow );
-   }
-}
-
-void database::process_decline_voting_rights()
-{
-   const auto& request_idx = get_index< decline_voting_rights_request_index >().indices().get< by_effective_date >();
-   auto itr = request_idx.begin();
-
-   while( itr != request_idx.end() && itr->effective_date <= head_block_time() )
-   {
-      const auto& account = get(itr->account);
-
-      /// remove all current votes
-      std::array<share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1> delta;
-      delta[0] = -account.vesting_shares.amount;
-      for( int i = 0; i < STEEMIT_MAX_PROXY_RECURSION_DEPTH; ++i )
-         delta[i+1] = -account.proxied_vsf_votes[i];
-      adjust_proxied_witness_votes( account, delta );
-
-      clear_witness_votes( account );
-
-      modify( get(itr->account), [&]( account_object& a )
-      {
-         a.can_vote = false;
-         a.proxy = STEEMIT_PROXY_TO_SELF_ACCOUNT;
-      });
-
-      remove( *itr );
-      itr = request_idx.begin();
-   }
 }
 
 time_point_sec database::head_block_time()const
@@ -2121,14 +1908,22 @@ void database::_apply_block( const signed_block& next_block )
    cashout_processor(*this);
    cop.process_comment_cashout();
 
-   process_vesting_withdrawals();
+   vest_withraw_processor vwp(*this);
+   vwp.process_vesting_withdrawals();
+
    process_savings_withdraws();
-   pay_liquidity_reward();
+
+   reward_processor rp(*this);
+   rp.pay_liquidity_reward();
+
    update_virtual_supply();
 
-   account_recovery_processing();
-   expire_escrow_ratification();
-   process_decline_voting_rights();
+   account_recovery_processor arp(*this);
+   arp.account_recovery_processing();
+
+   applier.expire_escrow_ratification();
+
+   applier.process_decline_voting_rights();
 
    // For WEKU, all hardforks before hardfork_20 are applied just after block 1 is saved to dish
    // this hardfork process is almost at the end of the process,
