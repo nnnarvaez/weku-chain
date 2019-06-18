@@ -24,6 +24,8 @@
 #include <steemit/chain/util/uint256.hpp>
 #include <steemit/chain/util/reward.hpp>
 
+#include <wk/chain_refactory/slot.hpp>
+
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
 
@@ -213,7 +215,7 @@ void database::close(bool rewind)
    FC_CAPTURE_AND_RETHROW()
 }
 
-void database::last_hardfork()
+uint32_t database::last_hardfork()
 {
    return get_hardfork_property_object().last_hardfork;
 }
@@ -815,7 +817,7 @@ signed_block database::_generate_block(
    pending_block.timestamp = when;
    pending_block.transaction_merkle_root = pending_block.calculate_merkle_root();
    pending_block.witness = witness_owner;
-   if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) )
+   if( has_hardfork( STEEMIT_HARDFORK_0_19 ) )
    {
       const auto& witness = get_witness( witness_owner );
 
@@ -965,7 +967,7 @@ uint32_t database::get_slot_at_time(fc::time_point_sec when)const
  */
 asset database::create_vesting( const account_object& to_account, asset steem, bool to_reward_balance )
 {
-   fund_processor(*this);
+   fund_processor fp(*this);
    fp.create_vesting(to_account, steem, to_reward_balance);
 }
 
@@ -987,7 +989,7 @@ uint32_t database::get_pow_summary_target()const
    if( dgp.num_pow_witnesses >= 1004 )
       return 0;
 
-   if( has_hardfork( STEEMIT_HARDFORK_0_16__551 ) )
+   if( has_hardfork( STEEMIT_HARDFORK_0_19 ) )
       return (0xFE00 - 0x0040 * dgp.num_pow_witnesses ) << 0x10;
    else
       return (0xFC00 - 0x0040 * dgp.num_pow_witnesses) << 0x10;
@@ -1097,7 +1099,7 @@ void database::clear_witness_votes( const account_object& a )
       remove(current);
    }
 
-   if( has_hardfork( STEEMIT_HARDFORK_0_6__104 ) )
+   if( has_hardfork( STEEMIT_HARDFORK_0_19 ) )
       modify( a, [&](account_object& acc )
       {
          acc.witnesses_voted_for = 0;
@@ -1183,7 +1185,7 @@ share_type database::pay_curators( const comment_object& c, share_type& max_rewa
             {
                unclaimed_rewards -= claim;
                const auto& voter = get(itr->voter);
-               auto reward = create_vesting( voter, asset( claim, STEEM_SYMBOL ), has_hardfork( STEEMIT_HARDFORK_0_17__659 ) );
+               auto reward = create_vesting( voter, asset( claim, STEEM_SYMBOL ), has_hardfork( STEEMIT_HARDFORK_0_17 ) );
 
                push_virtual_operation( curation_reward_operation( voter.name, reward, c.author, to_string( c.permlink ) ) );
 
@@ -1283,10 +1285,10 @@ asset database::get_pow_reward()const
 
 uint16_t database::get_curation_rewards_percent( const comment_object& c ) const
 {
-   if( has_hardfork( STEEMIT_HARDFORK_0_17__774 ) )
+   if( has_hardfork( STEEMIT_HARDFORK_0_17 ) )
       return get_reward_fund( c ).percent_curation_rewards;
-   else if( has_hardfork( STEEMIT_HARDFORK_0_8__116 ) )
-      return STEEMIT_1_PERCENT * 25;
+   //else if( has_hardfork( STEEMIT_HARDFORK_0_8 ) )
+   //   return STEEMIT_1_PERCENT * 25;
    else
       return STEEMIT_1_PERCENT * 50;
 }

@@ -129,7 +129,7 @@ class itemp_database: public chainbase::database
     virtual const node_property_object& get_node_properties()const;
     virtual node_property_object& node_properties();
 
-    virtual block_log block_log(); 
+    virtual block_log get_block_log(); 
     virtual fork_database fork_db();
 
     virtual void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 );

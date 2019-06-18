@@ -18,6 +18,8 @@
 
 #include <map>
 
+using namespace wk::chain;
+
 namespace steemit { namespace chain {
 
    using steemit::protocol::signed_transaction;
@@ -192,7 +194,7 @@ namespace steemit { namespace chain {
          void pop_block();
          void clear_pending();
 
-         virtual block_log block_log() override {return _block_log;}
+         virtual block_log get_block_log() override {return _block_log;}
          virtual fork_database fork_db() override {return _fork_db;}
 
          /**
@@ -382,10 +384,7 @@ namespace steemit { namespace chain {
          bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
          virtual void cancel_order( const limit_order_object& obj ) override;
          int  match( const limit_order_object& bid, const limit_order_object& ask, const price& trade_price );
-                                   
-         
-         
-
+              
          virtual bool has_hardfork( uint32_t hardfork )const override;
 
          /* For testing and debugging only. Given a hardfork

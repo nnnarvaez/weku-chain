@@ -38,7 +38,7 @@ void block_applier::update_global_dynamic_data( const signed_block& b )
 { 
     gpo_processor gp(_db);
    // update head_block_time during this operation
-   gp.update_global_dynamic_data(next_block);
+   gp.update_global_dynamic_data(b);
 }
 
 void block_applier::create_block_summary(const signed_block& next_block)
