@@ -11,6 +11,9 @@
 #include <steemit/chain/steem_objects.hpp>
 #include <fc/uint128.hpp>
 #include <steemit/chain/witness_schedule.hpp>
+#include <steemit/chain/util/asset.hpp>
+#include <steemit/chain/util/reward.hpp>
+#include <steemit/chain/util/uint256.hpp>
 
 #include <wk/chain_refactory/hardfork_constants.hpp>
 
@@ -106,7 +109,8 @@ class itemp_database: public chainbase::database
     
     virtual void adjust_total_payout( const comment_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value );
     virtual void validate_invariants()const;
-    virtual const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const;
+    virtual const fc::time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const;
+    virtual asset to_sbd( const asset& steem )const;
 };
 
 }}

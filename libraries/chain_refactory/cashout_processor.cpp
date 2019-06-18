@@ -1,17 +1,19 @@
 #include <wk/chain_refactory/cashout_processor.hpp>
-
-using namespace steemit::chain;
+#include <vector>
 
 namespace wk{namespace chain{
 
-struct reward_fund_context
-{
-   uint128_t   recent_claims = 0;
-   asset       reward_balance = asset( 0, STEEM_SYMBOL );
-   share_type  steem_awarded = 0;
-};
+using fc::uint128_t;
+using namespace steemit::chain;
 
-share_type cashout_processor::cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment )
+void cashout_processor::fill_comment_reward_context_local_state( util::comment_reward_context& ctx, const comment_object& comment )
+{
+   ctx.rshares = comment.net_rshares;
+   ctx.reward_weight = comment.reward_weight;
+   ctx.max_sbd = comment.max_accepted_payout;
+}
+
+share_type cashout_processor::cashout_comment_helper( steemit::chain::util::comment_reward_context& ctx, const comment_object& comment )
 {
    try
    {
@@ -23,7 +25,7 @@ share_type cashout_processor::cashout_comment_helper( util::comment_reward_conte
 
          if( _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
          {
-            const auto rf = get_reward_fund( comment );
+            const auto rf = _db.get_reward_fund( comment );
             ctx.reward_curve = rf.author_reward_curve;
             ctx.content_constant = rf.content_constant;
          }
@@ -54,13 +56,18 @@ share_type cashout_processor::cashout_comment_helper( util::comment_reward_conte
             auto vesting_steem = author_tokens - sbd_steem;
 
             const auto& author = _db.get_account( comment.author );
-            auto vest_created = _db.create_vesting( author, vesting_steem, has_hardfork( STEEMIT_HARDFORK_0_17__659 ) );
-            auto sbd_payout = _db.create_sbd( author, sbd_steem, has_hardfork( STEEMIT_HARDFORK_0_17__659 ) );
+            auto vest_created = _db.create_vesting( author, vesting_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
+            auto sbd_payout = _db.create_sbd( author, sbd_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
 
-            _db.adjust_total_payout( comment, sbd_payout.first + to_sbd( sbd_payout.second + asset( vesting_steem, STEEM_SYMBOL ) ), to_sbd( asset( curation_tokens, STEEM_SYMBOL ) ), to_sbd( asset( total_beneficiary, STEEM_SYMBOL ) ) );
+            _db.adjust_total_payout( comment, sbd_payout.first + 
+                _db.to_sbd( sbd_payout.second + asset( vesting_steem, STEEM_SYMBOL ) ), 
+                _db.to_sbd( asset( curation_tokens, STEEM_SYMBOL ) ), 
+                _db.to_sbd( asset( total_beneficiary, STEEM_SYMBOL ) ) );
 
-            _db.push_virtual_operation( author_reward_operation( comment.author, to_string( comment.permlink ), sbd_payout.first, sbd_payout.second, vest_created ) );
-            _db.push_virtual_operation( comment_reward_operation( comment.author, to_string( comment.permlink ), to_sbd( asset( claimed_reward, STEEM_SYMBOL ) ) ) );
+            _db.push_virtual_operation( author_reward_operation( comment.author, to_string( comment.permlink ), 
+                sbd_payout.first, sbd_payout.second, vest_created ) );
+            _db.push_virtual_operation( comment_reward_operation( comment.author, to_string( comment.permlink ), 
+                _db.to_sbd( asset( claimed_reward, STEEM_SYMBOL ) ) ) );
 
             #ifndef IS_LOW_MEM
             _db.modify( comment, [&]( comment_object& c )
@@ -76,7 +83,7 @@ share_type cashout_processor::cashout_comment_helper( util::comment_reward_conte
 
          }
 
-         if( !_db.has_hardfork( STEEMIT_HARDFORK_0_17__774 ) )
+         if( !_db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
             _db.adjust_rshares2( comment, util::evaluate_reward_curve( comment.net_rshares.value ), 0 );
       }
 
@@ -127,7 +134,7 @@ share_type cashout_processor::cashout_comment_helper( util::comment_reward_conte
          else
          {
             #ifdef CLEAR_VOTES
-            remove( cur_vote );
+            _db.remove( cur_vote );
             #endif
          }
       }
@@ -141,15 +148,15 @@ void cashout_processor::process_comment_cashout()
    /// don't allow any content to get paid out until the website is ready to launch
    /// and people have had a week to start posting.  The first cashout will be the biggest because it
    /// will represent 2+ months of rewards.
-   if( !has_hardfork( STEEMIT_FIRST_CASHOUT_TIME ) )
+   if( !_db.has_hardfork( STEEMIT_FIRST_CASHOUT_TIME ) )
       return;
 
    const auto& gpo = _db.get_dynamic_global_properties();
    util::comment_reward_context ctx;
    ctx.current_steem_price = _db.get_feed_history().current_median_history;
 
-   vector< reward_fund_context > funds;
-   vector< share_type > steem_awarded;
+   std::vector< reward_fund_context > funds;
+   std::vector< share_type > steem_awarded;
    const auto& reward_idx = _db.get_index< reward_fund_index, by_id >();
 
    // Decay recent rshares of each fund
@@ -160,7 +167,7 @@ void cashout_processor::process_comment_cashout()
       {
          fc::microseconds decay_rate;
 
-         if( _db.has_hardfork( STEEMIT_HARDFORK_0_19__1051 ) )
+         if( _db.has_hardfork( STEEMIT_HARDFORK_0_19 ) )
             decay_rate = STEEMIT_RECENT_RSHARES_DECAY_RATE_HF19;
          else
             decay_rate = STEEMIT_RECENT_RSHARES_DECAY_RATE_HF17;
@@ -215,7 +222,7 @@ void cashout_processor::process_comment_cashout()
     */
    while( current != cidx.end() && current->cashout_time <= _db.head_block_time() )
    {
-      if( _db.has_hardfork( STEEMIT_HARDFORK_0_17__771 ) )
+      if( _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
       {
          auto fund_id = _db.get_reward_fund( *current ).id._id;
          ctx.total_reward_shares2 = funds[ fund_id ].recent_claims;

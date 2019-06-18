@@ -359,7 +359,7 @@ namespace steemit { namespace chain {
           * Helper method to return the current sbd value of a given amount of
           * STEEM.  Return 0 SBD if there isn't a current_median_history
           */
-         asset to_sbd( const asset& steem )const;
+         virtual asset to_sbd( const asset& steem )const override;
          asset to_steem( const asset& sbd )const;
 
          virtual time_point_sec   head_block_time()const override;

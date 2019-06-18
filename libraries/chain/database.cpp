@@ -1565,12 +1565,7 @@ share_type database::pay_curators( const comment_object& c, share_type& max_rewa
    } FC_CAPTURE_AND_RETHROW()
 }
 
-void fill_comment_reward_context_local_state( util::comment_reward_context& ctx, const comment_object& comment )
-{
-   ctx.rshares = comment.net_rshares;
-   ctx.reward_weight = comment.reward_weight;
-   ctx.max_sbd = comment.max_accepted_payout;
-}
+
 
 void database::process_comment_cashout()
 {

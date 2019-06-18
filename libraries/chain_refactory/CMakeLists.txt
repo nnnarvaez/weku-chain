@@ -1,4 +1,5 @@
 include_directories(../chain/include)
+include_directories(../chain/util)
 include_directories(../fc/include)
 
 file(GLOB HEADERS "include/wk/chain_refactory/*.hpp")
