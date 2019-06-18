@@ -17,6 +17,8 @@
 #include <steemit/chain/node_property_object.hpp>
 #include <steemit/chain/block_summary_object.hpp>
 #include <steemit/chain/database_exceptions.hpp>
+#include <steemit/chain/block_log.hpp>
+#include <steemit/chain/fork_database.hpp>
 
 #include <steemit/chain/util/asset.hpp>
 #include <steemit/chain/util/reward.hpp>
