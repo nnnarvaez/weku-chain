@@ -76,6 +76,10 @@ class itemp_database: public chainbase::database
 
     virtual const dynamic_global_property_object&  get_dynamic_global_properties()const;
     virtual const witness_schedule_object&         get_witness_schedule_object()const;
+    virtual const feed_history_object&             get_feed_history()const;
+
+    virtual const account_object&  get_account(  const account_name_type& name )const;
+    virtual const account_object*  find_account( const account_name_type& name )const;
 
     virtual void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing );
 

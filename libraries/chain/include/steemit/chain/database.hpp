@@ -132,8 +132,8 @@ namespace steemit { namespace chain {
          const witness_object&  get_witness(  const account_name_type& name )const;
          const witness_object*  find_witness( const account_name_type& name )const;
 
-         const account_object&  get_account(  const account_name_type& name )const;
-         const account_object*  find_account( const account_name_type& name )const;
+         virtual const account_object&  get_account(  const account_name_type& name )const override;
+         virtual const account_object*  find_account( const account_name_type& name )const override;
 
          const comment_object&  get_comment(  const account_name_type& author, const shared_string& permlink )const;
          const comment_object*  find_comment( const account_name_type& author, const shared_string& permlink )const;
@@ -152,7 +152,7 @@ namespace steemit { namespace chain {
 
          virtual const dynamic_global_property_object&  get_dynamic_global_properties()const override;
          const node_property_object&            get_node_properties()const;
-         const feed_history_object&             get_feed_history()const;
+         virtual const feed_history_object&             get_feed_history()const override;
          virtual const witness_schedule_object&         get_witness_schedule_object()const override;
          const hardfork_property_object&        get_hardfork_property_object()const;
 
@@ -394,7 +394,7 @@ namespace steemit { namespace chain {
 
          bool apply_order( const limit_order_object& new_order_object );
          bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
-         void cancel_order( const limit_order_object& obj );
+         virtual void cancel_order( const limit_order_object& obj ) override;
          int  match( const limit_order_object& bid, const limit_order_object& ask, const price& trade_price );
                                    
          

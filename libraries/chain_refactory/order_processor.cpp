@@ -121,13 +121,13 @@ int order_processor::match(
    {
       if( old_order_receives.symbol == STEEM_SYMBOL )
       {
-         _db.adjust_liquidity_reward( get_account( old_order.seller ), old_order_receives, false );
-         _db.adjust_liquidity_reward( get_account( new_order.seller ), -old_order_receives, false );
+         _db.adjust_liquidity_reward( _db.get_account( old_order.seller ), old_order_receives, false );
+         _db.adjust_liquidity_reward( _db.get_account( new_order.seller ), -old_order_receives, false );
       }
       else
       {
-         _db.adjust_liquidity_reward( get_account( old_order.seller ), new_order_receives, true );
-         _db.adjust_liquidity_reward( get_account( new_order.seller ), -new_order_receives, true );
+         _db.adjust_liquidity_reward( _db.get_account( old_order.seller ), new_order_receives, true );
+         _db.adjust_liquidity_reward( _db.get_account( new_order.seller ), -new_order_receives, true );
       }
    }
 

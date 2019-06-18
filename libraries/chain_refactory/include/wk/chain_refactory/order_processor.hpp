@@ -6,6 +6,8 @@ namespace wk{namespace chain{
 
 class order_processor{
     public:
+        order_processor(itemp_database& db):_db(db){}
+        
         virtual bool apply_order( const limit_order_object& new_order_object );
         bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
         void clear_expired_orders();
