@@ -16,9 +16,10 @@
 #include <steemit/chain/util/uint256.hpp>
 
 #include <wk/chain_refactory/hardfork_constants.hpp>
-
+ #include <steemit/chain/compound.hpp>
+ 
 // #include <steemit/chain/block_summary_object.hpp>
-// #include <steemit/chain/compound.hpp>
+//
 // #include <steemit/chain/custom_operation_interpreter.hpp>
 // 
 // #include <steemit/chain/history_object.hpp>
@@ -85,11 +86,15 @@ class itemp_database: public chainbase::database
 
     virtual const account_object&  get_account(  const account_name_type& name )const;
     virtual const account_object*  find_account( const account_name_type& name )const;
+    virtual const witness_object&  get_witness(  const account_name_type& name )const;
+         virtual const witness_object*  find_witness( const account_name_type& name )const;
+
 
     virtual void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing );
 
     virtual fc::time_point_sec   head_block_time()const;
-    virtual void        adjust_balance( const account_object& a, const asset& delta );
+    virtual void adjust_balance( const account_object& a, const asset& delta );
+    virtual void adjust_supply( const asset& delta, bool adjust_vesting = false );
     virtual void adjust_witness_votes( const account_object& a, share_type delta );
     virtual void adjust_witness_vote( const witness_object& obj, share_type delta );
     virtual void adjust_rshares2( const comment_object& comment, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 );
@@ -111,6 +116,12 @@ class itemp_database: public chainbase::database
     virtual void validate_invariants()const;
     virtual const fc::time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const;
     virtual asset to_sbd( const asset& steem )const;
+    virtual share_type pay_reward_funds( share_type reward );
+
+    virtual asset get_content_reward()const ;
+         virtual asset get_producer_reward() ;
+         virtual asset get_curation_reward()const ;
+         virtual asset get_pow_reward()const ;
 };
 
 }}

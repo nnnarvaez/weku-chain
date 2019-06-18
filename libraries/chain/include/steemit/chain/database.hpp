@@ -129,8 +129,8 @@ namespace steemit { namespace chain {
          chain_id_type             get_chain_id()const;
 
 
-         const witness_object&  get_witness(  const account_name_type& name )const;
-         const witness_object*  find_witness( const account_name_type& name )const;
+         virtual const witness_object&  get_witness(  const account_name_type& name )const override;
+         virtual const witness_object*  find_witness( const account_name_type& name )const override;
 
          virtual const account_object&  get_account(  const account_name_type& name )const override;
          virtual const account_object*  find_account( const account_name_type& name )const override;
@@ -304,7 +304,7 @@ namespace steemit { namespace chain {
          virtual void        adjust_balance( const account_object& a, const asset& delta ) override;
          void        adjust_savings_balance( const account_object& a, const asset& delta );
          void        adjust_reward_balance( const account_object& a, const asset& delta );
-         void        adjust_supply( const asset& delta, bool adjust_vesting = false );
+         virtual void        adjust_supply( const asset& delta, bool adjust_vesting = false ) override;
          virtual void        adjust_rshares2( const comment_object& comment, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 ) override;
          void        update_owner_authority( const account_object& account, const authority& owner_authority );
 
@@ -342,16 +342,15 @@ namespace steemit { namespace chain {
          void expire_escrow_ratification();
          void process_decline_voting_rights();
          void update_median_feed();
-
-         asset get_liquidity_reward()const;
-         asset get_content_reward()const;
-         asset get_producer_reward();
-         asset get_curation_reward()const;
-         asset get_pow_reward()const;
+        
+         virtual asset get_content_reward()const override;
+         virtual asset get_producer_reward() override;
+         virtual asset get_curation_reward()const override;
+         virtual asset get_pow_reward()const override;
 
          virtual uint16_t get_curation_rewards_percent( const comment_object& c ) const override;
 
-         share_type pay_reward_funds( share_type reward );
+         virtual share_type pay_reward_funds( share_type reward ) override;
 
          void  pay_liquidity_reward();
 
@@ -414,18 +413,18 @@ namespace steemit { namespace chain {
          void set_flush_interval( uint32_t flush_blocks );
          void show_free_memory( bool force );
 
-#ifdef IS_TEST_NET
+         #ifdef IS_TEST_NET
          bool liquidity_rewards_enabled = true;
          bool skip_price_feed_limit_check = true;
          bool skip_transaction_delta_check = true;
-#endif
+         #endif
 
    protected:
          //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
          //void pop_undo() { object_database::pop_undo(); }
          void notify_changed_objects();
 
-      private:
+   private:
          hardfork_votes_type _next_hardfork_votes;
          optional< chainbase::database::session > _pending_tx_session;
 
