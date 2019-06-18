@@ -11,6 +11,7 @@ class block_applier{
         void update_last_irreversible_block();
         void expire_escrow_ratification();
         void process_decline_voting_rights();
+        void clear_expired_transactions();
     private:
         itemp_database& _db;
 };

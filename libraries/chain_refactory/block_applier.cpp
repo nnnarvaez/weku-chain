@@ -4,6 +4,16 @@ using namespace steemit::chain;
 
 namespace wk{namespace chain{
 
+void block_applier::clear_expired_transactions()
+{
+   //Look for expired transactions in the deduplication list, and remove them.
+   //Transactions must have expired by at least two forking windows in order to be removed.
+   auto& transaction_idx = _db.get_index< transaction_index >();
+   const auto& dedupe_index = transaction_idx.indices().get< by_expiration >();
+   while( ( !dedupe_index.empty() ) && ( _db.head_block_time() > dedupe_index.begin()->expiration ) )
+      _db.remove( *dedupe_index.begin() );
+}
+
 void block_applier::process_decline_voting_rights()
 {
    const auto& request_idx = _db.get_index< decline_voting_rights_request_index >().indices().get< by_effective_date >();

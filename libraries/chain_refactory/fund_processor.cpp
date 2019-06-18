@@ -4,6 +4,121 @@ using namespace steemit::chain;
 
 namespace wk{namespace chain{
 
+asset fund_processor::create_vesting( const account_object& to_account, asset steem, bool to_reward_balance )
+{
+   try
+   {
+      const auto& cprops = _db.get_dynamic_global_properties();
+
+      /**
+       *  The ratio of total_vesting_shares / total_vesting_fund_steem should not
+       *  change as the result of the user adding funds
+       *
+       *  V / C  = (V+Vn) / (C+Cn)
+       *
+       *  Simplifies to Vn = (V * Cn ) / C
+       *
+       *  If Cn equals o.amount, then we must solve for Vn to know how many new vesting shares
+       *  the user should receive.
+       *
+       *  128 bit math is requred due to multiplying of 64 bit numbers. This is done in asset and price.
+       */
+
+      // The V/C ratio is not changed inside this function,
+      // but it's being changed by the gradually reduced price in process_fund function
+      // vesting_share_price means how many VESTS you can get per WEKU
+      asset new_vesting = steem * ( to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price() );
+
+      _db.modify( to_account, [&]( account_object& to )
+      {
+         if( to_reward_balance )
+         {
+             // reward vesting balance and reward_vesting_steem are adding at same time?
+            to.reward_vesting_balance += new_vesting;
+            to.reward_vesting_steem += steem;
+         }
+         else
+            to.vesting_shares += new_vesting;
+      } );
+
+      _db.modify( cprops, [&]( dynamic_global_property_object& props )
+      {
+         if( to_reward_balance )
+         {
+            props.pending_rewarded_vesting_shares += new_vesting;
+            props.pending_rewarded_vesting_steem += steem;
+         }
+         else
+         {
+            props.total_vesting_fund_steem += steem;
+            props.total_vesting_shares += new_vesting;
+         }
+      } );
+
+      if( !to_reward_balance )
+         _db.adjust_proxied_witness_votes( to_account, new_vesting.amount );
+
+      return new_vesting;
+   }
+   FC_CAPTURE_AND_RETHROW( (to_account.name)(steem) )
+}
+
+/**
+ *  Converts STEEM into sbd and adds it to to_account while reducing the STEEM supply
+ *  by STEEM and increasing the sbd supply by the specified amount.
+ */
+std::pair< asset, asset > fund_processor::create_sbd( const account_object& to_account, asset steem, bool to_reward_balance )
+{
+   std::pair< asset, asset > assets( asset( 0, SBD_SYMBOL ), asset( 0, STEEM_SYMBOL ) );
+
+   try
+   {
+      if( steem.amount == 0 )
+         return assets;
+
+      const auto& median_price = _db.get_feed_history().current_median_history;
+      const auto& gpo = _db.get_dynamic_global_properties();
+
+      if( !median_price.is_null() )
+      {
+          // for example: sbd_print_rate = 20%,  steem.amount = 100 WEKUK
+          // then amount for to_sbd will be 20 , and amount for to_steem willbe 80
+         auto to_sbd = ( gpo.sbd_print_rate * steem.amount ) / STEEMIT_100_PERCENT;
+         auto to_steem = steem.amount - to_sbd;
+
+         // to_sbd is an amount of WEKU need to be convert to SBD
+         // median_price is SBD/WEKU, means how much SBD per WEKU.
+         // so the UNIT of variable sbd here will be SBD
+         auto sbd = asset( to_sbd, STEEM_SYMBOL ) * median_price;
+
+         if( to_reward_balance )
+         {
+            _db.adjust_reward_balance( to_account, sbd );
+            _db.adjust_reward_balance( to_account, asset( to_steem, STEEM_SYMBOL ) );
+         }
+         else
+         {
+            _db.adjust_balance( to_account, sbd );
+            _db.adjust_balance( to_account, asset( to_steem, STEEM_SYMBOL ) );
+         }
+
+         _db.adjust_supply( asset( -to_sbd, STEEM_SYMBOL ) );
+         _db.adjust_supply( sbd );
+         assets.first = sbd;
+         assets.second = to_steem;
+      }
+      else
+      {
+          // if no median_price availabe, it will just add weku directly without SBD.
+         _db.adjust_balance( to_account, steem );
+         assets.second = steem;
+      }
+   }
+   FC_CAPTURE_LOG_AND_RETHROW( (to_account.name)(steem) )
+
+   return assets;
+}
+
 /**
  *  Overall the network has an inflation rate of 102% of virtual steem per year
  *  90% of inflation is directed to vesting shares

@@ -20,7 +20,7 @@ void account_recovery_processor::account_recovery_processing()
    const auto& hist_idx = _db.get_index< owner_authority_history_index >().indices(); //by id
    auto hist = hist_idx.begin();
 
-   while( hist != hist_idx.end() && time_point_sec( hist->last_valid_time + STEEMIT_OWNER_AUTH_RECOVERY_PERIOD ) < head_block_time() )
+   while( hist != hist_idx.end() && fc::time_point_sec( hist->last_valid_time + STEEMIT_OWNER_AUTH_RECOVERY_PERIOD ) < _db.head_block_time() )
    {
       _db.remove( *hist );
       hist = hist_idx.begin();
@@ -32,7 +32,7 @@ void account_recovery_processor::account_recovery_processing()
 
    while( change_req != change_req_idx.end() && change_req->effective_on <= _db.head_block_time() )
    {
-      _db.modify( get_account( change_req->account_to_recover ), [&]( account_object& a )
+      _db.modify( _db.get_account( change_req->account_to_recover ), [&]( account_object& a )
       {
          a.recovery_account = change_req->recovery_account;
       });

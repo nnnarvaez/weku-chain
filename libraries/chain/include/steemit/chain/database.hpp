@@ -293,8 +293,8 @@ namespace steemit { namespace chain {
           */
          virtual uint32_t get_slot_at_time(fc::time_point_sec when)const override;
 
-         /** @return the sbd created and deposited to_account, may return STEEM if there is no median feed */
-         virtual std::pair< asset, asset > create_sbd( const account_object& to_account, asset steem, bool to_reward_balance=false ) override;
+         
+         
          virtual asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false ) override;
          virtual void adjust_total_payout( const comment_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value ) override;
 
@@ -354,7 +354,7 @@ namespace steemit { namespace chain {
          virtual uint32_t head_block_num()const override;
          virtual block_id_type    head_block_id()const override;
 
-         node_property_object& node_properties();
+         virtual node_property_object& node_properties() override;
 
          uint32_t last_non_undoable_block_num() const;
          //////////////////// db_init.cpp ////////////////////
@@ -408,11 +408,6 @@ namespace steemit { namespace chain {
          bool skip_transaction_delta_check = true;
          #endif
 
-   protected:
-         //Mark pop_undo() as protected -- we do not want outside calling pop_undo(); it should call pop_block() instead
-         //void pop_undo() { object_database::pop_undo(); }
-         void notify_changed_objects();
-
    private:
          hardfork_votes_type _next_hardfork_votes;
          optional< chainbase::database::session > _pending_tx_session;
@@ -432,7 +427,7 @@ namespace steemit { namespace chain {
                   
          
          
-         void clear_expired_transactions();
+         
          void clear_expired_orders();
          void clear_expired_delegations();
          void process_header_extensions( const signed_block& next_block );

@@ -1,4 +1,6 @@
 #include <wk/chain_refactory/cashout_processor.hpp>
+#include <wk/chain_refactory/fund_processor.hpp>
+
 #include <vector>
 
 namespace wk{namespace chain{
@@ -57,7 +59,9 @@ share_type cashout_processor::cashout_comment_helper( steemit::chain::util::comm
 
             const auto& author = _db.get_account( comment.author );
             auto vest_created = _db.create_vesting( author, vesting_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
-            auto sbd_payout = _db.create_sbd( author, sbd_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
+            
+            fund_processor fpr(_db);
+            auto sbd_payout = fpr.create_sbd( author, sbd_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
 
             _db.adjust_total_payout( comment, sbd_payout.first + 
                 _db.to_sbd( sbd_payout.second + asset( vesting_steem, STEEM_SYMBOL ) ), 

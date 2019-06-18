@@ -11,6 +11,7 @@
 #include <steemit/chain/steem_object_types.hpp>
 #include <steemit/chain/account_object.hpp>
 #include <steemit/chain/global_property_object.hpp>
+#include <steemit/chain/hardfork_property_object.hpp>
 #include <steemit/chain/comment_object.hpp>
 #include <steemit/chain/steem_objects.hpp>
 #include <steemit/chain/witness_schedule.hpp>
@@ -23,13 +24,13 @@
 #include <steemit/chain/util/asset.hpp>
 #include <steemit/chain/util/reward.hpp>
 #include <steemit/chain/util/uint256.hpp>
-
+#include <steemit/chain/transaction_object.hpp>
 #include <wk/chain_refactory/hardfork_constants.hpp>
 
 // #include <steemit/chain/custom_operation_interpreter.hpp>
 // #include <steemit/chain/history_object.hpp>
 // #include <steemit/chain/index.hpp>
-// #include <steemit/chain/transaction_object.hpp>
+// 
 // #include <steemit/chain/shared_db_merkle.hpp>
 // #include <steemit/chain/operation_notification.hpp>
 
@@ -112,7 +113,6 @@ class itemp_database: public chainbase::database
     virtual uint16_t get_curation_rewards_percent( const comment_object& c ) const;
     virtual share_type pay_curators( const comment_object& c, share_type& max_rewards );
     virtual asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false );
-    virtual std::pair< asset, asset > create_sbd( const account_object& to_account, asset steem, bool to_reward_balance=false );
     
     virtual void adjust_total_payout( const comment_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value );
     virtual void validate_invariants()const;
@@ -127,6 +127,7 @@ class itemp_database: public chainbase::database
     virtual account_name_type get_scheduled_witness(uint32_t slot_num)const;
     virtual uint32_t get_slot_at_time(fc::time_point_sec when)const;
     virtual const node_property_object& get_node_properties()const;
+    virtual node_property_object& node_properties();
 
     virtual block_log block_log(); 
     virtual fork_database fork_db();

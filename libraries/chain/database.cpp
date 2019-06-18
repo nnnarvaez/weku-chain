@@ -695,7 +695,7 @@ void database::_push_transaction( const signed_transaction& trx )
    _apply_transaction( trx );
    _pending_tx.push_back( trx );
 
-   notify_changed_objects();
+   //notify_changed_objects();
    // The transaction applied successfully. Merge its changes into the pending block session.
    temp_session.squash();
 
@@ -957,61 +957,7 @@ uint32_t database::get_slot_at_time(fc::time_point_sec when)const
    return s.get_slot_at_time(when);
 }
 
-/**
- *  Converts STEEM into sbd and adds it to to_account while reducing the STEEM supply
- *  by STEEM and increasing the sbd supply by the specified amount.
- */
-std::pair< asset, asset > database::create_sbd( const account_object& to_account, asset steem, bool to_reward_balance )
-{
-   std::pair< asset, asset > assets( asset( 0, SBD_SYMBOL ), asset( 0, STEEM_SYMBOL ) );
 
-   try
-   {
-      if( steem.amount == 0 )
-         return assets;
-
-      const auto& median_price = get_feed_history().current_median_history;
-      const auto& gpo = get_dynamic_global_properties();
-
-      if( !median_price.is_null() )
-      {
-          // for example: sbd_print_rate = 20%,  steem.amount = 100 WEKUK
-          // then amount for to_sbd will be 20 , and amount for to_steem willbe 80
-         auto to_sbd = ( gpo.sbd_print_rate * steem.amount ) / STEEMIT_100_PERCENT;
-         auto to_steem = steem.amount - to_sbd;
-
-         // to_sbd is an amount of WEKU need to be convert to SBD
-         // median_price is SBD/WEKU, means how much SBD per WEKU.
-         // so the UNIT of variable sbd here will be SBD
-         auto sbd = asset( to_sbd, STEEM_SYMBOL ) * median_price;
-
-         if( to_reward_balance )
-         {
-            adjust_reward_balance( to_account, sbd );
-            adjust_reward_balance( to_account, asset( to_steem, STEEM_SYMBOL ) );
-         }
-         else
-         {
-            adjust_balance( to_account, sbd );
-            adjust_balance( to_account, asset( to_steem, STEEM_SYMBOL ) );
-         }
-
-         adjust_supply( asset( -to_sbd, STEEM_SYMBOL ) );
-         adjust_supply( sbd );
-         assets.first = sbd;
-         assets.second = to_steem;
-      }
-      else
-      {
-          // if no median_price availabe, it will just add weku directly without SBD.
-         adjust_balance( to_account, steem );
-         assets.second = steem;
-      }
-   }
-   FC_CAPTURE_LOG_AND_RETHROW( (to_account.name)(steem) )
-
-   return assets;
-}
 
 /**
  * @param to_account - the account to receive the new vesting shares
@@ -1019,61 +965,8 @@ std::pair< asset, asset > database::create_sbd( const account_object& to_account
  */
 asset database::create_vesting( const account_object& to_account, asset steem, bool to_reward_balance )
 {
-   try
-   {
-      const auto& cprops = get_dynamic_global_properties();
-
-      /**
-       *  The ratio of total_vesting_shares / total_vesting_fund_steem should not
-       *  change as the result of the user adding funds
-       *
-       *  V / C  = (V+Vn) / (C+Cn)
-       *
-       *  Simplifies to Vn = (V * Cn ) / C
-       *
-       *  If Cn equals o.amount, then we must solve for Vn to know how many new vesting shares
-       *  the user should receive.
-       *
-       *  128 bit math is requred due to multiplying of 64 bit numbers. This is done in asset and price.
-       */
-
-      // The V/C ratio is not changed inside this function,
-      // but it's being changed by the gradually reduced price in process_fund function
-      // vesting_share_price means how many VESTS you can get per WEKU
-      asset new_vesting = steem * ( to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price() );
-
-      modify( to_account, [&]( account_object& to )
-      {
-         if( to_reward_balance )
-         {
-             // reward vesting balance and reward_vesting_steem are adding at same time?
-            to.reward_vesting_balance += new_vesting;
-            to.reward_vesting_steem += steem;
-         }
-         else
-            to.vesting_shares += new_vesting;
-      } );
-
-      modify( cprops, [&]( dynamic_global_property_object& props )
-      {
-         if( to_reward_balance )
-         {
-            props.pending_rewarded_vesting_shares += new_vesting;
-            props.pending_rewarded_vesting_steem += steem;
-         }
-         else
-         {
-            props.total_vesting_fund_steem += steem;
-            props.total_vesting_shares += new_vesting;
-         }
-      } );
-
-      if( !to_reward_balance )
-         adjust_proxied_witness_votes( to_account, new_vesting.amount );
-
-      return new_vesting;
-   }
-   FC_CAPTURE_AND_RETHROW( (to_account.name)(steem) )
+   fund_processor(*this);
+   fp.create_vesting(to_account, steem, to_reward_balance);
 }
 
 fc::sha256 database::get_pow_target()const
@@ -1560,35 +1453,6 @@ void database::validate_transaction( const signed_transaction& trx )
    });
 }
 
-void database::notify_changed_objects()
-{
-   try
-   {
-      /*vector< graphene::chainbase::generic_id > ids;
-      get_changed_ids( ids );
-      STEEMIT_TRY_NOTIFY( changed_objects, ids )*/
-      /*
-      if( _undo_db.enabled() )
-      {
-         const auto& head_undo = _undo_db.head();
-         vector<object_id_type> changed_ids;  changed_ids.reserve(head_undo.old_values.size());
-         for( const auto& item : head_undo.old_values ) changed_ids.push_back(item.first);
-         for( const auto& item : head_undo.new_ids ) changed_ids.push_back(item);
-         vector<const object*> removed;
-         removed.reserve( head_undo.removed.size() );
-         for( const auto& item : head_undo.removed )
-         {
-            changed_ids.push_back( item.first );
-            removed.emplace_back( item.second.get() );
-         }
-         STEEMIT_TRY_NOTIFY( changed_objects, changed_ids )
-      }
-      */
-   }
-   FC_CAPTURE_AND_RETHROW()
-
-}
-
 void database::set_flush_interval( uint32_t flush_blocks )
 {
    _flush_blocks = flush_blocks;
@@ -1780,7 +1644,7 @@ void database::_apply_block( const signed_block& next_block )
    applier.update_last_irreversible_block();
 
    create_block_summary(next_block);
-   clear_expired_transactions();
+   applier.clear_expired_transactions();
    clear_expired_orders();
    clear_expired_delegations();
    update_witness_schedule(*this);
@@ -1829,7 +1693,7 @@ void database::_apply_block( const signed_block& next_block )
    // notify observers that the block has been applied
    notify_applied_block( next_block );
 
-   notify_changed_objects();
+   //notify_changed_objects();
 } //FC_CAPTURE_AND_RETHROW( (next_block.block_num()) )  }
 FC_CAPTURE_LOG_AND_RETHROW( (next_block.block_num()) )
 }
@@ -1883,9 +1747,6 @@ void database::process_header_extensions( const signed_block& next_block )
       ++itr;
    }
 }
-
-
-
 
 void database::apply_transaction(const signed_transaction& trx, uint32_t skip)
 {
@@ -1982,8 +1843,6 @@ void database::apply_operation(const operation& op)
    notify_post_apply_operation( note );
 }
 
-
-
 void database::create_block_summary(const signed_block& next_block)
 { try {
    block_summary_id_type sid( next_block.block_num() & 0xffff );
@@ -2049,15 +1908,7 @@ void database::cancel_order( const limit_order_object& order )
 }
 
 
-void database::clear_expired_transactions()
-{
-   //Look for expired transactions in the deduplication list, and remove them.
-   //Transactions must have expired by at least two forking windows in order to be removed.
-   auto& transaction_idx = get_index< transaction_index >();
-   const auto& dedupe_index = transaction_idx.indices().get< by_expiration >();
-   while( ( !dedupe_index.empty() ) && ( head_block_time() > dedupe_index.begin()->expiration ) )
-      remove( *dedupe_index.begin() );
-}
+
 
 void database::clear_expired_orders()
 {
