@@ -3,11 +3,11 @@
 #include <wk/chain_refactory/itemp_database.hpp>
 using namespace wk::chain;
 namespace steemit{namespace chain{
-    class invariant_avlidator{
+    class invariant_validator{
         public:
-            invariant_validator(itemp_database& db):_db(db){}
+            invariant_validator(const itemp_database& db):_db(db){}
             void validate();
         private:
-            itemp_database& _db;
+            const itemp_database& _db;
     };
 }}

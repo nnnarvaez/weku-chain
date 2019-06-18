@@ -24,7 +24,21 @@
 #include <steemit/chain/util/uint256.hpp>
 #include <steemit/chain/util/reward.hpp>
 
+
+#include <wk/chain_refactory/fund_processor.hpp>
+#include <wk/chain_refactory/account_recovery_processor.hpp>
+#include <wk/chain_refactory/balance_processor.hpp>
+#include <wk/chain_refactory/block_applier.hpp>
+#include <wk/chain_refactory/block_header_validator.hpp>
+#include <wk/chain_refactory/cashout_processor.hpp>
+#include <wk/chain_refactory/genesis_processor.hpp>
+#include <wk/chain_refactory/gpo_processor.hpp>
+#include <wk/chain_refactory/reward_processor.hpp>
+#include <wk/chain_refactory/median_feed_updator.hpp>
+#include <wk/chain_refactory/null_account_cleaner.hpp>
+#include <wk/chain_refactory/order_processor.hpp>
 #include <wk/chain_refactory/slot.hpp>
+#include <wk/chain_refactory/vest_withdraw_processor.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
@@ -1610,19 +1624,6 @@ void database::_apply_block( const signed_block& next_block )
 
    /// parse witness version reporting
    process_header_extensions( next_block );
-   
-   // TODO: Below section of code should not be here, will replace it soon.
-   // NATHAN: Check reimplemented on HF22
-   
-   if( has_hardfork( STEEMIT_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork
-   {
-      const auto& witness = get_witness( next_block.witness );
-      const auto& hardfork_state = get_hardfork_property_object();
-      FC_ASSERT( witness.running_version >= hardfork_state.current_hardfork_version,
-         "Block produced by witness that is not running current hardfork",
-         ("witness",witness)("next_block.witness",next_block.witness)("hardfork_state", hardfork_state)
-      );
-   }
 
    for( const auto& trx : next_block.transactions )
    {
@@ -1661,13 +1662,13 @@ void database::_apply_block( const signed_block& next_block )
    fund_processor fp(*this);
    fp.process_funds();
 
-   conversion_processor(*this);
-   cp.process_conversions();
+   conversion_processor conp(*this);
+   conp.process_conversions();
 
-   cashout_processor(*this);
+   cashout_processor cop(*this);
    cop.process_comment_cashout();
 
-   vest_withraw_processor vwp(*this);
+   vest_withdraw_processor vwp(*this);
    vwp.process_vesting_withdrawals();
 
    process_savings_withdraws();
@@ -1687,8 +1688,8 @@ void database::_apply_block( const signed_block& next_block )
    // For WEKU, all hardforks before hardfork_20 are applied just after block 1 is saved to dish
    // this hardfork process is almost at the end of the process,
    // which also means during process of block #1, there is only harfork 0.
-   hardfork_doer hfd(*this);
-   hfd.process();  
+   hardforker hfk(*this);
+   hfk.process();  
 
    // notify observers that the block has been applied
    notify_applied_block( next_block );
@@ -1869,7 +1870,7 @@ void database::adjust_liquidity_reward( const account_object& owner, const asset
 bool database::fill_order( const limit_order_object& order, const asset& pays, const asset& receives )
 {
    order_processor(*this) op;
-   return op.fill_order(limit_order_object, pays, receives);
+   return op.fill_order(order, pays, receives);
 }
 
 void database::cancel_order( const limit_order_object& order )
@@ -1881,20 +1882,20 @@ void database::cancel_order( const limit_order_object& order )
 void database::adjust_balance( const account_object& a, const asset& delta )
 {
    balance_processor bp(*this);
-   bp.adjust_balance(account_object, delta);
+   bp.adjust_balance(a, delta);
 }
 
 
 void database::adjust_savings_balance( const account_object& a, const asset& delta )
 {
    balance_processor bp(*this);
-   bp.adjust_savings_balance(account_object, delta);
+   bp.adjust_savings_balance(a, delta);
 }
 
 void database::adjust_reward_balance( const account_object& a, const asset& delta )
 {
    balance_processor bp(*this);
-   bp.adjust_reward_balance(account_object, delta);
+   bp.adjust_reward_balance(a, delta);
 }
 
 void database::adjust_supply( const asset& delta, bool adjust_vesting )

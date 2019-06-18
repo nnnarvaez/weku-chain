@@ -203,7 +203,7 @@ void block_applier::update_last_irreversible_block()
         if( !( _db.get_node_properties().skip_flags & skip_block_log ) )
         {
             // output to block log based on new last irreverisible block num
-            const auto& tmp_head = _db.block_log().head();
+            const auto& tmp_head = _db.get_block_log().head();
             uint64_t log_head_num = 0;
 
             if( tmp_head )
@@ -216,12 +216,12 @@ void block_applier::update_last_irreversible_block()
                 {
                     std::shared_ptr< fork_item > block = _db.fork_db().fetch_block_on_main_branch_by_number( log_head_num+1 );
                     FC_ASSERT( block, "Current fork in the fork database does not contain the last_irreversible_block" );
-                    _db.block_log().append( block->data );
+                    _db.get_block_log().append( block->data );
                     ilog("append data to block log file.");
                     log_head_num++;
                 }
 
-                _db.block_log().flush();
+                _db.get_block_log().flush();
             }
         }
 
