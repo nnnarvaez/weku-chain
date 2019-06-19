@@ -1,8 +1,6 @@
-#include <wk/chain_refactory/order_processor.hpp>
+#include <weku/chain/order_processor.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 bool order_processor::fill_order( const limit_order_object& order, const asset& pays, const asset& receives )
 {

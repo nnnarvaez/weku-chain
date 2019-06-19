@@ -1,8 +1,6 @@
-#include <wk/chain_refactory/null_account_cleaner.hpp>
+#include <weku/chain/null_account_cleaner.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 // get called for every block creation.
 void null_account_cleaner::clear_null_account_balance()

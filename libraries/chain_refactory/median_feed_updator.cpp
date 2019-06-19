@@ -1,8 +1,6 @@
-#include <wk/chain_refactory/median_feed_updator.hpp>
+#include <weku/chain/median_feed_updator.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 // only update median feed once every hour.
 void median_feed_updator::update_median_feed() 

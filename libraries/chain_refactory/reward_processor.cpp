@@ -1,8 +1,6 @@
-#include <wk/chain_refactory/reward_processor.hpp>
+#include <weku/chain/reward_processor.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 share_type reward_processor::pay_reward_funds( share_type reward )
 {

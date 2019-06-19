@@ -1,6 +1,4 @@
-#include <wk/chain_refactory/account_recovery_processor.hpp>
-
-using namespace steemit::chain;
+#include <weku/chain/account_recovery_processor.hpp>
 
 namespace wk{ namespace chain {
 

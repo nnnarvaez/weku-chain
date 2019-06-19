@@ -1,8 +1,6 @@
-#include <wk/chain_refactory/block_header_validator.hpp>
+#include <weku/chain/block_header_validator.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 const witness_object& block_header_validator::validate_block_header( uint32_t skip, const signed_block& next_block )const
 { try {

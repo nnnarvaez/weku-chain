@@ -7,37 +7,36 @@
 #include <steemit/protocol/steem_operations.hpp>
 #include <steemit/protocol/config.hpp>
 
-#include <steemit/chain/compound.hpp>
-#include <steemit/chain/steem_object_types.hpp>
-#include <steemit/chain/account_object.hpp>
-#include <steemit/chain/global_property_object.hpp>
-#include <steemit/chain/hardfork_property_object.hpp>
-#include <steemit/chain/comment_object.hpp>
-#include <steemit/chain/steem_objects.hpp>
-#include <steemit/chain/witness_schedule.hpp>
-#include <steemit/chain/node_property_object.hpp>
-#include <steemit/chain/block_summary_object.hpp>
-#include <steemit/chain/database_exceptions.hpp>
-#include <steemit/chain/block_log.hpp>
-#include <steemit/chain/fork_database.hpp>
+#include <weku/chain/util/asset.hpp>
+#include <weku/chain/util/reward.hpp>
+#include <weku/chain/util/uint256.hpp>
 
-#include <steemit/chain/util/asset.hpp>
-#include <steemit/chain/util/reward.hpp>
-#include <steemit/chain/util/uint256.hpp>
-#include <steemit/chain/transaction_object.hpp>
-#include <wk/chain_refactory/hardfork_constants.hpp>
+#include <weku/chain/hardfork_constants.hpp>
+#include <weku/chain/weku_object_types.hpp>
+#include <weku/chain/account_objects.hpp>
+#include <weku/chain/global_property_object.hpp>
+#include <weku/chain/hardfork_property_object.hpp>
+#include <weku/chain/common_objects.hpp>
+#include <weku/chain/comment_objects.hpp>
+#include <weku/chain/node_property_object.hpp>
+#include <weku/chain/block_summary_object.hpp>
+#include <weku/chain/database_exceptions.hpp>
+#include <weku/chain/block_log.hpp>
+#include <weku/chain/fork_database.hpp>
+#include <weku/chain/transaction_object.hpp>
+
+#include <weku/chain/compound.hpp>
+#include <weku/chain/witness_schedule.hpp>
 
 // #include <steemit/chain/custom_operation_interpreter.hpp>
 // #include <steemit/chain/history_object.hpp>
-// #include <steemit/chain/index.hpp>
-// 
+// #include <steemit/chain/index.hpp>// 
 // #include <steemit/chain/shared_db_merkle.hpp>
 // #include <steemit/chain/operation_notification.hpp>
 
 using namespace steemit::protocol;
-using namespace steemit::chain;
 
-namespace wk{ namespace chain{
+namespace weku{ namespace chain{
 
 // TODO: need to find hardfork numbers
 #define HARDFORK_20_BLOCK_NUM 100

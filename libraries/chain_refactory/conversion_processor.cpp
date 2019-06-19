@@ -1,8 +1,6 @@
-#include <wk/chain_refactory/conversion_processor.hpp>
+#include <weku/chain/conversion_processor.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 /**
  *  Iterates over all conversion requests with a conversion date before

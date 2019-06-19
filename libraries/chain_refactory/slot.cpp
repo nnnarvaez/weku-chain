@@ -1,8 +1,6 @@
-#include <wk/chain_refactory/slot.hpp>
+#include <weku/chain/slot.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 uint32_t slot::get_slot_at_time(fc::time_point_sec when)const
 {

@@ -1,9 +1,7 @@
-#include <wk/chain_refactory/block_applier.hpp>
-#include <wk/chain_refactory/gpo_processor.hpp>
+#include <weku/chain/block_applier.hpp>
+#include <weku/chain/gpo_processor.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 void block_applier::update_virtual_supply()
 { 

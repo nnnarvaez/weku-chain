@@ -1,8 +1,6 @@
-#include <wk/chain_refactory/vest_withdraw_processor.hpp>
+#include <weku/chain/vest_withdraw_processor.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 void vest_withdraw_processor::process_vesting_withdrawals()
 {

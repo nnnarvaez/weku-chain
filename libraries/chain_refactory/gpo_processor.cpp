@@ -1,8 +1,6 @@
-#include <wk/chain_refactory/gpo_processor.hpp>
+#include <weku/chain/gpo_processor.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 void gpo_processor::update_global_dynamic_data( const signed_block& b )
 { 

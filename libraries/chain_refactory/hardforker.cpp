@@ -1,8 +1,6 @@
-#include<wk/chain_refactory/hardforker.hpp>
+#include<weku/chain/hardforker.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain {
+namespace weku{namespace chain {
 
 using fc::uint128_t;
 

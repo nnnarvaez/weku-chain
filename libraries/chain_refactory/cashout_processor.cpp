@@ -1,12 +1,11 @@
-#include <wk/chain_refactory/cashout_processor.hpp>
-#include <wk/chain_refactory/fund_processor.hpp>
+#include <weku/chain/cashout_processor.hpp>
+#include <weku/chain/fund_processor.hpp>
 
 #include <vector>
 
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 using fc::uint128_t;
-using namespace steemit::chain;
 
 void cashout_processor::fill_comment_reward_context_local_state( util::comment_reward_context& ctx, const comment_object& comment )
 {

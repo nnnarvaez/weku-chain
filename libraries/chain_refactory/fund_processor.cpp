@@ -1,8 +1,6 @@
-#include <wk/chain_refactory/fund_processor.hpp>
+#include <weku/chain/fund_processor.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 asset fund_processor::create_vesting( const account_object& to_account, asset steem, bool to_reward_balance )
 {

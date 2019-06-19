@@ -1,8 +1,6 @@
-#include <wk/chain_refactory/balance_processor.hpp>
+#include <weku/chain/balance_processor.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{ namespace chain {
+namespace weku{ namespace chain {
 
 void balance_processor::adjust_supply( const asset& delta, bool adjust_vesting )
 {

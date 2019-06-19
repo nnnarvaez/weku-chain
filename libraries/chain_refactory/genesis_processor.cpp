@@ -1,8 +1,6 @@
-#include <wk/chain_refactory/genesis_processor.hpp>
+#include <weku/chain/genesis_processor.hpp>
 
-using namespace steemit::chain;
-
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 void genesis_processor::init_genesis( uint64_t init_supply )
 {
