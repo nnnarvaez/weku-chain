@@ -7,7 +7,7 @@ namespace graphene { namespace schema {
    struct abstract_schema;
 } }
 
-namespace steemit { namespace protocol {
+namespace weku { namespace protocol {
    struct custom_json_operation;
 } }
 

@@ -5,14 +5,14 @@
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 
-#include <steemit/protocol/block.hpp>
+#include <weku/protocol/block.hpp>
 
 namespace weku { namespace chain {
    using boost::multi_index_container;
    using namespace boost::multi_index;
 
-   using steemit::protocol::signed_block;
-   using steemit::protocol::block_id_type;
+   using weku::protocol::signed_block;
+   using weku::protocol::block_id_type;
 
    struct fork_item
    {
@@ -103,4 +103,4 @@ namespace weku { namespace chain {
          shared_ptr<fork_item>    _head; // QUESTION: on what scenario that the _head is null/empty.
    };
 
-} } // steemit::chain
+} } // weku::chain

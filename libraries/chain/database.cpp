@@ -10,7 +10,7 @@
 #include <fc/container/deque.hpp>
 #include <fc/io/fstream.hpp>
 
-#include <steemit/protocol/steem_operations.hpp>
+#include <weku/protocol/weku_operations.hpp>
 
 #include <weku/chain/util/asset.hpp>
 #include <weku/chain/util/reward.hpp>

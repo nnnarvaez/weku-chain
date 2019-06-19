@@ -24,15 +24,8 @@
 #include <weku/chain/block_log.hpp>
 #include <weku/chain/fork_database.hpp>
 #include <weku/chain/transaction_object.hpp>
-
+#include <weku/chain/witness_objects.hpp>
 #include <weku/chain/compound.hpp>
-#include <weku/chain/witness_schedule.hpp>
-
-// #include <weku/chain/custom_operation_interpreter.hpp>
-// #include <weku/chain/history_object.hpp>
-// #include <weku/chain/index.hpp>// 
-// #include <weku/chain/shared_db_merkle.hpp>
-// #include <weku/chain/operation_notification.hpp>
 
 using namespace weku::protocol;
 

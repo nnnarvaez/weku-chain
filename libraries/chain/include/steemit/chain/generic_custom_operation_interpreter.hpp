@@ -1,15 +1,13 @@
 #pragma once
+#include <weku/chain/custom_operation_interpreter.hpp>
 #include <string>
 #include <vector>
-
 #include <fc/variant.hpp>
 #include <graphene/schema/schema.hpp>
-
-#include <steemit/protocol/steem_operations.hpp>
-#include <steemit/protocol/operation_util_impl.hpp>
+#include <weku/protocol/steem_operations.hpp>
+#include <weku/protocol/operation_util_impl.hpp>
 #include <weku/chain/evaluator.hpp>
 #include <weku/chain/evaluator_registry.hpp>
-#include <weku/chain/custom_operation_interpreter.hpp>
 
 namespace weku { namespace chain {
 
@@ -59,7 +57,7 @@ class generic_custom_operation_interpreter
          plugin_session.squash();
       }
 
-      virtual void apply( const steemit::protocol::custom_json_operation& outer_o ) override
+      virtual void apply( const weku::protocol::custom_json_operation& outer_o ) override
       {
          try
          {

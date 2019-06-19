@@ -1,5 +1,6 @@
 #include <weku/chain/block_applier.hpp>
 #include <weku/chain/gpo_processor.hpp>
+#include <weku/chain/witness_objects.hpp>
 
 namespace weku{namespace chain{
 

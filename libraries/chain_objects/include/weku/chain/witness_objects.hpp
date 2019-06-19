@@ -2,7 +2,7 @@
 #include <boost/multi_index/composite_key.hpp>
 
 #include <weku/protocol/authority.hpp>
-#include <weku/protocol/steem_operations.hpp>
+#include <weku/protocol/weku_operations.hpp>
 #include <weku/chain/weku_object_types.hpp>
 
 namespace weku { namespace chain {

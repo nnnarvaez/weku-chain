@@ -3,7 +3,7 @@
 #include <fc/signals.hpp>
 #include <fc/log/logger.hpp>
 
-#include <steemit/protocol/protocol.hpp>
+#include <weku/protocol/protocol.hpp>
 
 #include <weku/chain/global_property_object.hpp>
 #include <weku/chain/node_property_object.hpp>
@@ -14,12 +14,12 @@
 
 namespace weku { namespace chain {
 
-   using steemit::protocol::signed_transaction;
-   using steemit::protocol::operation;
-   using steemit::protocol::authority;
-   using steemit::protocol::asset;
-   using steemit::protocol::asset_symbol_type;
-   using steemit::protocol::price;
+   using weku::protocol::signed_transaction;
+   using weku::protocol::operation;
+   using weku::protocol::authority;
+   using weku::protocol::asset;
+   using weku::protocol::asset_symbol_type;
+   using weku::protocol::price;
   
 
    class database_impl;

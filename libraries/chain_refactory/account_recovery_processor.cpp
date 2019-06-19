@@ -1,6 +1,6 @@
 #include <weku/chain/account_recovery_processor.hpp>
 
-namespace wk{ namespace chain {
+namespace weku{ namespace chain {
 
 void account_recovery_processor::account_recovery_processing()
 {

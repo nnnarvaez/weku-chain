@@ -1,4 +1,4 @@
-#include <steemit/protocol/types.hpp>
+#include <weku/protocol/types.hpp>
 
 namespace weku { namespace chain {
 

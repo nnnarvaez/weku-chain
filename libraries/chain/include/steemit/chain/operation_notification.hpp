@@ -1,5 +1,5 @@
 #pragma once
-#include <steemit/protocol/operations.hpp>
+#include <weku/protocol/operations.hpp>
 #include <weku/chain/weku_object_types.hpp>
 
 namespace weku { namespace chain {

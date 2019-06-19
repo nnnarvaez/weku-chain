@@ -1,5 +1,5 @@
 #include <weku/chain/witness_schedule.hpp>
-#include <steemit/protocol/config.hpp>
+#include <weku/protocol/config.hpp>
 #include <weku/chain/database.hpp>
 #include <weku/chain/witness_objects.hpp>
 

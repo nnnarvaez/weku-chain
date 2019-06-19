@@ -1,10 +1,10 @@
 #pragma once
-#include <steemit/protocol/steem_operations.hpp>
+#include <weku/protocol/steem_operations.hpp>
 #include <weku/chain/evaluator.hpp>
 
 namespace weku{ namespace chain {
 
-using namespace steemit::protocol;
+using namespace weku::protocol;
 
 DEFINE_EVALUATOR( account_create )
 DEFINE_EVALUATOR( account_create_with_delegation )

@@ -1,11 +1,11 @@
 file(GLOB HEADERS "include/weku/chain/*.hpp")
 file(GLOB SRCS "*.cpp")
 
-add_library( weku_chain ${SRCS} ${HEADERS} )
+add_library( chain ${SRCS} ${HEADERS} )
 
-add_dependencies( weku_chain chain_refactory protocol )
-target_link_libraries( weku_chain chain_refactory protocol fc chainbase graphene_schema ${PATCH_MERGE_LIB} )
-target_include_directories( weku_chain
+add_dependencies( chain chain_refactory protocol )
+target_link_libraries( chain chain_refactory protocol fc chainbase graphene_schema ${PATCH_MERGE_LIB} )
+target_include_directories( chain
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
 
 if(MSVC)
@@ -13,7 +13,7 @@ if(MSVC)
 endif(MSVC)
 
 INSTALL( TARGETS
-   weku_chain
+   chain
 
    RUNTIME DESTINATION bin
    LIBRARY DESTINATION lib

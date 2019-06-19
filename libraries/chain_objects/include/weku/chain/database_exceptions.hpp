@@ -81,7 +81,7 @@ namespace weku { namespace chain {
    FC_DECLARE_DERIVED_EXCEPTION( pop_empty_chain,                   weku::chain::undo_database_exception, 4070001, "there are no blocks to pop" )
 
    STEEMIT_DECLARE_OP_BASE_EXCEPTIONS( transfer );
-//   STEEMIT_DECLARE_OP_EVALUATE_EXCEPTION( from_account_not_whitelisted, transfer, 1, "owner mismatch" )
+   // STEEMIT_DECLARE_OP_EVALUATE_EXCEPTION( from_account_not_whitelisted, transfer, 1, "owner mismatch" )
 
    STEEMIT_DECLARE_OP_BASE_EXCEPTIONS( account_create );
    STEEMIT_DECLARE_OP_EVALUATE_EXCEPTION( max_auth_exceeded, account_create, 1, "Exceeds max authority fan-out" )
@@ -104,8 +104,4 @@ namespace weku { namespace chain {
 #include <fc/exception/exception.hpp>
 #include <weku/protocol/exceptions.hpp>
 
-namespace weku { namespace chain {
-
-
-
-} } // weku::chain
+namespace weku { namespace chain {} }
