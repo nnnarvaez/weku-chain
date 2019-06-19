@@ -5,7 +5,7 @@
 #include <fc/fixed_string.hpp>
 #include <steemit/protocol/authority.hpp>
 #include <steemit/protocol/steem_operations.hpp>
-#include <weku/chain/steem_object_types.hpp>
+#include <weku/chain/weku_object_types.hpp>
 #include <weku/chain/shared_authority.hpp>
 
 namespace weku { namespace chain {

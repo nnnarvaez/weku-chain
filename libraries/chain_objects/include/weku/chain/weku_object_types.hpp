@@ -12,6 +12,8 @@
 
 namespace weku { namespace chain 
 {
+   using std::string;
+   
    namespace bip = chainbase::bip;
    using namespace boost::multi_index;
 
@@ -233,6 +235,7 @@ FC_REFLECT_ENUM( weku::chain::object_type,
    (reward_fund_object_type)
    (vesting_delegation_object_type)
    (vesting_delegation_expiration_object_type)
+   (blacklist_vote_object_type)
 )
 FC_REFLECT_ENUM( weku::chain::bandwidth_type, (post)(forum)(market) )
 FC_REFLECT_TYPENAME( weku::chain::shared_string )

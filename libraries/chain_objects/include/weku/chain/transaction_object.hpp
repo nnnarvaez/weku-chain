@@ -1,10 +1,10 @@
 #pragma once
 #include <boost/multi_index/hashed_index.hpp>
 #include <steemit/protocol/transaction.hpp>
-#include <weku/chain/steem_object_types.hpp>
+#include <weku/chain/weku_object_types.hpp>
 
 namespace weku { namespace chain {
-
+   using fc::time_point_sec;
    using steemit::protocol::signed_transaction;
 
    /**
@@ -28,7 +28,7 @@ namespace weku { namespace chain {
 
          bip::vector< char, allocator< char > > packed_trx;
          transaction_id_type  trx_id;
-         time_point_sec       expiration;
+         fc::time_point_sec       expiration;
    };
 
    struct by_expiration;

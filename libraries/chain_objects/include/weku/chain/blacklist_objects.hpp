@@ -1,7 +1,7 @@
 #pragma once
 #include <boost/multi_index/composite_key.hpp>
 
-#include <weku/chain/steem_object_types.hpp>
+#include <weku/chain/weku_object_types.hpp>
 
 namespace weku{namespace chain{
 using namespace std;

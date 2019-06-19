@@ -3,7 +3,7 @@
 #include <steemit/protocol/types.hpp>
 #include <steemit/protocol/version.hpp>
 #include <steemit/protocol/asset.hpp>
-#include <weku/chain/steem_object_types.hpp>
+#include <weku/chain/weku_object_types.hpp>
 
 namespace weku { namespace chain {
 
