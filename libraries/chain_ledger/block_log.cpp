@@ -251,7 +251,7 @@ namespace weku { namespace chain {
 
          // block_id contains info of block_number.
          // block_number is stored in block_id._hash[0] in reversed order of 4 bits.
-         if( !( my->head.valid() && block_num <= steemit::protocol::block_header::num_from_id( my->head_id ) && block_num > 0 ) )
+         if( !( my->head.valid() && block_num <= weku::protocol::block_header::num_from_id( my->head_id ) && block_num > 0 ) )
             return npos;
          my->index_stream.seekg( sizeof( uint64_t ) * ( block_num - 1 ) );
          uint64_t pos;

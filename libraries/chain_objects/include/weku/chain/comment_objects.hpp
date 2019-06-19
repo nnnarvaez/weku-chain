@@ -1,8 +1,8 @@
 #pragma once
 #include <boost/multi_index/composite_key.hpp>
 
-#include <steemit/protocol/steem_operations.hpp>
-#include <steemit/protocol/authority.hpp>
+#include <weku/protocol/weku_operations.hpp>
+#include <weku/protocol/authority.hpp>
 #include <weku/chain/weku_object_types.hpp>
 
 namespace weku { namespace chain {
@@ -255,4 +255,4 @@ CHAINBASE_SET_INDEX_TYPE( weku::chain::comment_object, weku::chain::comment_inde
 FC_REFLECT( weku::chain::comment_vote_object,
              (id)(voter)(comment)(weight)(rshares)(vote_percent)(last_update)(num_changes)
           )
-CHAINBASE_SET_INDEX_TYPE( steemit::weku::comment_vote_object, weku::chain::comment_vote_index )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::comment_vote_object, weku::chain::comment_vote_index )

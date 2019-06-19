@@ -2,7 +2,7 @@
 
 #include <fc/time.hpp>
 
-namespace wk { namespace chain {
+namespace weku { namespace chain {
 
 #define STEEMIT_NUM_HARDFORKS 22
 

@@ -1,11 +1,11 @@
 #pragma once
 #include <boost/multi_index/hashed_index.hpp>
-#include <steemit/protocol/transaction.hpp>
+#include <weku/protocol/transaction.hpp>
 #include <weku/chain/weku_object_types.hpp>
 
 namespace weku { namespace chain {
    using fc::time_point_sec;
-   using steemit::protocol::signed_transaction;
+   using weku::protocol::signed_transaction;
 
    /**
     * The purpose of this object is to enable the detection of duplicate transactions. When a transaction is included
@@ -43,7 +43,7 @@ namespace weku { namespace chain {
       allocator< transaction_object >
    > transaction_index;
 
-} } // steemit::chain
+} } // weku::chain
 
 FC_REFLECT( weku::chain::transaction_object, (id)(packed_trx)(trx_id)(expiration) )
 CHAINBASE_SET_INDEX_TYPE( weku::chain::transaction_object, weku::chain::transaction_index )

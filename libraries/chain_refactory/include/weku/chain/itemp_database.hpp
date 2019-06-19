@@ -3,9 +3,9 @@
 #include <fc/uint128.hpp>
 #include <chainbase/chainbase.hpp>
 
-#include <steemit/protocol/block.hpp>
-#include <steemit/protocol/steem_operations.hpp>
-#include <steemit/protocol/config.hpp>
+#include <weku/protocol/block.hpp>
+#include <weku/protocol/weku_operations.hpp>
+#include <weku/protocol/config.hpp>
 
 #include <weku/chain/util/asset.hpp>
 #include <weku/chain/util/reward.hpp>
@@ -28,13 +28,13 @@
 #include <weku/chain/compound.hpp>
 #include <weku/chain/witness_schedule.hpp>
 
-// #include <steemit/chain/custom_operation_interpreter.hpp>
-// #include <steemit/chain/history_object.hpp>
-// #include <steemit/chain/index.hpp>// 
-// #include <steemit/chain/shared_db_merkle.hpp>
-// #include <steemit/chain/operation_notification.hpp>
+// #include <weku/chain/custom_operation_interpreter.hpp>
+// #include <weku/chain/history_object.hpp>
+// #include <weku/chain/index.hpp>// 
+// #include <weku/chain/shared_db_merkle.hpp>
+// #include <weku/chain/operation_notification.hpp>
 
-using namespace steemit::protocol;
+using namespace weku::protocol;
 
 namespace weku{ namespace chain{
 

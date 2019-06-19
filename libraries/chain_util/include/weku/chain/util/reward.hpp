@@ -2,17 +2,17 @@
 #include <fc/uint128.hpp>
 #include <fc/reflect/reflect.hpp>
 
-#include <steemit/protocol/asset.hpp>
-#include <steemit/protocol/config.hpp>
-#include <steemit/protocol/types.hpp>
+#include <weku/protocol/asset.hpp>
+#include <weku/protocol/config.hpp>
+#include <weku/protocol/types.hpp>
 #include <weku/chain/common_objects.hpp>
 #include <weku/chain/util/asset.hpp>
 
 namespace weku { namespace chain { namespace util {
 
-using steemit::protocol::asset;
-using steemit::protocol::price;
-using steemit::protocol::share_type;
+using weku::protocol::asset;
+using weku::protocol::price;
+using weku::protocol::share_type;
 
 using fc::uint128_t;
 

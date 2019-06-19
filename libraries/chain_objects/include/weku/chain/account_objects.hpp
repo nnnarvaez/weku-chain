@@ -3,14 +3,14 @@
 #include <boost/multi_index/composite_key.hpp>
 
 #include <fc/fixed_string.hpp>
-#include <steemit/protocol/authority.hpp>
-#include <steemit/protocol/steem_operations.hpp>
+#include <weku/protocol/authority.hpp>
+#include <weku/protocol/weku_operations.hpp>
 #include <weku/chain/weku_object_types.hpp>
 #include <weku/chain/shared_authority.hpp>
 
 namespace weku { namespace chain {
 
-   using steemit::protocol::authority;
+   using weku::protocol::authority;
 
    class account_object : public object< account_object_type, account_object >
    {

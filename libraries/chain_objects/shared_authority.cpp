@@ -69,7 +69,7 @@ void shared_authority::validate()const
 {
    for( const auto& item : account_auths )
    {
-      FC_ASSERT( steemit::protocol::is_valid_account_name( item.first ) );
+      FC_ASSERT( weku::protocol::is_valid_account_name( item.first ) );
    }
 }
 

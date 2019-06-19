@@ -1,18 +1,18 @@
 #pragma once
 
-#include <steemit/protocol/exceptions.hpp>
+#include <weku/protocol/exceptions.hpp>
 
 #define STEEMIT_DECLARE_OP_BASE_EXCEPTIONS( op_name )                \
    FC_DECLARE_DERIVED_EXCEPTION(                                      \
       op_name ## _validate_exception,                                 \
       weku::chain::operation_validate_exception,                  \
-      4040000 + 100 * steemit::protocol::operation::tag< steemit::protocol::op_name ## _operation >::value, \
+      4040000 + 100 * weku::protocol::operation::tag< weku::protocol::op_name ## _operation >::value, \
       #op_name "_operation validation exception"                      \
       )                                                               \
    FC_DECLARE_DERIVED_EXCEPTION(                                      \
       op_name ## _evaluate_exception,                                 \
       weku::chain::operation_evaluate_exception,                  \
-      4050000 + 100 * steemit::protocol::operation::tag< steemit::protocol::op_name ## _operation >::value, \
+      4050000 + 100 * weku::protocol::operation::tag< weku::protocol::op_name ## _operation >::value, \
       #op_name "_operation evaluation exception"                      \
       )
 
@@ -20,7 +20,7 @@
    FC_DECLARE_DERIVED_EXCEPTION(                                      \
       op_name ## _ ## exc_name,                                       \
       weku::chain::op_name ## _validate_exception,                \
-      4040000 + 100 * steemit::protocol::operation::tag< steemit::protocol::op_name ## _operation >::value  \
+      4040000 + 100 * weku::protocol::operation::tag< weku::protocol::op_name ## _operation >::value  \
          + seqnum,                                                    \
       msg                                                             \
       )
@@ -29,7 +29,7 @@
    FC_DECLARE_DERIVED_EXCEPTION(                                      \
       op_name ## _ ## exc_name,                                       \
       weku::chain::op_name ## _evaluate_exception,                \
-      4050000 + 100 * steemit::protocol::operation::tag< steemit::protocol::op_name ## _operation >::value  \
+      4050000 + 100 * weku::protocol::operation::tag< weku::protocol::op_name ## _operation >::value  \
          + seqnum,                                                    \
       msg                                                             \
       )
@@ -96,13 +96,13 @@ namespace weku { namespace chain {
    STEEMIT_DECLARE_INTERNAL_EXCEPTION( verify_auth_max_auth_exceeded, 1, "Exceeds max authority fan-out" )
    STEEMIT_DECLARE_INTERNAL_EXCEPTION( verify_auth_account_not_found, 2, "Auth account not found" )
 
-} } // steemit::chain
+} } // weku::chain
 
 
 #pragma once
 
 #include <fc/exception/exception.hpp>
-#include <steemit/protocol/exceptions.hpp>
+#include <weku/protocol/exceptions.hpp>
 
 namespace weku { namespace chain {
 

@@ -5,8 +5,8 @@
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 
-#include <steemit/protocol/authority.hpp>
-#include <steemit/protocol/types.hpp>
+#include <weku/protocol/authority.hpp>
+#include <weku/protocol/types.hpp>
 
 #include <chainbase/chainbase.hpp>
 
@@ -23,11 +23,11 @@ namespace weku { namespace chain
    using chainbase::oid;
    using chainbase::allocator;
 
-   using steemit::protocol::block_id_type;
-   using steemit::protocol::transaction_id_type;
-   using steemit::protocol::chain_id_type;
-   using steemit::protocol::account_name_type;
-   using steemit::protocol::share_type;
+   using weku::protocol::block_id_type;
+   using weku::protocol::transaction_id_type;
+   using weku::protocol::chain_id_type;
+   using weku::protocol::account_name_type;
+   using weku::protocol::share_type;
 
    typedef bip::basic_string< char, std::char_traits< char >, allocator< char > > shared_string;
    inline std::string to_string( const shared_string& str ) { return std::string( str.begin(), str.end() ); }

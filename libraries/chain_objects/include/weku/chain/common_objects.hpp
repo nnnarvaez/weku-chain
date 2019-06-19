@@ -3,18 +3,18 @@
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 
-#include <steemit/protocol/authority.hpp>
-#include <steemit/protocol/steem_operations.hpp>
+#include <weku/protocol/authority.hpp>
+#include <weku/protocol/weku_operations.hpp>
 #include <weku/chain/weku_object_types.hpp>
 
 namespace weku { namespace chain {
    using fc::uint128_t;
    using fc::time_point_sec;
-   using steemit::protocol::asset;
-   using steemit::protocol::price;
-   using steemit::protocol::asset_symbol_type;
+   using weku::protocol::asset;
+   using weku::protocol::price;
+   using weku::protocol::asset_symbol_type;
 
-   typedef steemit::protocol::fixed_string_16 reward_fund_name_type;
+   typedef weku::protocol::fixed_string_16 reward_fund_name_type;
 
    enum curve_id
    {

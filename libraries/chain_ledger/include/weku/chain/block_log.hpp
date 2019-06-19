@@ -1,10 +1,10 @@
 #pragma once
 #include <fc/filesystem.hpp>
-#include <steemit/protocol/block.hpp>
+#include <weku/protocol/block.hpp>
 
 namespace weku { namespace chain {
    using fc::optional;
-   using namespace steemit::protocol;
+   using namespace weku::protocol;
 
    namespace detail { class block_log_impl; }
 

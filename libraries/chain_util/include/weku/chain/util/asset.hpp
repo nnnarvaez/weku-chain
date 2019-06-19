@@ -1,11 +1,11 @@
 #pragma once
 
-#include <steemit/protocol/asset.hpp>
+#include <weku/protocol/asset.hpp>
 
 namespace weku { namespace chain { namespace util {
 
-using steemit::protocol::asset;
-using steemit::protocol::price;
+using weku::protocol::asset;
+using weku::protocol::price;
 
 inline asset to_sbd( const price& p, const asset& steem )
 {

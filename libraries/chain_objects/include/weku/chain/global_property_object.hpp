@@ -1,13 +1,13 @@
 #pragma once
 #include <fc/uint128.hpp>
 
-#include <steemit/protocol/asset.hpp>
+#include <weku/protocol/asset.hpp>
 #include <weku/chain/weku_object_types.hpp>
 
 namespace weku { namespace chain {
 
-   using steemit::protocol::asset;
-   using steemit::protocol::price;
+   using weku::protocol::asset;
+   using weku::protocol::price;
 
    /**
     * @class dynamic_global_property_object

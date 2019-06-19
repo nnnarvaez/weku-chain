@@ -1,8 +1,8 @@
 #pragma once
 #include <fc/uint128.hpp>
-#include <steemit/protocol/types.hpp>
-#include <steemit/protocol/version.hpp>
-#include <steemit/protocol/asset.hpp>
+#include <weku/protocol/types.hpp>
+#include <weku/protocol/version.hpp>
+#include <weku/protocol/asset.hpp>
 #include <weku/chain/weku_object_types.hpp>
 
 namespace weku { namespace chain {

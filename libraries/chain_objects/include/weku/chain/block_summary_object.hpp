@@ -3,7 +3,7 @@
 
 namespace weku { namespace chain {
 
-   using steemit::protocol::block_id_type;
+   using weku::protocol::block_id_type;
 
    /**
     *  @brief tracks minimal information about past blocks to implement TaPOS

@@ -1,9 +1,9 @@
 #pragma once
 #include <boost/multi_index/composite_key.hpp>
 
-#include <steemit/protocol/authority.hpp>
-#include <steemit/protocol/operations.hpp>
-#include <steemit/protocol/steem_operations.hpp>
+#include <weku/protocol/authority.hpp>
+#include <weku/protocol/operations.hpp>
+#include <weku/protocol/steem_operations.hpp>
 
 #include <weku/chain/weku_object_types.hpp>
 

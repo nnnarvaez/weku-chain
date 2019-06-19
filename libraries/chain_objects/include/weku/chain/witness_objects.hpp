@@ -1,20 +1,20 @@
 #pragma once
 #include <boost/multi_index/composite_key.hpp>
 
-#include <steemit/protocol/authority.hpp>
-#include <steemit/protocol/steem_operations.hpp>
+#include <weku/protocol/authority.hpp>
+#include <weku/protocol/steem_operations.hpp>
 #include <weku/chain/weku_object_types.hpp>
 
 namespace weku { namespace chain {
 
-   using steemit::protocol::chain_properties;
-   using steemit::protocol::digest_type;
-   using steemit::protocol::public_key_type;
-   using steemit::protocol::version;
-   using steemit::protocol::hardfork_version;
-   using steemit::protocol::price;
-   using steemit::protocol::asset;
-   using steemit::protocol::asset_symbol_type;
+   using weku::protocol::chain_properties;
+   using weku::protocol::digest_type;
+   using weku::protocol::public_key_type;
+   using weku::protocol::version;
+   using weku::protocol::hardfork_version;
+   using weku::protocol::price;
+   using weku::protocol::asset;
+   using weku::protocol::asset_symbol_type;
 
    /**
     *  All witnesses with at least 1% net positive approval and

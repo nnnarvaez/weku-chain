@@ -3,7 +3,6 @@
 #include <weku/chain/util/uint256.hpp>
 
 namespace weku { namespace chain { namespace util {
-using steemit::u256;
 
 uint8_t find_msb( const uint128_t& u )
 {

@@ -1,12 +1,12 @@
 #pragma once
 #include <boost/interprocess/managed_mapped_file.hpp>
-#include <steemit/protocol/authority.hpp>
+#include <weku/protocol/authority.hpp>
 
 namespace weku { namespace chain {
-   using steemit::protocol::authority;
-   using steemit::protocol::public_key_type;
-   using steemit::protocol::account_name_type;
-   using steemit::protocol::weight_type;
+   using weku::protocol::authority;
+   using weku::protocol::public_key_type;
+   using weku::protocol::account_name_type;
+   using weku::protocol::weight_type;
 
    namespace bip = boost::interprocess;
 

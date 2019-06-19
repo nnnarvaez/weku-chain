@@ -14,7 +14,7 @@ void cashout_processor::fill_comment_reward_context_local_state( util::comment_r
    ctx.max_sbd = comment.max_accepted_payout;
 }
 
-share_type cashout_processor::cashout_comment_helper( steemit::chain::util::comment_reward_context& ctx, const comment_object& comment )
+share_type cashout_processor::cashout_comment_helper( weku::chain::util::comment_reward_context& ctx, const comment_object& comment )
 {
    try
    {

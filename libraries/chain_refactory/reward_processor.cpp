@@ -33,7 +33,7 @@ asset reward_processor::get_liquidity_reward()const
 
    const auto& props = _db.get_dynamic_global_properties();
    static_assert( STEEMIT_LIQUIDITY_REWARD_PERIOD_SEC == 60*60, "this code assumes a 1 hour time interval" );
-   asset percent( steemit::protocol::calc_percent_reward_per_hour< STEEMIT_LIQUIDITY_APR_PERCENT >( props.virtual_supply.amount ), STEEM_SYMBOL );
+   asset percent( weku::protocol::calc_percent_reward_per_hour< STEEMIT_LIQUIDITY_APR_PERCENT >( props.virtual_supply.amount ), STEEM_SYMBOL );
    return std::max( percent, STEEMIT_MIN_LIQUIDITY_REWARD );
 }
 
