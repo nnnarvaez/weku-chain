@@ -1,6 +1,7 @@
 file(GLOB HEADERS "include/weku/chain/*.hpp")
+file(GLOB HEADERS2 "include/chainbase/*.hpp")
 file(GLOB SRCS "*.cpp")
-add_library( chain_objects ${SRCS} ${HEADERS} )
+add_library( chain_objects ${SRCS} ${HEADERS} ${HEADERS2})
 
 add_dependencies( chain_objects protocol chainbase)
 target_link_libraries( chain_objects protocol chainbase fc ${PATCH_MERGE_LIB} )

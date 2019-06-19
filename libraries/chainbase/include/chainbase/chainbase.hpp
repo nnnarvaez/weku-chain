@@ -689,7 +689,7 @@ namespace chainbase {
          void wipe( const bfs::path& dir );
          void set_require_locking( bool enable_require_locking );
 
-#ifdef CHAINBASE_CHECK_LOCKING
+         #ifdef CHAINBASE_CHECK_LOCKING
          void require_lock_fail( const char* method, const char* lock_type, const char* tname )const;
 
          // some functions must already have a lock as pre-execute condition.
@@ -707,7 +707,7 @@ namespace chainbase {
             if( BOOST_UNLIKELY( _enable_require_locking & (_write_lock_count <= 0) ) )
                require_lock_fail(method, "write", tname);
          }
-#endif
+         #endif
 
         // embeded session in database, it's different with session embedded in generic_index.
         // this session is "database session", it's a wrapper/container of all generic_index(table) sessions.
@@ -951,10 +951,10 @@ namespace chainbase {
          auto with_read_lock( Lambda&& callback, uint64_t wait_micro = 1000000 ) -> decltype( (*(Lambda*)nullptr)() )
          {
             read_lock lock( _rw_manager->current_lock(), bip::defer_lock_type() );
-#ifdef CHAINBASE_CHECK_LOCKING
+            #ifdef CHAINBASE_CHECK_LOCKING
             BOOST_ATTRIBUTE_UNUSED
             int_incrementer ii( _read_lock_count );
-#endif
+            #endif
 
             if( !wait_micro )
             {
@@ -976,10 +976,10 @@ namespace chainbase {
                BOOST_THROW_EXCEPTION( std::logic_error( "cannot acquire write lock on read-only process" ) );
 
             write_lock lock( _rw_manager->current_lock(), boost::defer_lock_t() );
-#ifdef CHAINBASE_CHECK_LOCKING
+            #ifdef CHAINBASE_CHECK_LOCKING
             BOOST_ATTRIBUTE_UNUSED
             int_incrementer ii( _write_lock_count );
-#endif
+            #endif
 
             if( !wait_micro )
             {

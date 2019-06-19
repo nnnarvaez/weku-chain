@@ -49,6 +49,7 @@
 #include <weku/chain/slot.hpp>
 #include <weku/chain/vest_withdraw_processor.hpp>
 #include <weku/chain/conversion_processor.hpp>
+#include <weku/chain/hardforker.hpp>
 
 
 namespace weku { namespace chain {
@@ -981,7 +982,7 @@ uint32_t database::get_slot_at_time(fc::time_point_sec when)const
 asset database::create_vesting( const account_object& to_account, asset steem, bool to_reward_balance )
 {
    fund_processor fp(*this);
-   fp.create_vesting(to_account, steem, to_reward_balance);
+   return fp.create_vesting(to_account, steem, to_reward_balance);
 }
 
 fc::sha256 database::get_pow_target()const
@@ -1868,7 +1869,7 @@ void database::adjust_liquidity_reward( const account_object& owner, const asset
 
 bool database::fill_order( const limit_order_object& order, const asset& pays, const asset& receives )
 {
-   order_processor(*this) op;
+   order_processor op(*this);
    return op.fill_order(order, pays, receives);
 }
 

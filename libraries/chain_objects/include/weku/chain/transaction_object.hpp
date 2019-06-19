@@ -2,11 +2,12 @@
 #include <boost/multi_index/hashed_index.hpp>
 #include <weku/protocol/transaction.hpp>
 #include <weku/chain/weku_object_types.hpp>
+#include <chainbase/chainbase.hpp>
 
 namespace weku { namespace chain {
    using fc::time_point_sec;
    using weku::protocol::signed_transaction;
-
+   using chainbase::object;
    /**
     * The purpose of this object is to enable the detection of duplicate transactions. When a transaction is included
     * in a block a transaction_object is added. At the end of block processing all transaction_objects that have

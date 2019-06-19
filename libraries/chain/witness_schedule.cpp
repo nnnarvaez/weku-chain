@@ -76,7 +76,7 @@ namespace weku { namespace chain {
             for (auto itr = widx.begin();
                  itr != widx.end() && selected_voted.size() < wso.max_voted_witnesses;
                  ++itr) {
-                if (db.has_hardfork(STEEMIT_HARDFORK_0_14__278) && (itr->signing_key == public_key_type()))
+                if (db.has_hardfork(STEEMIT_HARDFORK_0_14) && (itr->signing_key == public_key_type()))
                     continue;
                 selected_voted.insert(itr->id);
                 active_witnesses.push_back(itr->owner);
@@ -96,7 +96,7 @@ namespace weku { namespace chain {
                 // Only consider a miner who is not a top voted witness
                 if (selected_voted.find(mitr->id) == selected_voted.end()) {
                     // Only consider a miner who has a valid block signing key
-                    if (!(db.has_hardfork(STEEMIT_HARDFORK_0_14__278) &&
+                    if (!(db.has_hardfork(STEEMIT_HARDFORK_0_14) &&
                           db.get_witness(mitr->owner).signing_key == public_key_type())) {
                         selected_miners.insert(mitr->id);
                         active_witnesses.push_back(mitr->owner);
@@ -127,7 +127,7 @@ namespace weku { namespace chain {
                 new_virtual_time = sitr->virtual_scheduled_time; /// everyone advances to at least this time
                 processed_witnesses.push_back(sitr);
 
-                if (db.has_hardfork(STEEMIT_HARDFORK_0_14__278) && sitr->signing_key == public_key_type())
+                if (db.has_hardfork(STEEMIT_HARDFORK_0_14) && sitr->signing_key == public_key_type())
                     continue; /// skip witnesses without a valid block signing key
 
                 if (selected_miners.find(sitr->id) == selected_miners.end()
@@ -172,7 +172,7 @@ namespace weku { namespace chain {
             
             auto majority_version = wso.majority_version;
 
-            if (db.has_hardfork(STEEMIT_HARDFORK_0_5__54)) {
+            if (db.has_hardfork(STEEMIT_HARDFORK_0_5)) {
                 flat_map<version, uint32_t, std::greater<version> > witness_versions;
                 flat_map<std::tuple<hardfork_version, time_point_sec>, uint32_t> hardfork_version_votes;
 
