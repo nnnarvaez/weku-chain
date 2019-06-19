@@ -1,14 +1,13 @@
 #pragma once
-#include <steemit/protocol/block.hpp>
-
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 
+#include <steemit/protocol/block.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
    using boost::multi_index_container;
    using namespace boost::multi_index;
 

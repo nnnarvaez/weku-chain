@@ -1,9 +1,9 @@
 #pragma once
 
-#include <steemit/protocol/authority.hpp>
-#include <steemit/protocol/types.hpp>
+#include <weku/protocol/authority.hpp>
+#include <weku/protocol/types.hpp>
 
-namespace steemit { namespace protocol {
+namespace weku { namespace protocol {
 
 typedef std::function<authority(const string&)> authority_getter;
 
@@ -35,4 +35,4 @@ struct sign_state
       uint32_t                         max_recursion = STEEMIT_MAX_SIG_CHECK_DEPTH;
 };
 
-} } // steemit::protocol
+} } // weku::protocol

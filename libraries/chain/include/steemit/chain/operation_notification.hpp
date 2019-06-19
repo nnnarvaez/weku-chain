@@ -1,10 +1,8 @@
 #pragma once
-
 #include <steemit/protocol/operations.hpp>
+#include <weku/chain/weku_object_types.hpp>
 
-#include <steemit/chain/steem_object_types.hpp>
-
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
 struct operation_notification
 {

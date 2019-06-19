@@ -1,26 +1,18 @@
-/*
- * Copyright (c) 2015 Cryptonomex, Inc., and contributors.
- */
 #pragma once
-#include <steemit/chain/global_property_object.hpp>
-
-#include <steemit/chain/node_property_object.hpp>
-#include <steemit/chain/fork_database.hpp>
-#include <steemit/chain/block_log.hpp>
-#include <steemit/chain/operation_notification.hpp>
-#include <wk/chain_refactory/itemp_database.hpp>
-#include <steemit/protocol/protocol.hpp>
-
-//#include <graphene/db2/database.hpp>
+#include <map>
 #include <fc/signals.hpp>
-
 #include <fc/log/logger.hpp>
 
-#include <map>
+#include <steemit/protocol/protocol.hpp>
 
-using namespace wk::chain;
+#include <weku/chain/global_property_object.hpp>
+#include <weku/chain/node_property_object.hpp>
+#include <weku/chain/fork_database.hpp>
+#include <weku/chain/block_log.hpp>
+#include <weku/chain/operation_notification.hpp>
+#include <weku/chain/itemp_database.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
    using steemit::protocol::signed_transaction;
    using steemit::protocol::operation;

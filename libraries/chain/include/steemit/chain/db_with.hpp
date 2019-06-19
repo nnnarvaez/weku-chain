@@ -1,6 +1,6 @@
 #pragma once
 
-#include <steemit/chain/database.hpp>
+#include <weku/chain/database.hpp>
 
 /*
  * This file provides with() functions which modify the database
@@ -13,7 +13,7 @@
  * and put the finally block in a destructor.  Aagh!
  */
 
-namespace steemit { namespace chain { namespace detail {
+namespace weku { namespace chain { namespace detail {
 /**
  * Class used to help the with_skip_flags implementation.
  * It must be defined in this header because it must be
@@ -134,4 +134,4 @@ void without_pending_transactions(
     return;
 }
 
-} } } // steemit::chain::detail
+} } } // weku::chain::detail

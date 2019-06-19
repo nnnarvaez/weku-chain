@@ -4,14 +4,14 @@ include_directories(../fc/include)
 
 file(GLOB HEADERS "include/weku/chain/*.hpp")
 file(GLOB SRCS "*.cpp")
-add_library( weku_chain_refactory ${SRCS} ${HEADERS} )
+add_library( chain_refactory ${SRCS} ${HEADERS} )
 
-add_dependencies( weku_chain_refactory weku_chain_util weku_chain_objects weku_chain_ledger steemit_protocol )
-target_link_libraries( weku_chain_refactory weku_chain_util weku_chain_objects weku_chain_ledger steemit_protocol fc chainbase graphene_schema ${PATCH_MERGE_LIB} )
-target_include_directories( weku_chain_refactory PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
+add_dependencies( chain_refactory chain_util chain_objects chain_ledger protocol )
+target_link_libraries( chain_refactory chain_util chain_objects chain_ledger protocol fc chainbase graphene_schema ${PATCH_MERGE_LIB} )
+target_include_directories( chain_refactory PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
 
 INSTALL( TARGETS
-   weku_chain_refactory
+   chain_refactory
 
    RUNTIME DESTINATION bin
    LIBRARY DESTINATION lib

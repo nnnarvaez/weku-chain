@@ -1,12 +1,16 @@
-#include <steemit/chain/steem_evaluator.hpp>
-#include <steemit/chain/database.hpp>
-#include <steemit/chain/custom_operation_interpreter.hpp>
-#include <steemit/chain/steem_objects.hpp>
-#include <steemit/chain/witness_objects.hpp>
-#include <steemit/chain/block_summary_object.hpp>
-#include <steemit/chain/blacklist_objects.hpp>
+#include <weku/chain/weku_evaluator.hpp>
 
-#include <steemit/chain/util/reward.hpp>
+#include <limits>
+#include <fc/uint128.hpp>
+#include <fc/utf8.hpp>
+
+#include <weku/chain/util/reward.hpp>
+#include <weku/chain/database.hpp>
+#include <weku/chain/custom_operation_interpreter.hpp>
+#include <weku/chain/common_objects.hpp>
+#include <weku/chain/witness_objects.hpp>
+#include <weku/chain/block_summary_object.hpp>
+#include <weku/chain/blacklist_objects.hpp>
 
 #ifndef IS_LOW_MEM
 #include <diff_match_patch.h>
@@ -23,15 +27,9 @@ std::string wstring_to_utf8(const std::wstring& str)
 {
     return utf_to_utf<char>(str.c_str(), str.c_str() + str.size());
 }
-
 #endif
 
-#include <fc/uint128.hpp>
-#include <fc/utf8.hpp>
-
-#include <limits>
-
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 using fc::uint128_t;
 
 inline void validate_permlink_0_1( const string& permlink )

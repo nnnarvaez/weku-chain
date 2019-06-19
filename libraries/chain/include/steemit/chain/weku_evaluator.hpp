@@ -1,10 +1,8 @@
 #pragma once
-
 #include <steemit/protocol/steem_operations.hpp>
+#include <weku/chain/evaluator.hpp>
 
-#include <steemit/chain/evaluator.hpp>
-
-namespace steemit{ namespace chain {
+namespace weku{ namespace chain {
 
 using namespace steemit::protocol;
 
@@ -52,4 +50,4 @@ DEFINE_EVALUATOR( claim_reward_balance )
 DEFINE_EVALUATOR( delegate_vesting_shares )
 DEFINE_EVALUATOR( blacklist_vote)
 
-} } // steemit::chain
+} } // weku::chain

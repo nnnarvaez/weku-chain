@@ -1,8 +1,7 @@
 #pragma once
+#include <weku/chain/itemp_database.hpp>
 
-#include <wk/chain_refactory/itemp_database.hpp>
-using namespace wk::chain;
-namespace steemit{namespace chain{
+namespace weku{namespace chain{
     class invariant_validator{
         public:
             invariant_validator(const itemp_database& db):_db(db){}

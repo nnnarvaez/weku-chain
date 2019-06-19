@@ -1,8 +1,8 @@
-#include <steemit/chain/fork_database.hpp>
+#include <weku/chain/fork_database.hpp>
 
-#include <steemit/chain/database_exceptions.hpp>
+#include <weku/chain/database_exceptions.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
 fork_database::fork_database()
 {

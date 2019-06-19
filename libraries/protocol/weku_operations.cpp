@@ -1,9 +1,9 @@
-#include <steemit/protocol/steem_operations.hpp>
+#include <weku/protocol/weku_operations.hpp>
 #include <fc/io/json.hpp>
 
 #include <locale>
 
-namespace steemit { namespace protocol {
+namespace weku { namespace protocol {
 
    bool inline is_asset_type( asset asset, asset_symbol_type symbol )
    {
@@ -182,7 +182,7 @@ namespace steemit { namespace protocol {
    {
       validate_account_name( from_account );
       validate_account_name( to_account );
-      FC_ASSERT( 0 <= percent && percent <= STEEMIT_100_PERCENT, "Percent must be valid steemit percent" );
+      FC_ASSERT( 0 <= percent && percent <= STEEMIT_100_PERCENT, "Percent must be valid weku percent" );
    }
 
    void witness_update_operation::validate() const
@@ -551,4 +551,4 @@ namespace steemit { namespace protocol {
       FC_ASSERT( vesting_shares >= asset( 0, VESTS_SYMBOL ), "Delegation cannot be negative" );
    }
 
-} } // steemit::protocol
+} } // weku::protocol

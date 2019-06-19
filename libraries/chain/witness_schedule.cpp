@@ -1,12 +1,9 @@
-
-#include <steemit/chain/database.hpp>
-#include <steemit/chain/witness_objects.hpp>
-#include <steemit/chain/witness_schedule.hpp>
-
+#include <weku/chain/witness_schedule.hpp>
 #include <steemit/protocol/config.hpp>
+#include <weku/chain/database.hpp>
+#include <weku/chain/witness_objects.hpp>
 
-namespace steemit {
-    namespace chain {
+namespace weku { namespace chain {
 
         void reset_virtual_schedule_time(database &db) {
             const witness_schedule_object &wso = db.get_witness_schedule_object();

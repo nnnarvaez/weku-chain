@@ -2,7 +2,7 @@
 #include <steemit/protocol/exceptions.hpp>
 #include <steemit/protocol/operations.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
 class database;
 

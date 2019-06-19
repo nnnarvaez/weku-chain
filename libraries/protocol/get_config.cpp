@@ -1,10 +1,10 @@
-#include <steemit/protocol/get_config.hpp>
-#include <steemit/protocol/config.hpp>
-#include <steemit/protocol/asset.hpp>
-#include <steemit/protocol/types.hpp>
-#include <steemit/protocol/version.hpp>
+#include <weku/protocol/get_config.hpp>
+#include <weku/protocol/config.hpp>
+#include <weku/protocol/asset.hpp>
+#include <weku/protocol/types.hpp>
+#include <weku/protocol/version.hpp>
 
-namespace steemit { namespace protocol {
+namespace weku { namespace protocol {
 
 fc::variant_object get_config()
 {
@@ -185,4 +185,4 @@ fc::variant_object get_config()
    return result;
 }
 
-} } // steemit::protocol
+} } // weku::protocol

@@ -1,17 +1,11 @@
-file(GLOB HEADERS "include/steemit/chain/*.hpp")
-file(GLOB HEADERS2 "include/wk/chain_refactory/*.hpp")
+file(GLOB HEADERS "include/weku/chain/*.hpp")
 file(GLOB SRCS "*.cpp")
 
-## SORT .cpp by most likely to change / break compile
-add_library( steemit_chain
-             ${SRCS}
-             ${HEADERS2}
-             ${HEADERS}
-           )
+add_library( weku_chain ${SRCS} ${HEADERS} )
 
-add_dependencies( steemit_chain wk_chain_refactory steemit_protocol )
-target_link_libraries( steemit_chain wk_chain_refactory steemit_protocol fc chainbase graphene_schema ${PATCH_MERGE_LIB} )
-target_include_directories( steemit_chain
+add_dependencies( weku_chain chain_refactory protocol )
+target_link_libraries( weku_chain chain_refactory protocol fc chainbase graphene_schema ${PATCH_MERGE_LIB} )
+target_include_directories( weku_chain
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
 
 if(MSVC)
@@ -19,10 +13,10 @@ if(MSVC)
 endif(MSVC)
 
 INSTALL( TARGETS
-   steemit_chain
+   weku_chain
 
    RUNTIME DESTINATION bin
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
-INSTALL( FILES ${HEADERS} DESTINATION "include/steemit/chain" )
+INSTALL( FILES ${HEADERS} DESTINATION "include/weku/chain" )

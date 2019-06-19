@@ -1,11 +1,11 @@
 #pragma once
-#include <steemit/protocol/operations.hpp>
-#include <steemit/protocol/sign_state.hpp>
-#include <steemit/protocol/types.hpp>
+#include <weku/protocol/operations.hpp>
+#include <weku/protocol/sign_state.hpp>
+#include <weku/protocol/types.hpp>
 
 #include <numeric>
 
-namespace steemit { namespace protocol {
+namespace weku { namespace protocol {
 
    struct transaction
    {
@@ -117,8 +117,8 @@ namespace steemit { namespace protocol {
 
    /// @} transactions group
 
-} } // steemit::protocol
+} } // weku::protocol
 
-FC_REFLECT( steemit::protocol::transaction, (ref_block_num)(ref_block_prefix)(expiration)(operations)(extensions) )
-FC_REFLECT_DERIVED( steemit::protocol::signed_transaction, (steemit::protocol::transaction), (signatures) )
-FC_REFLECT_DERIVED( steemit::protocol::annotated_signed_transaction, (steemit::protocol::signed_transaction), (transaction_id)(block_num)(transaction_num) );
+FC_REFLECT( weku::protocol::transaction, (ref_block_num)(ref_block_prefix)(expiration)(operations)(extensions) )
+FC_REFLECT_DERIVED( weku::protocol::signed_transaction, (weku::protocol::transaction), (signatures) )
+FC_REFLECT_DERIVED( weku::protocol::annotated_signed_transaction, (weku::protocol::signed_transaction), (transaction_id)(block_num)(transaction_num) );

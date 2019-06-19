@@ -1,21 +1,17 @@
-
 #pragma once
-
-#include <steemit/protocol/steem_operations.hpp>
-#include <steemit/protocol/operation_util_impl.hpp>
-
-#include <steemit/chain/evaluator.hpp>
-#include <steemit/chain/evaluator_registry.hpp>
-#include <steemit/chain/custom_operation_interpreter.hpp>
-
-#include <graphene/schema/schema.hpp>
-
-#include <fc/variant.hpp>
-
 #include <string>
 #include <vector>
 
-namespace steemit { namespace chain {
+#include <fc/variant.hpp>
+#include <graphene/schema/schema.hpp>
+
+#include <steemit/protocol/steem_operations.hpp>
+#include <steemit/protocol/operation_util_impl.hpp>
+#include <weku/chain/evaluator.hpp>
+#include <weku/chain/evaluator_registry.hpp>
+#include <weku/chain/custom_operation_interpreter.hpp>
+
+namespace weku { namespace chain {
 
 class database;
 
@@ -63,7 +59,7 @@ class generic_custom_operation_interpreter
          plugin_session.squash();
       }
 
-      virtual void apply( const protocol::custom_json_operation& outer_o ) override
+      virtual void apply( const steemit::protocol::custom_json_operation& outer_o ) override
       {
          try
          {

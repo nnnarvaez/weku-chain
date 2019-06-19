@@ -1,12 +1,12 @@
-#include <steemit/protocol/config.hpp>
-#include <steemit/protocol/types.hpp>
+#include <weku/protocol/config.hpp>
+#include <weku/protocol/types.hpp>
 
 #include <fc/crypto/base58.hpp>
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/io/raw.hpp>
 
-namespace steemit { namespace protocol {
+namespace weku { namespace protocol {
 
     public_key_type::public_key_type():key_data(){};
 
@@ -174,38 +174,38 @@ namespace steemit { namespace protocol {
        return p1.key_data != p2.key_data;
     }
 
-} } // steemit::protocol
+} } // weku::protocol
 
 namespace fc
 {
     using namespace std;
-    void to_variant( const steemit::protocol::public_key_type& var,  fc::variant& vo )
+    void to_variant( const weku::protocol::public_key_type& var,  fc::variant& vo )
     {
         vo = std::string( var );
     }
 
-    void from_variant( const fc::variant& var,  steemit::protocol::public_key_type& vo )
+    void from_variant( const fc::variant& var,  weku::protocol::public_key_type& vo )
     {
-        vo = steemit::protocol::public_key_type( var.as_string() );
+        vo = weku::protocol::public_key_type( var.as_string() );
     }
 
-    void to_variant( const steemit::protocol::extended_public_key_type& var, fc::variant& vo )
+    void to_variant( const weku::protocol::extended_public_key_type& var, fc::variant& vo )
     {
        vo = std::string( var );
     }
 
-    void from_variant( const fc::variant& var, steemit::protocol::extended_public_key_type& vo )
+    void from_variant( const fc::variant& var, weku::protocol::extended_public_key_type& vo )
     {
-       vo = steemit::protocol::extended_public_key_type( var.as_string() );
+       vo = weku::protocol::extended_public_key_type( var.as_string() );
     }
 
-    void to_variant( const steemit::protocol::extended_private_key_type& var, fc::variant& vo )
+    void to_variant( const weku::protocol::extended_private_key_type& var, fc::variant& vo )
     {
        vo = std::string( var );
     }
 
-    void from_variant( const fc::variant& var, steemit::protocol::extended_private_key_type& vo )
+    void from_variant( const fc::variant& var, weku::protocol::extended_private_key_type& vo )
     {
-       vo = steemit::protocol::extended_private_key_type( var.as_string() );
+       vo = weku::protocol::extended_private_key_type( var.as_string() );
     }
 } // fc

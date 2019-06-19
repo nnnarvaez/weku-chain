@@ -1,8 +1,8 @@
 #pragma once
 
-#include <steemit/chain/evaluator.hpp>
+#include <weku/chain/evaluator.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
 template< typename OperationType >
 class evaluator_registry

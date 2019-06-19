@@ -1,58 +1,55 @@
-#include <steemit/protocol/steem_operations.hpp>
-
-#include <steemit/chain/block_summary_object.hpp>
-#include <steemit/chain/compound.hpp>
-#include <steemit/chain/custom_operation_interpreter.hpp>
-#include <steemit/chain/database.hpp>
-#include <steemit/chain/database_exceptions.hpp>
-#include <steemit/chain/db_with.hpp>
-#include <steemit/chain/evaluator_registry.hpp>
-#include <steemit/chain/global_property_object.hpp>
-#include <steemit/chain/history_object.hpp>
-#include <steemit/chain/index.hpp>
-#include <steemit/chain/steem_evaluator.hpp>
-#include <steemit/chain/steem_objects.hpp>
-#include <steemit/chain/transaction_object.hpp>
-#include <steemit/chain/shared_db_merkle.hpp>
-#include <steemit/chain/operation_notification.hpp>
-#include <steemit/chain/witness_schedule.hpp>
-#include <steemit/chain/blacklist_objects.hpp>
-#include <steemit/chain/invariant_validator.hpp>
-
-#include <steemit/chain/util/asset.hpp>
-#include <steemit/chain/util/reward.hpp>
-#include <steemit/chain/util/uint256.hpp>
-#include <steemit/chain/util/reward.hpp>
-
-
-#include <wk/chain_refactory/fund_processor.hpp>
-#include <wk/chain_refactory/account_recovery_processor.hpp>
-#include <wk/chain_refactory/balance_processor.hpp>
-#include <wk/chain_refactory/block_applier.hpp>
-#include <wk/chain_refactory/block_header_validator.hpp>
-#include <wk/chain_refactory/cashout_processor.hpp>
-#include <wk/chain_refactory/genesis_processor.hpp>
-#include <wk/chain_refactory/gpo_processor.hpp>
-#include <wk/chain_refactory/reward_processor.hpp>
-#include <wk/chain_refactory/median_feed_updator.hpp>
-#include <wk/chain_refactory/null_account_cleaner.hpp>
-#include <wk/chain_refactory/order_processor.hpp>
-#include <wk/chain_refactory/slot.hpp>
-#include <wk/chain_refactory/vest_withdraw_processor.hpp>
-
-#include <fc/smart_ref_impl.hpp>
-#include <fc/uint128.hpp>
-
-#include <fc/container/deque.hpp>
-
-#include <fc/io/fstream.hpp>
+#include <weku/chain/database.hpp>
 
 #include <cstdint>
 #include <deque>
 #include <fstream>
 #include <functional>
 
-namespace steemit { namespace chain {
+#include <fc/smart_ref_impl.hpp>
+#include <fc/uint128.hpp>
+#include <fc/container/deque.hpp>
+#include <fc/io/fstream.hpp>
+
+#include <steemit/protocol/steem_operations.hpp>
+
+#include <weku/chain/util/asset.hpp>
+#include <weku/chain/util/reward.hpp>
+#include <weku/chain/util/uint256.hpp>
+#include <weku/chain/util/reward.hpp>
+
+#include <weku/chain/block_summary_object.hpp>
+#include <weku/chain/compound.hpp>
+#include <weku/chain/custom_operation_interpreter.hpp>
+#include <weku/chain/database_exceptions.hpp>
+#include <weku/chain/db_with.hpp>
+#include <weku/chain/evaluator_registry.hpp>
+#include <weku/chain/global_property_object.hpp>
+#include <weku/chain/history_object.hpp>
+#include <weku/chain/index.hpp>
+#include <weku/chain/steem_evaluator.hpp>
+#include <weku/chain/steem_objects.hpp>
+#include <weku/chain/transaction_object.hpp>
+#include <weku/chain/shared_db_merkle.hpp>
+#include <weku/chain/operation_notification.hpp>
+#include <weku/chain/witness_schedule.hpp>
+#include <weku/chain/blacklist_objects.hpp>
+#include <weku/chain/invariant_validator.hpp>
+#include <weku/chain/fund_processor.hpp>
+#include <weku/chain/account_recovery_processor.hpp>
+#include <weku/chain/balance_processor.hpp>
+#include <weku/chain/block_applier.hpp>
+#include <weku/chain/block_header_validator.hpp>
+#include <weku/chain/cashout_processor.hpp>
+#include <weku/chain/genesis_processor.hpp>
+#include <weku/chain/gpo_processor.hpp>
+#include <weku/chain/reward_processor.hpp>
+#include <weku/chain/median_feed_updator.hpp>
+#include <weku/chain/null_account_cleaner.hpp>
+#include <weku/chain/order_processor.hpp>
+#include <weku/chain/slot.hpp>
+#include <weku/chain/vest_withdraw_processor.hpp>
+
+namespace weku { namespace chain {
 
 using boost::container::flat_set;
 
