@@ -1,4 +1,5 @@
 #pragma once
+#include<utility>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 
@@ -7,12 +8,13 @@
 #include <weku/chain/weku_object_types.hpp>
 
 namespace weku { namespace chain {
-
+   using fc::uint128_t;
+   using fc::time_point_sec;
    using steemit::protocol::asset;
    using steemit::protocol::price;
    using steemit::protocol::asset_symbol_type;
 
-   typedef protocol::fixed_string_16 reward_fund_name_type;
+   typedef steemit::protocol::fixed_string_16 reward_fund_name_type;
 
    enum curve_id
    {
@@ -198,7 +200,7 @@ namespace weku { namespace chain {
          share_type        for_sale; ///< asset id is sell_price.base.symbol
          price             sell_price;
 
-         pair< asset_symbol_type, asset_symbol_type > get_market()const
+         std::pair< asset_symbol_type, asset_symbol_type > get_market()const
          {
             return sell_price.base.symbol < sell_price.quote.symbol ?
                 std::make_pair( sell_price.base.symbol, sell_price.quote.symbol ) :

@@ -1,11 +1,10 @@
-file(GLOB HEADERS "include/steemit/chain/*.hpp" "include/steemit/chain/util/*.hpp")
+file(GLOB HEADERS "include/steemit/chain/*.hpp")
 file(GLOB HEADERS2 "include/wk/chain_refactory/*.hpp")
 file(GLOB SRCS "*.cpp")
 
 ## SORT .cpp by most likely to change / break compile
 add_library( steemit_chain
              ${SRCS}
-             util/reward.cpp
              ${HEADERS2}
              ${HEADERS}
            )

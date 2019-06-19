@@ -1,17 +1,14 @@
 #pragma once
-
-#include <steemit/chain/util/asset.hpp>
-#include <steemit/chain/steem_objects.hpp>
+#include <fc/uint128.hpp>
+#include <fc/reflect/reflect.hpp>
 
 #include <steemit/protocol/asset.hpp>
 #include <steemit/protocol/config.hpp>
 #include <steemit/protocol/types.hpp>
+#include <weku/chain/common_objects.hpp>
+#include <weku/chain/util/asset.hpp>
 
-#include <fc/reflect/reflect.hpp>
-
-#include <fc/uint128.hpp>
-
-namespace steemit { namespace chain { namespace util {
+namespace weku { namespace chain { namespace util {
 
 using steemit::protocol::asset;
 using steemit::protocol::price;
@@ -45,9 +42,9 @@ inline bool is_comment_payout_dust( const price& p, uint64_t steem_payout )
    return to_sbd( p, asset( steem_payout, STEEM_SYMBOL ) ) < STEEMIT_MIN_PAYOUT_SBD;
 }
 
-} } } // steemit::chain::util
+} } } // weku::chain::util
 
-FC_REFLECT( steemit::chain::util::comment_reward_context,
+FC_REFLECT( weku::chain::util::comment_reward_context,
    (rshares)
    (reward_weight)
    (max_sbd)
@@ -55,5 +52,4 @@ FC_REFLECT( steemit::chain::util::comment_reward_context,
    (total_reward_fund_steem)
    (current_steem_price)
    (reward_curve)
-   (content_constant)
-   )
+   (content_constant))
