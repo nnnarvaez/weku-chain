@@ -1,5 +1,5 @@
 #pragma once
-#include <weku/protocol/steem_operations.hpp>
+#include <weku/protocol/weku_operations.hpp>
 #include <weku/chain/evaluator.hpp>
 
 namespace weku{ namespace chain {

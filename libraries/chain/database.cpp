@@ -24,13 +24,13 @@
 #include <weku/chain/db_with.hpp>
 #include <weku/chain/evaluator_registry.hpp>
 #include <weku/chain/global_property_object.hpp>
-#include <weku/chain/history_object.hpp>
 #include <weku/chain/index.hpp>
-#include <weku/chain/steem_evaluator.hpp>
-#include <weku/chain/steem_objects.hpp>
+#include <weku/chain/weku_evaluator.hpp>
+#include <weku/chain/common_objects.hpp>
 #include <weku/chain/transaction_object.hpp>
 #include <weku/chain/shared_db_merkle.hpp>
 #include <weku/chain/operation_notification.hpp>
+#include <weku/chain/operation_object.hpp>
 #include <weku/chain/witness_schedule.hpp>
 #include <weku/chain/blacklist_objects.hpp>
 #include <weku/chain/invariant_validator.hpp>
@@ -48,6 +48,8 @@
 #include <weku/chain/order_processor.hpp>
 #include <weku/chain/slot.hpp>
 #include <weku/chain/vest_withdraw_processor.hpp>
+#include <weku/chain/conversion_processor.hpp>
+
 
 namespace weku { namespace chain {
 
@@ -1847,7 +1849,7 @@ void database::apply_operation(const operation& op)
 
 bool database::apply_order( const limit_order_object& new_order_object )
 {
-   order_processer op(*this);
+   order_processor op(*this);
    return op.apply_order(new_order_object);   
 }
 

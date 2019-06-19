@@ -3,8 +3,8 @@ file(GLOB SRCS "*.cpp")
 
 add_library( chain ${SRCS} ${HEADERS} )
 
-add_dependencies( chain chain_refactory protocol )
-target_link_libraries( chain chain_refactory protocol fc chainbase graphene_schema ${PATCH_MERGE_LIB} )
+add_dependencies( chain chain_refactory chain_branch chain_ledger chain_util chain_objects protocol )
+target_link_libraries( chain chain_refactory chain_branch chain_ledger chain_util chain_objects protocol fc chainbase graphene_schema ${PATCH_MERGE_LIB} )
 target_include_directories( chain
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
 
