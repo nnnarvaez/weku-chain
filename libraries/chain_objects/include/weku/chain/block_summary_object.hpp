@@ -1,7 +1,7 @@
 #pragma once
-#include <steemit/chain/steem_object_types.hpp>
+#include <weku/chain/steem_object_types.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
    using steemit::protocol::block_id_type;
 
@@ -38,7 +38,7 @@ namespace steemit { namespace chain {
       allocator< block_summary_object >
    > block_summary_index;
 
-} } // steemit::chain
+} } // weku::chain
 
-FC_REFLECT( steemit::chain::block_summary_object, (id)(block_id) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::block_summary_object, steemit::chain::block_summary_index )
+FC_REFLECT( weku::chain::block_summary_object, (id)(block_id) )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::block_summary_object, weku::chain::block_summary_index )

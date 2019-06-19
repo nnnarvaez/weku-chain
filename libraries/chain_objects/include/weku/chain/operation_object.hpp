@@ -1,16 +1,13 @@
 #pragma once
+#include <boost/multi_index/composite_key.hpp>
 
 #include <steemit/protocol/authority.hpp>
 #include <steemit/protocol/operations.hpp>
 #include <steemit/protocol/steem_operations.hpp>
 
-#include <steemit/chain/steem_object_types.hpp>
-#include <steemit/chain/witness_objects.hpp>
+#include <weku/chain/steem_object_types.hpp>
 
-#include <boost/multi_index/composite_key.hpp>
-
-
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
    class operation_object : public object< operation_object_type, operation_object >
    {
@@ -50,7 +47,7 @@ namespace steemit { namespace chain {
                member< operation_object, operation_id_type, &operation_object::id>
             >
          >
-#ifndef SKIP_BY_TX_ID
+         #ifndef SKIP_BY_TX_ID
          ,
          ordered_unique< tag< by_transaction_id >,
             composite_key< operation_object,
@@ -58,46 +55,15 @@ namespace steemit { namespace chain {
                member< operation_object, operation_id_type, &operation_object::id>
             >
          >
-#endif
+         #endif
       >,
       allocator< operation_object >
    > operation_index;
 
-   class account_history_object : public object< account_history_object_type, account_history_object >
-   {
-      public:
-         template< typename Constructor, typename Allocator >
-         account_history_object( Constructor&& c, allocator< Allocator > a )
-         {
-            c( *this );
-         }
-
-         id_type           id;
-
-         account_name_type account;
-         uint32_t          sequence = 0;
-         operation_id_type op;
-   };
-
-   struct by_account;
-   typedef multi_index_container<
-      account_history_object,
-      indexed_by<
-         ordered_unique< tag< by_id >, member< account_history_object, account_history_id_type, &account_history_object::id > >,
-         ordered_unique< tag< by_account >,
-            composite_key< account_history_object,
-               member< account_history_object, account_name_type, &account_history_object::account>,
-               member< account_history_object, uint32_t, &account_history_object::sequence>
-            >,
-            composite_key_compare< std::less< account_name_type >, std::greater< uint32_t > >
-         >
-      >,
-      allocator< account_history_object >
-   > account_history_index;
+   
 } }
 
-FC_REFLECT( steemit::chain::operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(serialized_op) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::operation_object, steemit::chain::operation_index )
+FC_REFLECT( weku::chain::operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(virtual_op)(timestamp)(serialized_op) )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::operation_object, weku::chain::operation_index )
 
-FC_REFLECT( steemit::chain::account_history_object, (id)(account)(sequence)(op) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::account_history_object, steemit::chain::account_history_index )
+

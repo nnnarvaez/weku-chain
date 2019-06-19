@@ -1,6 +1,6 @@
-#include <steemit/chain/shared_authority.hpp>
+#include <weku/chain/shared_authority.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
 shared_authority::operator authority()const
 {
@@ -44,9 +44,9 @@ void shared_authority::add_authority( const account_name_type& k, weight_type w 
    account_auths[k] = w;
 }
 
-vector<public_key_type> shared_authority::get_keys()const
+std::vector<public_key_type> shared_authority::get_keys()const
 {
-   vector<public_key_type> result;
+   std::vector<public_key_type> result;
    result.reserve( key_auths.size() );
    for( const auto& k : key_auths )
       result.push_back(k.first);
@@ -69,7 +69,7 @@ void shared_authority::validate()const
 {
    for( const auto& item : account_auths )
    {
-      FC_ASSERT( protocol::is_valid_account_name( item.first ) );
+      FC_ASSERT( steemit::protocol::is_valid_account_name( item.first ) );
    }
 }
 
@@ -90,4 +90,4 @@ bool operator == ( const shared_authority& a, const authority& b )
    return authority( a ) == b;
 }
 
-} } // steemit::chain
+} } // weku::chain

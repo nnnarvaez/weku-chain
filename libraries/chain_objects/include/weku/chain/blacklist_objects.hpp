@@ -1,10 +1,10 @@
 #pragma once
-#include <steemit/chain/steem_object_types.hpp>
 #include <boost/multi_index/composite_key.hpp>
 
-namespace steemit{namespace chain{
+#include <weku/chain/steem_object_types.hpp>
+
+namespace weku{namespace chain{
 using namespace std;
-using namespace steemit::chain;
 using namespace boost::multi_index;
 
 class blacklist_vote_object: public object<blacklist_vote_object_type, blacklist_vote_object>{
@@ -45,5 +45,5 @@ typedef multi_index_container<
 
 }}
 
-FC_REFLECT(steemit::chain::blacklist_vote_object, (id)(voter_id)(badguy_id)(net_shares))
-CHAINBASE_SET_INDEX_TYPE(steemit::chain::blacklist_vote_object, steemit::chain::blacklist_vote_index)
+FC_REFLECT(weku::chain::blacklist_vote_object, (id)(voter_id)(badguy_id)(net_shares))
+CHAINBASE_SET_INDEX_TYPE(weku::chain::blacklist_vote_object, weku::chain::blacklist_vote_index)

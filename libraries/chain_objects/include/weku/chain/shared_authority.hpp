@@ -1,8 +1,8 @@
 #pragma once
-#include <steemit/protocol/authority.hpp>
 #include <boost/interprocess/managed_mapped_file.hpp>
+#include <steemit/protocol/authority.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
    using steemit::protocol::authority;
    using steemit::protocol::public_key_type;
    using steemit::protocol::account_name_type;
@@ -74,7 +74,7 @@ namespace steemit { namespace chain {
          add_authorities(auths...);
       }
 
-      vector<public_key_type> get_keys()const;
+      std::vector<public_key_type> get_keys()const;
 
       bool     is_impossible()const;
       uint32_t num_auths()const;
@@ -98,7 +98,7 @@ namespace steemit { namespace chain {
    bool operator == ( const authority& a, const shared_authority& b );
    bool operator == ( const shared_authority& a, const authority& b );
 
-} } //steemit::chain
+} } //weku::chain
 
-FC_REFLECT_TYPENAME( steemit::chain::shared_authority::account_authority_map)
-FC_REFLECT( steemit::chain::shared_authority, (weight_threshold)(account_auths)(key_auths) )
+FC_REFLECT_TYPENAME( weku::chain::shared_authority::account_authority_map)
+FC_REFLECT( weku::chain::shared_authority, (weight_threshold)(account_auths)(key_auths) )

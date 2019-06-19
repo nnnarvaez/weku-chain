@@ -1,15 +1,11 @@
 #pragma once
-
-#include <steemit/protocol/authority.hpp>
-#include <steemit/protocol/steem_operations.hpp>
-
-#include <steemit/chain/steem_object_types.hpp>
-#include <steemit/chain/witness_objects.hpp>
-
 #include <boost/multi_index/composite_key.hpp>
 
+#include <steemit/protocol/steem_operations.hpp>
+#include <steemit/protocol/authority.hpp>
+#include <weku/chain/steem_object_types.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
    using protocol::beneficiary_route_type;
 
@@ -218,7 +214,7 @@ namespace steemit { namespace chain {
             composite_key_compare< std::less< account_name_type >, strcmp_less, std::less< comment_id_type > >
          >
          /// NON_CONSENSUS INDICIES - used by APIs
-#ifndef IS_LOW_MEM
+         #ifndef IS_LOW_MEM
          ,
          ordered_unique< tag< by_last_update >,
             composite_key< comment_object,
@@ -236,14 +232,14 @@ namespace steemit { namespace chain {
             >,
             composite_key_compare< std::less< account_name_type >, std::greater< time_point_sec >, std::less< comment_id_type > >
          >
-#endif
+         #endif
       >,
       allocator< comment_object >
    > comment_index;
 
-} } // steemit::chain
+} } // weku::chain
 
-FC_REFLECT( steemit::chain::comment_object,
+FC_REFLECT( weku::chain::comment_object,
              (id)(author)(permlink)
              (category)(parent_author)(parent_permlink)
              (title)(body)(json_metadata)(last_update)(created)(active)(last_payout)
@@ -254,9 +250,9 @@ FC_REFLECT( steemit::chain::comment_object,
              (max_accepted_payout)(percent_steem_dollars)(allow_replies)(allow_votes)(allow_curation_rewards)
              (beneficiaries)
           )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::comment_object, steemit::chain::comment_index )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::comment_object, weku::chain::comment_index )
 
-FC_REFLECT( steemit::chain::comment_vote_object,
+FC_REFLECT( weku::chain::comment_vote_object,
              (id)(voter)(comment)(weight)(rshares)(vote_percent)(last_update)(num_changes)
           )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::comment_vote_object, steemit::chain::comment_vote_index )
+CHAINBASE_SET_INDEX_TYPE( steemit::weku::comment_vote_object, weku::chain::comment_vote_index )

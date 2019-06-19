@@ -1,18 +1,14 @@
 #pragma once
-#include <fc/fixed_string.hpp>
-
-#include <steemit/protocol/authority.hpp>
-#include <steemit/protocol/steem_operations.hpp>
-
-#include <steemit/chain/steem_object_types.hpp>
-#include <steemit/chain/witness_objects.hpp>
-#include <steemit/chain/shared_authority.hpp>
-
+#include <numeric>
 #include <boost/multi_index/composite_key.hpp>
 
-#include <numeric>
+#include <fc/fixed_string.hpp>
+#include <steemit/protocol/authority.hpp>
+#include <steemit/protocol/steem_operations.hpp>
+#include <weku/chain/steem_object_types.hpp>
+#include <weku/chain/shared_authority.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
    using steemit::protocol::authority;
 
@@ -467,52 +463,83 @@ namespace steemit { namespace chain {
       >,
       allocator< change_recovery_account_request_object >
    > change_recovery_account_request_index;
+
+   class account_history_object : public object< account_history_object_type, account_history_object >
+   {
+      public:
+         template< typename Constructor, typename Allocator >
+         account_history_object( Constructor&& c, allocator< Allocator > a )
+         {
+            c( *this );
+         }
+
+         id_type           id;
+
+         account_name_type account;
+         uint32_t          sequence = 0;
+         operation_id_type op;
+   };
+
+   struct by_account;
+   typedef multi_index_container<
+      account_history_object,
+      indexed_by<
+         ordered_unique< tag< by_id >, member< account_history_object, account_history_id_type, &account_history_object::id > >,
+         ordered_unique< tag< by_account >,
+            composite_key< account_history_object,
+               member< account_history_object, account_name_type, &account_history_object::account>,
+               member< account_history_object, uint32_t, &account_history_object::sequence>
+            >,
+            composite_key_compare< std::less< account_name_type >, std::greater< uint32_t > >
+         >
+      >,
+      allocator< account_history_object >
+   > account_history_index;
+
 } }
 
-FC_REFLECT( steemit::chain::account_object,
-             (id)(name)(memo_key)(json_metadata)(proxy)(last_account_update)
-             (created)(mined)
-             (owner_challenged)(active_challenged)(last_owner_proved)(last_active_proved)(recovery_account)(last_account_recovery)(reset_account)
-             (comment_count)(lifetime_vote_count)(post_count)(can_vote)(voting_power)(last_vote_time)
-             (balance)
-             (savings_balance)
-             (sbd_balance)(sbd_seconds)(sbd_seconds_last_update)(sbd_last_interest_payment)
-             (savings_sbd_balance)(savings_sbd_seconds)(savings_sbd_seconds_last_update)(savings_sbd_last_interest_payment)(savings_withdraw_requests)
-             (reward_steem_balance)(reward_sbd_balance)(reward_vesting_balance)(reward_vesting_steem)
-             (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)
-             (vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
-             (curation_rewards)
-             (posting_rewards)
-             (proxied_vsf_votes)(witnesses_voted_for)
-             (last_post)(last_root_post)(post_bandwidth)
-             (blacklist_total_votes)
-          )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::account_object, steemit::chain::account_index )
+FC_REFLECT( weku::chain::account_object,
+   (id)(name)(memo_key)(json_metadata)(proxy)(last_account_update)
+   (created)(mined)
+   (owner_challenged)(active_challenged)(last_owner_proved)(last_active_proved)(recovery_account)(last_account_recovery)(reset_account)
+   (comment_count)(lifetime_vote_count)(post_count)(can_vote)(voting_power)(last_vote_time)
+   (balance)
+   (savings_balance)
+   (sbd_balance)(sbd_seconds)(sbd_seconds_last_update)(sbd_last_interest_payment)
+   (savings_sbd_balance)(savings_sbd_seconds)(savings_sbd_seconds_last_update)(savings_sbd_last_interest_payment)(savings_withdraw_requests)
+   (reward_steem_balance)(reward_sbd_balance)(reward_vesting_balance)(reward_vesting_steem)
+   (vesting_shares)(delegated_vesting_shares)(received_vesting_shares)
+   (vesting_withdraw_rate)(next_vesting_withdrawal)(withdrawn)(to_withdraw)(withdraw_routes)
+   (curation_rewards)
+   (posting_rewards)
+   (proxied_vsf_votes)(witnesses_voted_for)
+   (last_post)(last_root_post)(post_bandwidth)
+   (blacklist_total_votes))
+CHAINBASE_SET_INDEX_TYPE( weku::chain::account_object, weku::chain::account_index )
 
-FC_REFLECT( steemit::chain::account_authority_object,
-             (id)(account)(owner)(active)(posting)(last_owner_update)
-)
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::account_authority_object, steemit::chain::account_authority_index )
+FC_REFLECT( weku::chain::account_authority_object,
+   (id)(account)(owner)(active)(posting)(last_owner_update))
+CHAINBASE_SET_INDEX_TYPE( weku::chain::account_authority_object, weku::chain::account_authority_index )
 
-FC_REFLECT( steemit::chain::vesting_delegation_object,
-            (id)(delegator)(delegatee)(vesting_shares)(min_delegation_time) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::vesting_delegation_object, steemit::chain::vesting_delegation_index )
+FC_REFLECT( weku::chain::vesting_delegation_object,
+   (id)(delegator)(delegatee)(vesting_shares)(min_delegation_time) )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::vesting_delegation_object, weku::chain::vesting_delegation_index )
 
-FC_REFLECT( steemit::chain::vesting_delegation_expiration_object,
-            (id)(delegator)(vesting_shares)(expiration) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::vesting_delegation_expiration_object, steemit::chain::vesting_delegation_expiration_index )
+FC_REFLECT( weku::chain::vesting_delegation_expiration_object,
+   (id)(delegator)(vesting_shares)(expiration) )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::vesting_delegation_expiration_object, weku::chain::vesting_delegation_expiration_index )
 
-FC_REFLECT( steemit::chain::owner_authority_history_object,
-             (id)(account)(previous_owner_authority)(last_valid_time)
-          )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::owner_authority_history_object, steemit::chain::owner_authority_history_index )
+FC_REFLECT( weku::chain::owner_authority_history_object,
+   (id)(account)(previous_owner_authority)(last_valid_time))
+CHAINBASE_SET_INDEX_TYPE( weku::chain::owner_authority_history_object, weku::chain::owner_authority_history_index )
 
-FC_REFLECT( steemit::chain::account_recovery_request_object,
-             (id)(account_to_recover)(new_owner_authority)(expires)
-          )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::account_recovery_request_object, steemit::chain::account_recovery_request_index )
+FC_REFLECT( weku::chain::account_recovery_request_object,
+   (id)(account_to_recover)(new_owner_authority)(expires))
+CHAINBASE_SET_INDEX_TYPE( weku::chain::account_recovery_request_object, weku::chain::account_recovery_request_index )
 
-FC_REFLECT( steemit::chain::change_recovery_account_request_object,
-             (id)(account_to_recover)(recovery_account)(effective_on)
-          )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::change_recovery_account_request_object, steemit::chain::change_recovery_account_request_index )
+FC_REFLECT( weku::chain::change_recovery_account_request_object,
+   (id)(account_to_recover)(recovery_account)(effective_on))
+CHAINBASE_SET_INDEX_TYPE( weku::chain::change_recovery_account_request_object, weku::chain::change_recovery_account_request_index )
+
+FC_REFLECT( weku::chain::account_history_object, (id)(account)(sequence)(op) )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::account_history_object, weku::chain::account_history_index )

@@ -1,21 +1,26 @@
 #pragma once
-
-#include <steemit/protocol/authority.hpp>
-#include <steemit/protocol/steem_operations.hpp>
-
-#include <steemit/chain/steem_object_types.hpp>
-
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 
+#include <steemit/protocol/authority.hpp>
+#include <steemit/protocol/steem_operations.hpp>
+#include <weku/chain/steem_object_types.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
    using steemit::protocol::asset;
    using steemit::protocol::price;
    using steemit::protocol::asset_symbol_type;
 
    typedef protocol::fixed_string_16 reward_fund_name_type;
+
+   enum curve_id
+   {
+      quadratic,
+      quadratic_curation,
+      linear,
+      square_root
+   };
 
    /**
     *  This object is used to track pending requests to convert sbd to steem
@@ -38,7 +43,6 @@ namespace steemit { namespace chain {
          asset             amount;
          time_point_sec    conversion_date; ///< at this time the feed_history_median_price * amount
    };
-
 
    class escrow_object : public object< escrow_object_type, escrow_object >
    {
@@ -69,7 +73,6 @@ namespace steemit { namespace chain {
          bool              is_approved()const { return to_approved && agent_approved; }
    };
 
-
    class savings_withdraw_object : public object< savings_withdraw_object_type, savings_withdraw_object >
    {
       savings_withdraw_object() = delete;
@@ -91,7 +94,6 @@ namespace steemit { namespace chain {
          asset             amount;
          time_point_sec    complete;
    };
-
 
    /**
     *  If last_update is greater than 1 week, then volume gets reset to 0
@@ -145,7 +147,6 @@ namespace steemit { namespace chain {
             return ( steem_volume > 0 && sbd_volume > 0 ) ? 1 : 0;
          }
    };
-
 
    /**
     *  This object gets updated once per hour, on the hour
@@ -248,15 +249,7 @@ namespace steemit { namespace chain {
          account_id_type   account;
          time_point_sec    effective_date;
    };
-
-   enum curve_id
-   {
-      quadratic,
-      quadratic_curation,
-      linear,
-      square_root
-   };
-
+   
    class reward_fund_object : public object< reward_fund_object_type, reward_fund_object >
    {
       public:
@@ -484,50 +477,47 @@ namespace steemit { namespace chain {
       allocator< reward_fund_object >
    > reward_fund_index;
 
-} } // steemit::chain
+} } // weku::chain
 
-#include <steemit/chain/comment_object.hpp>
-#include <steemit/chain/account_object.hpp>
-
-FC_REFLECT_ENUM( steemit::chain::curve_id,
+FC_REFLECT_ENUM( weku::chain::curve_id,
                   (quadratic)(quadratic_curation)(linear)(square_root))
 
-FC_REFLECT( steemit::chain::limit_order_object,
+FC_REFLECT( weku::chain::limit_order_object,
              (id)(created)(expiration)(seller)(orderid)(for_sale)(sell_price) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::limit_order_object, steemit::chain::limit_order_index )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::limit_order_object, weku::chain::limit_order_index )
 
-FC_REFLECT( steemit::chain::feed_history_object,
+FC_REFLECT( weku::chain::feed_history_object,
              (id)(current_median_history)(price_history) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::feed_history_object, steemit::chain::feed_history_index )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::feed_history_object, weku::chain::feed_history_index )
 
-FC_REFLECT( steemit::chain::convert_request_object,
+FC_REFLECT( weku::chain::convert_request_object,
              (id)(owner)(requestid)(amount)(conversion_date) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::convert_request_object, steemit::chain::convert_request_index )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::convert_request_object, weku::chain::convert_request_index )
 
-FC_REFLECT( steemit::chain::liquidity_reward_balance_object,
+FC_REFLECT( weku::chain::liquidity_reward_balance_object,
              (id)(owner)(steem_volume)(sbd_volume)(weight)(last_update) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::liquidity_reward_balance_object, steemit::chain::liquidity_reward_balance_index )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::liquidity_reward_balance_object, weku::chain::liquidity_reward_balance_index )
 
-FC_REFLECT( steemit::chain::withdraw_vesting_route_object,
+FC_REFLECT( weku::chain::withdraw_vesting_route_object,
              (id)(from_account)(to_account)(percent)(auto_vest) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::withdraw_vesting_route_object, steemit::chain::withdraw_vesting_route_index )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::withdraw_vesting_route_object, weku::chain::withdraw_vesting_route_index )
 
-FC_REFLECT( steemit::chain::savings_withdraw_object,
+FC_REFLECT( weku::chain::savings_withdraw_object,
              (id)(from)(to)(memo)(request_id)(amount)(complete) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::savings_withdraw_object, steemit::chain::savings_withdraw_index )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::savings_withdraw_object, weku::chain::savings_withdraw_index )
 
-FC_REFLECT( steemit::chain::escrow_object,
+FC_REFLECT( weku::chain::escrow_object,
              (id)(escrow_id)(from)(to)(agent)
              (ratification_deadline)(escrow_expiration)
              (sbd_balance)(steem_balance)(pending_fee)
              (to_approved)(agent_approved)(disputed) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::escrow_object, steemit::chain::escrow_index )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::escrow_object, weku::chain::escrow_index )
 
-FC_REFLECT( steemit::chain::decline_voting_rights_request_object,
+FC_REFLECT( weku::chain::decline_voting_rights_request_object,
              (id)(account)(effective_date) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::decline_voting_rights_request_object, steemit::chain::decline_voting_rights_request_index )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::decline_voting_rights_request_object, weku::chain::decline_voting_rights_request_index )
 
-FC_REFLECT( steemit::chain::reward_fund_object,
+FC_REFLECT( weku::chain::reward_fund_object,
             (id)
             (name)
             (reward_balance)
@@ -539,4 +529,4 @@ FC_REFLECT( steemit::chain::reward_fund_object,
             (author_reward_curve)
             (curation_reward_curve)
          )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::reward_fund_object, steemit::chain::reward_fund_index )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::reward_fund_object, weku::chain::reward_fund_index )

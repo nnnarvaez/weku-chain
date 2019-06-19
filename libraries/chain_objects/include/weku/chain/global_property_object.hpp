@@ -1,11 +1,10 @@
 #pragma once
 #include <fc/uint128.hpp>
 
-#include <steemit/chain/steem_object_types.hpp>
-
 #include <steemit/protocol/asset.hpp>
+#include <weku/chain/steem_object_types.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
    using steemit::protocol::asset;
    using steemit::protocol::price;
@@ -128,34 +127,33 @@ namespace steemit { namespace chain {
       allocator< dynamic_global_property_object >
    > dynamic_global_property_index;
 
-} } // steemit::chain
+} } // weku::chain
 
-FC_REFLECT( steemit::chain::dynamic_global_property_object,
-             (id)
-             (head_block_number)
-             (head_block_id)
-             (time)
-             (current_witness)
-             (total_pow)
-             (num_pow_witnesses)
-             (virtual_supply)
-             (current_supply)
-             (confidential_supply)
-             (current_sbd_supply)
-             (confidential_sbd_supply)
-             (total_vesting_fund_steem)
-             (total_vesting_shares)
-             (total_reward_fund_steem)
-             (total_reward_shares2)
-             (pending_rewarded_vesting_shares)
-             (pending_rewarded_vesting_steem)
-             (sbd_interest_rate)
-             (sbd_print_rate)
-             (maximum_block_size)
-             (current_aslot)
-             (recent_slots_filled)
-             (participation_count)
-             (last_irreversible_block_num)
-             (vote_power_reserve_rate)
-          )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::dynamic_global_property_object, steemit::chain::dynamic_global_property_index )
+FC_REFLECT( weku::chain::dynamic_global_property_object,
+   (id)
+   (head_block_number)
+   (head_block_id)
+   (time)
+   (current_witness)
+   (total_pow)
+   (num_pow_witnesses)
+   (virtual_supply)
+   (current_supply)
+   (confidential_supply)
+   (current_sbd_supply)
+   (confidential_sbd_supply)
+   (total_vesting_fund_steem)
+   (total_vesting_shares)
+   (total_reward_fund_steem)
+   (total_reward_shares2)
+   (pending_rewarded_vesting_shares)
+   (pending_rewarded_vesting_steem)
+   (sbd_interest_rate)
+   (sbd_print_rate)
+   (maximum_block_size)
+   (current_aslot)
+   (recent_slots_filled)
+   (participation_count)
+   (last_irreversible_block_num)
+   (vote_power_reserve_rate))
+CHAINBASE_SET_INDEX_TYPE( weku::chain::dynamic_global_property_object, weku::chain::dynamic_global_property_index )

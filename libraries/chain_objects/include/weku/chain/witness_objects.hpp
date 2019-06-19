@@ -1,13 +1,11 @@
 #pragma once
+#include <boost/multi_index/composite_key.hpp>
 
 #include <steemit/protocol/authority.hpp>
 #include <steemit/protocol/steem_operations.hpp>
+#include <weku/chain/steem_object_types.hpp>
 
-#include <steemit/chain/steem_object_types.hpp>
-
-#include <boost/multi_index/composite_key.hpp>
-
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
    using steemit::protocol::chain_properties;
    using steemit::protocol::digest_type;
@@ -166,8 +164,6 @@ namespace steemit { namespace chain {
          uint8_t hardfork_required_witnesses    = STEEMIT_HARDFORK_REQUIRED_WITNESSES;
    };
 
-
-
    struct by_vote_name;
    struct by_name;
    struct by_pow;
@@ -234,32 +230,32 @@ namespace steemit { namespace chain {
 
 } }
 
-FC_REFLECT_ENUM( steemit::chain::witness_object::witness_schedule_type, (top19)(timeshare)(miner)(none) )
+FC_REFLECT_ENUM( weku::chain::witness_object::witness_schedule_type, (top19)(timeshare)(miner)(none) )
 
-FC_REFLECT( steemit::chain::witness_object,
-             (id)
-             (owner)
-             (created)
-             (url)(votes)(schedule)(virtual_last_update)(virtual_position)(virtual_scheduled_time)(total_missed)
-             (last_aslot)(last_confirmed_block_num)(pow_worker)(signing_key)
-             (props)
-             (sbd_exchange_rate)(last_sbd_exchange_update)
-             (last_work)
-             (running_version)
-             (hardfork_version_vote)(hardfork_time_vote)
-          )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::witness_object, steemit::chain::witness_index )
+FC_REFLECT( weku::chain::witness_object,
+   (id)
+   (owner)
+   (created)
+   (url)(votes)(schedule)(virtual_last_update)(virtual_position)(virtual_scheduled_time)(total_missed)
+   (last_aslot)(last_confirmed_block_num)(pow_worker)(signing_key)
+   (props)
+   (sbd_exchange_rate)(last_sbd_exchange_update)
+   (last_work)
+   (running_version)
+   (hardfork_version_vote)(hardfork_time_vote)
+)
+CHAINBASE_SET_INDEX_TYPE( weku::chain::witness_object, weku::chain::witness_index )
 
-FC_REFLECT( steemit::chain::witness_vote_object, (id)(witness)(account) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::witness_vote_object, steemit::chain::witness_vote_index )
+FC_REFLECT( weku::chain::witness_vote_object, (id)(witness)(account) )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::witness_vote_object, weku::chain::witness_vote_index )
 
-FC_REFLECT( steemit::chain::witness_schedule_object,
-             (id)(current_virtual_time)(next_shuffle_block_num)(current_shuffled_witnesses)(num_scheduled_witnesses)
-             (top19_weight)(timeshare_weight)(miner_weight)(witness_pay_normalization_factor)
-             (median_props)(majority_version)
-             (max_voted_witnesses)
-             (max_miner_witnesses)
-             (max_runner_witnesses)
-             (hardfork_required_witnesses)
-          )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::witness_schedule_object, steemit::chain::witness_schedule_index )
+FC_REFLECT( weku::chain::witness_schedule_object,
+   (id)(current_virtual_time)(next_shuffle_block_num)(current_shuffled_witnesses)(num_scheduled_witnesses)
+   (top19_weight)(timeshare_weight)(miner_weight)(witness_pay_normalization_factor)
+   (median_props)(majority_version)
+   (max_voted_witnesses)
+   (max_miner_witnesses)
+   (max_runner_witnesses)
+   (hardfork_required_witnesses)
+)
+CHAINBASE_SET_INDEX_TYPE( weku::chain::witness_schedule_object, weku::chain::witness_schedule_index )

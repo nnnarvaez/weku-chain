@@ -1,11 +1,9 @@
 #pragma once
-#include <steemit/protocol/transaction.hpp>
-
-#include <steemit/chain/steem_object_types.hpp>
-
 #include <boost/multi_index/hashed_index.hpp>
+#include <steemit/protocol/transaction.hpp>
+#include <weku/chain/steem_object_types.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
    using steemit::protocol::signed_transaction;
 
@@ -47,5 +45,5 @@ namespace steemit { namespace chain {
 
 } } // steemit::chain
 
-FC_REFLECT( steemit::chain::transaction_object, (id)(packed_trx)(trx_id)(expiration) )
-CHAINBASE_SET_INDEX_TYPE( steemit::chain::transaction_object, steemit::chain::transaction_index )
+FC_REFLECT( weku::chain::transaction_object, (id)(packed_trx)(trx_id)(expiration) )
+CHAINBASE_SET_INDEX_TYPE( weku::chain::transaction_object, weku::chain::transaction_index )
