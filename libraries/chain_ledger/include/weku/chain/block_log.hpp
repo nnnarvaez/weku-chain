@@ -3,7 +3,7 @@
 #include <steemit/protocol/block.hpp>
 
 namespace weku { namespace chain {
-
+   using fc::optional;
    using namespace steemit::protocol;
 
    namespace detail { class block_log_impl; }

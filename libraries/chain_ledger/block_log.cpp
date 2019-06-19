@@ -1,6 +1,6 @@
 #include <weku/chain/block_log.hpp>
 #include <fstream>
-#include <fc/optional>
+#include <fc/optional.hpp>
 #include <fc/io/raw.hpp>
 
 #define LOG_READ  (std::ios::in | std::ios::binary)

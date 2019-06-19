@@ -1,3 +1,4 @@
+include_directories(../fc/include)
 file(GLOB HEADERS "include/weku/chain/*.hpp")
 file(GLOB SRCS "*.cpp")
 add_library( weku_chain_ledger ${SRCS} ${HEADERS} )
