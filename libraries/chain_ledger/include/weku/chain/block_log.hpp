@@ -2,7 +2,7 @@
 #include <fc/filesystem.hpp>
 #include <steemit/protocol/block.hpp>
 
-namespace steemit { namespace chain {
+namespace weku { namespace chain {
 
    using namespace steemit::protocol;
 
