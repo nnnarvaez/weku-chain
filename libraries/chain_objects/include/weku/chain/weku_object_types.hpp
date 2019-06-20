@@ -206,6 +206,10 @@ namespace fc
    }
 }
 
+namespace fc {
+
+}
+
 FC_REFLECT_ENUM( weku::chain::object_type,
    (dynamic_global_property_object_type)
    (account_object_type)

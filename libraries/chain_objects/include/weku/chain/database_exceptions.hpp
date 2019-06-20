@@ -104,4 +104,6 @@ namespace weku { namespace chain {
 #include <fc/exception/exception.hpp>
 #include <weku/protocol/exceptions.hpp>
 
-namespace weku { namespace chain {} }
+namespace weku { namespace chain {
+   
+} }
