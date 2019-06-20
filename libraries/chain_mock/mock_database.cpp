@@ -1,8 +1,7 @@
 
 #include <wk/chain_new/mock_database.hpp>
-#include <wk/chain_new/mock_hardforker.hpp>
 
-namespace wk{namespace chain{
+namespace weku{namespace chain{
 
 void mock_database::init_genesis(uint64_t initial_supply)
 {
@@ -11,11 +10,6 @@ void mock_database::init_genesis(uint64_t initial_supply)
 uint32_t mock_database::head_block_num() const
 {
     return _head_block_num;
-}
-
-std::vector<signed_block>& mock_database::ledger_blocks()
-{
-    return _ledger_blocks;
 }
 
 const hardfork_votes_type& mock_database::next_hardfork_votes() const

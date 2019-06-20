@@ -14,16 +14,5 @@ namespace weku{namespace chain{
             uint32_t hardfork, uint32_t block_num) const = 0;
         
         virtual void process() = 0;
-
-        virtual void perform_vesting_share_split( uint32_t magnitude ) = 0;
-        virtual void retally_witness_vote_counts( bool force = false ) = 0;
-        virtual void retally_witness_votes() = 0;
-        virtual void reset_virtual_schedule_time() = 0;
-        virtual void do_hardfork_12() = 0;
-        virtual void do_hardfork_17() = 0;
-        virtual void do_hardfork_19() = 0;
-        virtual void do_hardfork_21() = 0;
-        virtual void do_hardfork_22() = 0;
-        virtual void do_hardforks_to_19() = 0; 
     };
 }}

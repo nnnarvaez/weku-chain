@@ -67,6 +67,8 @@ class itemp_database: public chainbase::database
     virtual hardfork_votes_type next_hardfork_votes();
     virtual void next_hardfork_votes(hardfork_votes_type next_hardfork_votes);
 
+    virtual signed_block generate_block_before_apply(); // TODO:
+
     virtual const dynamic_global_property_object&  get_dynamic_global_properties()const;
     virtual const witness_schedule_object&         get_witness_schedule_object()const;
     virtual const feed_history_object&             get_feed_history()const;
@@ -74,6 +76,8 @@ class itemp_database: public chainbase::database
 
     virtual block_id_type head_block_id()const;
     virtual fc::time_point_sec head_block_time()const;
+
+    virtual void reindex( const fc::path& data_dir, const fc::path& shared_mem_dir, uint64_t shared_file_size = (1024l*1024l*1024l*8l) );
 
     virtual const account_object&  get_account(  const account_name_type& name )const;
     virtual const account_object*  find_account( const account_name_type& name )const;
