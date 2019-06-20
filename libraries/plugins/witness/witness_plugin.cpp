@@ -70,6 +70,15 @@ void new_chain_banner( const steemit::chain::database& db )
    return;
 }
 
+ /**
+ *  Calculate the percent of block production slots that were missed in the
+ *  past 128 blocks, not including the current block.
+ */
+uint32_t witness_participation_rate(const dynamic_global_property_object& dpo)
+{
+   return uint64_t(STEEMIT_100_PERCENT) * dpo.recent_slots_filled.popcount() / 128;
+}
+
 namespace detail
 {
    using namespace steemit::chain;
@@ -652,7 +661,7 @@ block_production_condition::block_production_condition_enum witness_plugin::mayb
       return block_production_condition::no_private_key;
    }
 
-   uint32_t prate = db.witness_participation_rate();
+   uint32_t prate = witness_participation_rate(db.get_dynamic_global_properties());
    if( prate < _required_witness_participation )
    {
       capture("pct", uint32_t(100*uint64_t(prate) / STEEMIT_1_PERCENT));

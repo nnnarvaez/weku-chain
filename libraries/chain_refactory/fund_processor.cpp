@@ -1,6 +1,15 @@
 #include <weku/chain/fund_processor.hpp>
+#include <weku/chain/helpers.hpp>
 
 namespace weku{namespace chain{
+
+asset get_content_reward(const itemp_database& db)
+{
+   const auto& props = db.get_dynamic_global_properties();
+   static_assert( STEEMIT_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+   asset percent( protocol::calc_percent_reward_per_block< STEEMIT_CONTENT_APR_PERCENT >( props.virtual_supply.amount ), STEEM_SYMBOL );
+   return std::max( percent, STEEMIT_MIN_CONTENT_REWARD );
+}
 
 asset fund_processor::create_vesting( const account_object& to_account, asset steem, bool to_reward_balance )
 {
@@ -155,7 +164,7 @@ void fund_processor::process_funds()
       auto content_reward = ( new_steem * STEEMIT_CONTENT_REWARD_PERCENT ) / STEEMIT_100_PERCENT;
       if( _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
           // distribute the content_reward to all participants according to their percentage.
-         content_reward = _db.pay_reward_funds( content_reward ); /// 75% to content creator
+         content_reward = pay_reward_funds(_db, content_reward ); /// 75% to content creator
       auto vesting_reward = ( new_steem * STEEMIT_VESTING_FUND_PERCENT ) / STEEMIT_100_PERCENT; /// 15% to vesting fund
       auto witness_reward = new_steem - content_reward - vesting_reward; /// Remaining 10% to witness pay
 
@@ -195,9 +204,9 @@ void fund_processor::process_funds()
    }
    else
    {
-      auto content_reward = _db.get_content_reward();
-      auto curate_reward = _db.get_curation_reward();
-      auto witness_pay = _db.get_producer_reward();
+      auto content_reward = get_content_reward(_db);
+      auto curate_reward = get_curation_reward(_db);
+      auto witness_pay = get_producer_reward(_db);
       auto vesting_reward = content_reward + curate_reward + witness_pay;
 
       content_reward = content_reward + curate_reward;

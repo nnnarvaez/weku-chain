@@ -80,41 +80,37 @@ class itemp_database: public chainbase::database
     virtual void reindex( const fc::path& data_dir, const fc::path& shared_mem_dir, uint64_t shared_file_size = (1024l*1024l*1024l*8l) );
 
     virtual const account_object&  get_account(  const account_name_type& name )const;
-    virtual const account_object*  find_account( const account_name_type& name )const;
+    virtual const account_object*  find_account( const account_name_type& name )const; 
     virtual const witness_object&  get_witness(  const account_name_type& name )const;
     virtual const witness_object*  find_witness( const account_name_type& name )const;
 
     virtual void apply_block( const signed_block& next_block, uint32_t skip = skip_nothing );
 
-    virtual void adjust_savings_balance( const account_object& a, const asset& delta );
-    virtual void adjust_reward_balance( const account_object& a, const asset& delta );
+    virtual void adjust_savings_balance( const account_object& a, const asset& delta ); // move
+    virtual void adjust_reward_balance( const account_object& a, const asset& delta ); // move
     virtual void adjust_balance( const account_object& a, const asset& delta );
-    virtual void adjust_supply( const asset& delta, bool adjust_vesting = false );
+    virtual void adjust_supply( const asset& delta, bool adjust_vesting = false ); // move
     virtual void adjust_witness_votes( const account_object& a, share_type delta );
     virtual void adjust_witness_vote( const witness_object& obj, share_type delta );
     virtual void adjust_rshares2( const comment_object& comment, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 );
     virtual void adjust_proxied_witness_votes( const account_object& a,
                                             const std::array< share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                                             int depth = 0 );
-    virtual void adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_bid );
+    
     virtual const void push_virtual_operation( const operation& op, bool force = false ); 
     
-    virtual void cancel_order( const limit_order_object& obj );
+    virtual void cancel_order( const limit_order_object& obj ); 
 
     virtual const reward_fund_object& get_reward_fund( const comment_object& c )const;
-    virtual uint16_t get_curation_rewards_percent( const comment_object& c ) const;
-    virtual share_type pay_curators( const comment_object& c, share_type& max_rewards );
+    
     virtual asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false );
     
-    virtual void validate_invariants()const;
+    
     virtual const fc::time_point_sec calculate_discussion_payout_time( const comment_object& comment )const;
     virtual asset to_sbd( const asset& steem )const;
-    virtual share_type pay_reward_funds( share_type reward );
 
-    virtual asset get_content_reward()const ;
-    virtual asset get_producer_reward() ;
-    virtual asset get_curation_reward()const ;
-    virtual asset get_pow_reward()const ;
+    virtual void validate_invariants()const; // move
+    
     virtual account_name_type get_scheduled_witness(uint32_t slot_num)const;
     virtual uint32_t get_slot_at_time(fc::time_point_sec when)const;
     virtual const node_property_object& get_node_properties()const;
@@ -124,8 +120,6 @@ class itemp_database: public chainbase::database
     virtual fork_database& fork_db();
 
     virtual void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 );
-    // TODO: move 
-    virtual void clear_witness_votes( const account_object& a );
     virtual bool is_producing() const;
    
     virtual const comment_object&  get_comment(  const account_name_type& author, const shared_string& permlink )const;
@@ -135,7 +129,6 @@ class itemp_database: public chainbase::database
     virtual const comment_object*  find_comment( const account_name_type& author, const string& permlink )const;
 
     virtual const escrow_object&   get_escrow(  const account_name_type& name, uint32_t escrow_id )const;
-    virtual const escrow_object*   find_escrow( const account_name_type& name, uint32_t escrow_id )const;
     
     virtual std::shared_ptr< custom_operation_interpreter > get_custom_json_evaluator( const std::string& id );
     

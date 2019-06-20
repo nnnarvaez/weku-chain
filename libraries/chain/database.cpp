@@ -423,10 +423,6 @@ const escrow_object& database::get_escrow( const account_name_type& name, uint32
    return get< escrow_object, by_from_id >( boost::make_tuple( name, escrow_id ) );
 } FC_CAPTURE_AND_RETHROW( (name)(escrow_id) ) }
 
-const escrow_object* database::find_escrow( const account_name_type& name, uint32_t escrow_id )const
-{
-   return find< escrow_object, by_from_id >( boost::make_tuple( name, escrow_id ) );
-}
 
 const node_property_object& database::get_node_properties() const
 {
@@ -467,22 +463,16 @@ const reward_fund_object& database::get_reward_fund( const comment_object& c ) c
    return get< reward_fund_object, by_name >( STEEMIT_POST_REWARD_FUND_NAME );
 }
 
-uint32_t database::witness_participation_rate()const
-{
-   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-   return uint64_t(STEEMIT_100_PERCENT) * dpo.recent_slots_filled.popcount() / 128;
-}
-
 void database::add_checkpoints( const flat_map< uint32_t, block_id_type >& checkpts )
 {
    for( const auto& i : checkpts )
       _checkpoints[i.first] = i.second;
 }
 
-bool database::before_last_checkpoint()const
-{
-   return (_checkpoints.size() > 0) && (_checkpoints.rbegin()->first >= head_block_num());
-}
+// bool database::before_last_checkpoint()const
+// {
+//    return (_checkpoints.size() > 0) && (_checkpoints.rbegin()->first >= head_block_num());
+// }
 
 /**
  * Push block "may fail" in which case every partial change is unwound.  After
@@ -1052,23 +1042,7 @@ void database::adjust_witness_vote( const witness_object& witness, share_type de
    } );
 }
 
-void database::clear_witness_votes( const account_object& a )
-{
-   const auto& vidx = get_index< witness_vote_index >().indices().get<by_account_witness>();
-   auto itr = vidx.lower_bound( boost::make_tuple( a.id, witness_id_type() ) );
-   while( itr != vidx.end() && itr->account == a.id )
-   {
-      const auto& current = *itr;
-      ++itr;
-      remove(current);
-   }
 
-   if( has_hardfork( STEEMIT_HARDFORK_0_19 ) )
-      modify( a, [&](account_object& acc )
-      {
-         acc.witnesses_voted_for = 0;
-      });
-}
 
 
 /**
@@ -1087,154 +1061,26 @@ void database::adjust_rshares2( const comment_object& c, fc::uint128_t old_rshar
    } );
 }
 
-
-
-/**
- *  This method will iterate through all comment_vote_objects and give them
- *  (max_rewards * weight) / c.total_vote_weight.
- *
- *  @returns unclaimed rewards.
- */
-share_type database::pay_curators( const comment_object& c, share_type& max_rewards )
+void process_savings_withdraws(itemp_database& db)
 {
-   try
-   {
-      uint128_t total_weight( c.total_vote_weight );
-      //edump( (total_weight)(max_rewards) );
-      share_type unclaimed_rewards = max_rewards;
-
-      if( !c.allow_curation_rewards )
-      {
-         unclaimed_rewards = 0;
-         max_rewards = 0;
-      }
-      else if( c.total_vote_weight > 0 )
-      {
-         const auto& cvidx = get_index<comment_vote_index>().indices().get<by_comment_weight_voter>();
-         auto itr = cvidx.lower_bound( c.id );
-         while( itr != cvidx.end() && itr->comment == c.id )
-         {
-            uint128_t weight( itr->weight );
-            auto claim = ( ( max_rewards.value * weight ) / total_weight ).to_uint64();
-            if( claim > 0 ) // min_amt is non-zero satoshis
-            {
-               unclaimed_rewards -= claim;
-               const auto& voter = get(itr->voter);
-               auto reward = create_vesting( voter, asset( claim, STEEM_SYMBOL ), has_hardfork( STEEMIT_HARDFORK_0_17 ) );
-
-               push_virtual_operation( curation_reward_operation( voter.name, reward, c.author, to_string( c.permlink ) ) );
-
-               #ifndef IS_LOW_MEM
-                  modify( voter, [&]( account_object& a )
-                  {
-                     a.curation_rewards += claim;
-                  });
-               #endif
-            }
-            ++itr;
-         }
-      }
-      max_rewards -= unclaimed_rewards;
-
-      return unclaimed_rewards;
-   } FC_CAPTURE_AND_RETHROW()
-}
-
-void database::process_savings_withdraws()
-{
-  const auto& idx = get_index< savings_withdraw_index >().indices().get< by_complete_from_rid >();
+  const auto& idx = db.get_index< savings_withdraw_index >().indices().get< by_complete_from_rid >();
   auto itr = idx.begin();
   while( itr != idx.end() ) {
-     if( itr->complete > head_block_time() )
+     if( itr->complete > db.head_block_time() )
         break;
-     adjust_balance( get_account( itr->to ), itr->amount );
+     db.adjust_balance( db.get_account( itr->to ), itr->amount );
 
-     modify( get_account( itr->from ), [&]( account_object& a )
+     db.modify( db.get_account( itr->from ), [&]( account_object& a )
      {
         a.savings_withdraw_requests--;
      });
 
-     push_virtual_operation( fill_transfer_from_savings_operation( itr->from, itr->to, itr->amount, itr->request_id, to_string( itr->memo) ) );
+     db.push_virtual_operation( fill_transfer_from_savings_operation( itr->from, itr->to, itr->amount, itr->request_id, to_string( itr->memo) ) );
 
-     remove( *itr );
+     db.remove( *itr );
      itr = idx.begin();
   }
 }
-
-asset database::get_content_reward()const
-{
-   const auto& props = get_dynamic_global_properties();
-   static_assert( STEEMIT_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
-   asset percent( protocol::calc_percent_reward_per_block< STEEMIT_CONTENT_APR_PERCENT >( props.virtual_supply.amount ), STEEM_SYMBOL );
-   return std::max( percent, STEEMIT_MIN_CONTENT_REWARD );
-}
-
-asset database::get_curation_reward()const
-{
-   const auto& props = get_dynamic_global_properties();
-   static_assert( STEEMIT_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
-   asset percent( protocol::calc_percent_reward_per_block< STEEMIT_CURATE_APR_PERCENT >( props.virtual_supply.amount ), STEEM_SYMBOL);
-   return std::max( percent, STEEMIT_MIN_CURATE_REWARD );
-}
-
-asset database::get_producer_reward()
-{
-   const auto& props = get_dynamic_global_properties();
-   static_assert( STEEMIT_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
-   asset percent( protocol::calc_percent_reward_per_block< STEEMIT_PRODUCER_APR_PERCENT >( props.virtual_supply.amount ), STEEM_SYMBOL);
-   auto pay = std::max( percent, STEEMIT_MIN_PRODUCER_REWARD );
-   const auto& witness_account = get_account( props.current_witness );
-
-   /// pay witness in vesting shares
-   if( props.head_block_number >= STEEMIT_START_MINER_VOTING_BLOCK || (witness_account.vesting_shares.amount.value == 0) ) {
-      // const auto& witness_obj = get_witness( props.current_witness );
-      const auto& producer_reward = create_vesting( witness_account, pay );
-      push_virtual_operation( producer_reward_operation( witness_account.name, producer_reward ) );
-   }
-   else
-   {
-      modify( get_account( witness_account.name), [&]( account_object& a )
-      {
-         a.balance += pay;
-      } );
-   }
-
-   return pay;
-}
-
-asset database::get_pow_reward()const
-{
-   const auto& props = get_dynamic_global_properties();
-
-   #ifndef IS_TEST_NET
-   /// 0 block rewards until at least STEEMIT_MAX_WITNESSES have produced a POW
-   if( props.num_pow_witnesses < STEEMIT_MAX_WITNESSES && props.head_block_number < STEEMIT_START_VESTING_BLOCK )
-      return asset( 0, STEEM_SYMBOL );
-   #endif
-
-   static_assert( STEEMIT_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
-   static_assert( STEEMIT_MAX_WITNESSES == 21, "this code assumes 21 per round" );
-   asset percent( calc_percent_reward_per_round< STEEMIT_POW_APR_PERCENT >( props.virtual_supply.amount ), STEEM_SYMBOL);
-   return std::max( percent, STEEMIT_MIN_POW_REWARD );
-}
-
-uint16_t database::get_curation_rewards_percent( const comment_object& c ) const
-{
-   if( has_hardfork( STEEMIT_HARDFORK_0_17 ) )
-      return get_reward_fund( c ).percent_curation_rewards;
-   //else if( has_hardfork( STEEMIT_HARDFORK_0_8 ) )
-   //   return STEEMIT_1_PERCENT * 25;
-   else
-      return STEEMIT_1_PERCENT * 50;
-}
-
-share_type database::pay_reward_funds( share_type reward )
-{
-   reward_processor rp(*this);
-   return rp.pay_reward_funds(reward);
-}
-
-
 
 asset database::to_sbd( const asset& steem )const
 {
@@ -1380,15 +1226,15 @@ void database::init_genesis( uint64_t init_supply )
 }
 
 
-void database::validate_transaction( const signed_transaction& trx )
-{
-   database::with_write_lock( [&]()
-   {
-      auto session = start_undo_session( true );
-      _apply_transaction( trx );
-      session.undo();
-   });
-}
+// void database::validate_transaction( const signed_transaction& trx )
+// {
+//    database::with_write_lock( [&]()
+//    {
+//       auto session = start_undo_session( true );
+//       _apply_transaction( trx );
+//       session.undo();
+//    });
+// }
 
 void database::set_flush_interval( uint32_t flush_blocks )
 {
@@ -1592,7 +1438,7 @@ void database::_apply_block( const signed_block& next_block )
    vest_withdraw_processor vwp(*this);
    vwp.process_vesting_withdrawals();
 
-   process_savings_withdraws();
+   process_savings_withdraws(*this);
 
    reward_processor rp(*this);
    rp.pay_liquidity_reward();
@@ -1780,13 +1626,6 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
    order_processor op(*this);
    return op.match(new_order, old_order, match_price);
 }
-
-void database::adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_sdb )
-{
-   reward_processor rp(*this);
-   rp.adjust_liquidity_reward(owner, volume, is_sdb);
-}
-
 
 bool database::fill_order( const limit_order_object& order, const asset& pays, const asset& receives )
 {

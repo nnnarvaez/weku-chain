@@ -10,6 +10,7 @@
 #include <weku/chain/witness_objects.hpp>
 #include <weku/chain/block_summary_object.hpp>
 #include <weku/chain/blacklist_objects.hpp>
+#include <weku/chain/helpers.hpp>
 
 #ifndef IS_LOW_MEM
 #include <diff_match_patch.h>
@@ -57,7 +58,7 @@ asset get_savings_balance( const account_object& a, asset_symbol_type symbol )
    }
 }
 
-fc::sha256 database::get_pow_target(const itemp_database& db)
+fc::sha256 get_pow_target(const itemp_database& db)
 {
    const auto& dgp = db.get_dynamic_global_properties();
    fc::sha256 target;
@@ -140,6 +141,26 @@ void update_owner_authority(itemp_database& db, const account_object& account, c
       auth.last_owner_update = db.head_block_time();
    });
 }
+
+asset get_pow_reward(const itemp_database& db)
+{
+   const auto& props = db.get_dynamic_global_properties();
+
+   #ifndef IS_TEST_NET
+   /// 0 block rewards until at least STEEMIT_MAX_WITNESSES have produced a POW
+   if( props.num_pow_witnesses < STEEMIT_MAX_WITNESSES && props.head_block_number < STEEMIT_START_VESTING_BLOCK )
+      return asset( 0, STEEM_SYMBOL );
+   #endif
+
+   static_assert( STEEMIT_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
+   static_assert( STEEMIT_MAX_WITNESSES == 21, "this code assumes 21 per round" );
+   asset percent( calc_percent_reward_per_round< STEEMIT_POW_APR_PERCENT >( props.virtual_supply.amount ), STEEM_SYMBOL);
+   return std::max( percent, STEEMIT_MIN_POW_REWARD );
+}
+
+
+
+
 
 struct strcmp_equal
 {
@@ -1156,7 +1177,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
       }
 
       /// clear all individual vote records
-      _db.clear_witness_votes( account );
+      clear_witness_votes(_db, account );
 
       _db.modify( account, [&]( account_object& a ) {
          a.proxy = o.proxy;
@@ -1476,7 +1497,7 @@ void vote_evaluator::do_apply( const vote_operation& o )
          bool curation_reward_eligible = rshares > 0 && (comment.last_payout == fc::time_point_sec()) && comment.allow_curation_rewards;
 
          if( curation_reward_eligible && _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
-            curation_reward_eligible = _db.get_curation_rewards_percent( comment ) > 0;
+            curation_reward_eligible = get_curation_rewards_percent(_db, comment ) > 0;
 
          if( curation_reward_eligible )
          {
@@ -1789,7 +1810,7 @@ void pow_apply( itemp_database& db, Operation o )
       });
    }
    /// POW reward depends upon whether we are before or after MINER_VOTING kicks in
-   asset pow_reward = db.get_pow_reward();
+   asset pow_reward = get_pow_reward(db);
    if( db.head_block_num() < STEEMIT_START_MINER_VOTING_BLOCK )
       pow_reward.amount *= STEEMIT_MAX_WITNESSES;
    db.adjust_supply( pow_reward, true );
@@ -1886,10 +1907,10 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
       });
    }
 
-   if( !db.has_hardfork( STEEMIT_HARDFORK_0_16) )
+   if( !db.has_hardfork( STEEMIT_HARDFORK_0_19) )
    {
       /// pay the witness that includes this POW
-      asset inc_reward = db.get_pow_reward();
+      asset inc_reward = get_pow_reward(db);
       db.adjust_supply( inc_reward, true );
 
       const auto& inc_witness = db.get_account( dgp.current_witness );

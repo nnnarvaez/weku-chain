@@ -110,8 +110,8 @@ namespace weku { namespace chain {
           *  @return true if the block is in our fork DB or saved to disk as
           *  part of the official chain, otherwise return false
           */
-         bool                       is_known_block( const block_id_type& id )const;
-         bool                       is_known_transaction( const transaction_id_type& id )const;
+         bool                       is_known_block( const block_id_type& id )const; // move
+         bool                       is_known_transaction( const transaction_id_type& id )const; // move
          
          block_id_type              find_block_id_for_num( uint32_t block_num )const;
          block_id_type              get_block_id_for_num( uint32_t block_num )const;
@@ -136,8 +136,7 @@ namespace weku { namespace chain {
          virtual const comment_object*  find_comment( const account_name_type& author, const string& permlink )const override;
 
          virtual const escrow_object&   get_escrow(  const account_name_type& name, uint32_t escrow_id )const override;
-         virtual const escrow_object*   find_escrow( const account_name_type& name, uint32_t escrow_id )const override;
-
+        
       
          virtual const dynamic_global_property_object&  get_dynamic_global_properties()const override;
          virtual const node_property_object&            get_node_properties()const override;
@@ -148,17 +147,13 @@ namespace weku { namespace chain {
          virtual const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const override;
          virtual const reward_fund_object&              get_reward_fund( const comment_object& c )const override;
 
-         void max_bandwidth_per_share()const;
-
-         /**
-          *  Calculate the percent of block production slots that were missed in the
-          *  past 128 blocks, not including the current block.
-          */
-         uint32_t witness_participation_rate()const;
+         
 
          void                                   add_checkpoints( const flat_map<uint32_t,block_id_type>& checkpts );
-         const flat_map<uint32_t,block_id_type> get_checkpoints()const { return _checkpoints; }
-         bool                                   before_last_checkpoint()const;
+         
+         //void max_bandwidth_per_share()const;
+         //const flat_map<uint32_t,block_id_type> get_checkpoints()const { return _checkpoints; }
+         //bool before_last_checkpoint()const;
 
          bool push_block( const signed_block& b, uint32_t skip = skip_nothing );
          void push_transaction( const signed_transaction& trx, uint32_t skip = skip_nothing );
@@ -270,7 +265,7 @@ namespace weku { namespace chain {
           * If slot_num == N for N > 0, return the Nth next
           * block-interval-aligned time greater than head_block_time().
           */
-         fc::time_point_sec get_slot_time(uint32_t slot_num)const;
+         fc::time_point_sec get_slot_time(uint32_t slot_num)const; // move
 
          /**
           * Get the last slot which occurs AT or BEFORE the given time.
@@ -280,20 +275,18 @@ namespace weku { namespace chain {
           *
           * If no such N exists, return 0.
           */
-         virtual uint32_t get_slot_at_time(fc::time_point_sec when)const override;
+         virtual uint32_t get_slot_at_time(fc::time_point_sec when)const override; // move
 
          
-         
+         //move
          virtual asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false ) override;
          
-         virtual void        adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_bid ) override;
          virtual void        adjust_balance( const account_object& a, const asset& delta ) override;
          virtual void        adjust_savings_balance( const account_object& a, const asset& delta ) override;
          virtual void        adjust_reward_balance( const account_object& a, const asset& delta ) override;
          virtual void        adjust_supply( const asset& delta, bool adjust_vesting = false ) override;
          virtual void        adjust_rshares2( const comment_object& comment, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 ) override;
-         virtual void update_owner_authority( const account_object& account, const authority& owner_authority ) override;
-       
+        
          /** this updates the votes for witnesses as a result of account voting proxy changing */
          virtual void adjust_proxied_witness_votes( const account_object& a,
                                             const std::array< share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
@@ -306,27 +299,8 @@ namespace weku { namespace chain {
          virtual void adjust_witness_votes( const account_object& a, share_type delta ) override;
 
          /** this updates the vote of a single witness as a result of a vote being added or removed*/
-         virtual void adjust_witness_vote( const witness_object& obj, share_type delta ) override;
-
-         /** clears all vote records for a particular account but does not update the
-          * witness vote totals.  Vote totals should be updated first via a call to
-          * adjust_proxied_witness_votes( a, -a.witness_vote_weight() )
-          */
-         virtual void clear_witness_votes( const account_object& a ) override;
+         virtual void adjust_witness_vote( const witness_object& obj, share_type delta ) override; 
          
-         virtual share_type pay_curators( const comment_object& c, share_type& max_rewards ) override;
-                  
-         void process_savings_withdraws();
-                 
-         virtual asset get_content_reward()const override;
-         virtual asset get_producer_reward() override;
-         virtual asset get_curation_reward()const override;
-         virtual asset get_pow_reward()const override;
-
-         virtual uint16_t get_curation_rewards_percent( const comment_object& c ) const override;
-
-         virtual share_type pay_reward_funds( share_type reward ) override;
-
          /**
           * Helper method to return the current sbd value of a given amount of
           * STEEM.  Return 0 SBD if there isn't a current_median_history
@@ -343,7 +317,7 @@ namespace weku { namespace chain {
          uint32_t last_non_undoable_block_num() const;
          //////////////////// db_init.cpp ////////////////////
 
-         void initialize_evaluators();
+         void initialize_evaluators(); // move
          void set_custom_operation_interpreter( const std::string& id, std::shared_ptr< custom_operation_interpreter > registry );
          virtual std::shared_ptr< custom_operation_interpreter > get_custom_json_evaluator( const std::string& id ) override;
 
@@ -355,14 +329,14 @@ namespace weku { namespace chain {
           *  This method validates transactions without adding it to the pending state.
           *  @throw if an error occurs
           */
-         void validate_transaction( const signed_transaction& trx );
+         //void validate_transaction( const signed_transaction& trx );
 
          /** when popping a block, the transactions that were removed get cached here so they
           * can be reapplied at the proper time */
          std::deque< signed_transaction >       _popped_tx;
          vector< signed_transaction >           _pending_tx;
 
-         virtual bool apply_order( const limit_order_object& new_order_object ) override;
+         virtual bool apply_order( const limit_order_object& new_order_object ) override; // remove
          bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
          virtual void cancel_order( const limit_order_object& obj ) override;
          int  match( const limit_order_object& bid, const limit_order_object& ask, const price& trade_price );
@@ -378,7 +352,7 @@ namespace weku { namespace chain {
           * @}
           */
 
-         const std::string& get_json_schema() const;
+         const std::string& get_json_schema() const; // move
 
          void set_flush_interval( uint32_t flush_blocks );
          void show_free_memory( bool force );
@@ -399,12 +373,8 @@ namespace weku { namespace chain {
          void _apply_transaction( const signed_transaction& trx );
          void apply_operation( const operation& op );
 
-
          ///Steps involved in applying a new block
          ///@{
-
-         
-         
          
          void process_header_extensions( const signed_block& next_block );
          ///@}

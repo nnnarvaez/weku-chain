@@ -1,11 +1,63 @@
 #include <weku/chain/cashout_processor.hpp>
 #include <weku/chain/fund_processor.hpp>
+#include <weku/chain/helpers.hpp>
 
 #include <vector>
 
 namespace weku{namespace chain{
 
 using fc::uint128_t;
+
+/**
+ *  This method will iterate through all comment_vote_objects and give them
+ *  (max_rewards * weight) / c.total_vote_weight.
+ *
+ *  @returns unclaimed rewards.
+ */
+share_type pay_curators(itemp_database& db, const comment_object& c, share_type& max_rewards )
+{
+   try
+   {
+      uint128_t total_weight( c.total_vote_weight );
+      //edump( (total_weight)(max_rewards) );
+      share_type unclaimed_rewards = max_rewards;
+
+      if( !c.allow_curation_rewards )
+      {
+         unclaimed_rewards = 0;
+         max_rewards = 0;
+      }
+      else if( c.total_vote_weight > 0 )
+      {
+         const auto& cvidx = db.get_index<comment_vote_index>().indices().get<by_comment_weight_voter>();
+         auto itr = cvidx.lower_bound( c.id );
+         while( itr != cvidx.end() && itr->comment == c.id )
+         {
+            uint128_t weight( itr->weight );
+            auto claim = ( ( max_rewards.value * weight ) / total_weight ).to_uint64();
+            if( claim > 0 ) // min_amt is non-zero satoshis
+            {
+               unclaimed_rewards -= claim;
+               const auto& voter = db.get(itr->voter);
+               auto reward = db.create_vesting( voter, asset( claim, STEEM_SYMBOL ), db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
+
+               db.push_virtual_operation( curation_reward_operation( voter.name, reward, c.author, to_string( c.permlink ) ) );
+
+               #ifndef IS_LOW_MEM
+               db.modify( voter, [&]( account_object& a )
+               {
+                  a.curation_rewards += claim;
+               });
+               #endif
+            }
+            ++itr;
+         }
+      }
+      max_rewards -= unclaimed_rewards;
+
+      return unclaimed_rewards;
+   } FC_CAPTURE_AND_RETHROW()
+}
 
 void adjust_total_payout(itemp_database& db, const comment_object& cur, const asset& sbd_created, const asset& curator_sbd_value, const asset& beneficiary_value )
 {
@@ -48,10 +100,10 @@ share_type cashout_processor::cashout_comment_helper( weku::chain::util::comment
 
          if( reward_tokens > 0 )
          {
-            share_type curation_tokens = ( ( reward_tokens * _db.get_curation_rewards_percent( comment ) ) / STEEMIT_100_PERCENT ).to_uint64();
+            share_type curation_tokens = ( ( reward_tokens * get_curation_rewards_percent(_db, comment ) ) / STEEMIT_100_PERCENT ).to_uint64();
             share_type author_tokens = reward_tokens.to_uint64() - curation_tokens;
 
-            author_tokens += _db.pay_curators( comment, curation_tokens );
+            author_tokens += pay_curators(_db, comment, curation_tokens );
             share_type total_beneficiary = 0;
             claimed_reward = author_tokens + curation_tokens;
 

@@ -1,6 +1,7 @@
 #include <weku/chain/block_applier.hpp>
 #include <weku/chain/gpo_processor.hpp>
 #include <weku/chain/witness_objects.hpp>
+#include <weku/chain/helpers.hpp>
 
 namespace weku{namespace chain{
 
@@ -105,7 +106,7 @@ void block_applier::process_decline_voting_rights()
          delta[i+1] = -account.proxied_vsf_votes[i];
       _db.adjust_proxied_witness_votes( account, delta );
 
-      _db.clear_witness_votes( account );
+      clear_witness_votes(_db, account );
 
       _db.modify( _db.get(itr->account), [&]( account_object& a )
       {
