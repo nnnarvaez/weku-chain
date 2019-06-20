@@ -69,6 +69,7 @@ class itemp_database: public chainbase::database
     virtual const dynamic_global_property_object&  get_dynamic_global_properties()const;
     virtual const witness_schedule_object&         get_witness_schedule_object()const;
     virtual const feed_history_object&             get_feed_history()const;
+    virtual const hardfork_property_object&        get_hardfork_property_object()const;
 
     virtual block_id_type head_block_id()const;
     virtual fc::time_point_sec head_block_time()const;

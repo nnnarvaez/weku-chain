@@ -5,7 +5,6 @@
 #include <fc/utf8.hpp>
 
 #include <weku/chain/util/reward.hpp>
-#include <weku/chain/database.hpp>
 #include <weku/chain/custom_operation_interpreter.hpp>
 #include <weku/chain/common_objects.hpp>
 #include <weku/chain/witness_objects.hpp>
@@ -427,12 +426,12 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
 
 struct comment_options_extension_visitor
 {
-   comment_options_extension_visitor( const comment_object& c, database& db ) : _c( c ), _db( db ) {}
+   comment_options_extension_visitor( const comment_object& c, itemp_database& db ) : _c( c ), _db( db ) {}
 
    typedef void result_type;
 
    const comment_object& _c;
-   database& _db;
+   itemp_database& _db;
 
    void operator()( const comment_payout_beneficiaries& cpb ) const
    {
@@ -1573,7 +1572,7 @@ void custom_evaluator::do_apply( const custom_operation& o ){}
 
 void custom_json_evaluator::do_apply( const custom_json_operation& o )
 {
-   database& d = db();
+   itemp_database& d = db();
    std::shared_ptr< custom_operation_interpreter > eval = d.get_custom_json_evaluator( o.id );
    if( !eval )
       return;
@@ -1596,7 +1595,7 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
 
 void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
 {
-   database& d = db();
+   itemp_database& d = db();
    FC_ASSERT( d.has_hardfork( STEEMIT_HARDFORK_0_14 ) );
 
    std::shared_ptr< custom_operation_interpreter > eval = d.get_custom_json_evaluator( o.id );
@@ -1620,7 +1619,7 @@ void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
 
 
 template<typename Operation>
-void pow_apply( database& db, Operation o )
+void pow_apply( itemp_database& db, Operation o )
 {
    const auto& dgp = db.get_dynamic_global_properties();
 
@@ -1721,7 +1720,7 @@ void pow_evaluator::do_apply( const pow_operation& o ) {
 
 void pow2_evaluator::do_apply( const pow2_operation& o )
 {
-   database& db = this->db();
+   itemp_database& db = this->db();
    FC_ASSERT( !db.has_hardfork( STEEMIT_HARDFORK_0_17 ), "mining is now disabled" );
 
    const auto& dgp = db.get_dynamic_global_properties();

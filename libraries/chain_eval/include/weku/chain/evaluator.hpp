@@ -1,10 +1,9 @@
 #pragma once
 #include <weku/protocol/exceptions.hpp>
 #include <weku/protocol/operations.hpp>
+#include <weku/chain/itemp_database.hpp>
 
 namespace weku { namespace chain {
-
-class database;
 
 template< typename OperationType=weku::protocol::operation >
 class evaluator
@@ -21,7 +20,7 @@ class evaluator_impl : public evaluator<OperationType>
       typedef OperationType operation_sv_type;
       // typedef typename EvaluatorType::operation_type op_type;
 
-      evaluator_impl( database& d )
+      evaluator_impl( itemp_database& d )
          : _db(d) {}
 
       virtual void apply(const OperationType& o) final override
@@ -33,10 +32,10 @@ class evaluator_impl : public evaluator<OperationType>
 
       virtual int get_type()const override { return OperationType::template tag< typename EvaluatorType::operation_type >::value; }
 
-      database& db() { return _db; }
+      itemp_database& db() { return _db; }
 
    protected:
-      database& _db;
+      itemp_database& _db;
 };
 
 } }
@@ -47,8 +46,8 @@ class X ## _evaluator : public weku::chain::evaluator_impl< X ## _evaluator > \
    public:                                                                  \
       typedef X ## _operation operation_type;                               \
                                                                             \
-      X ## _evaluator( database& db )                                       \
-         : weku::chain::evaluator_impl< X ## _evaluator >( db )          \
+      X ## _evaluator( itemp_database& db )                                 \
+         : weku::chain::evaluator_impl< X ## _evaluator >( db )             \
       {}                                                                    \
                                                                             \
       void do_apply( const X ## _operation& o );                            \

@@ -149,7 +149,7 @@ namespace weku { namespace chain {
          virtual const node_property_object&            get_node_properties()const override;
          virtual const feed_history_object&             get_feed_history()const override;
          virtual const witness_schedule_object&         get_witness_schedule_object()const override;
-         const hardfork_property_object&        get_hardfork_property_object()const;
+         virtual const hardfork_property_object&        get_hardfork_property_object()const override;
 
          virtual const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const override;
          virtual const reward_fund_object&              get_reward_fund( const comment_object& c )const override;
