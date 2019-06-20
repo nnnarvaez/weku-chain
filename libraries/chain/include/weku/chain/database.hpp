@@ -188,7 +188,7 @@ namespace weku { namespace chain {
          void clear_pending();
 
          virtual block_log& get_block_log() override {return _block_log;}
-         virtual fork_database& get_fork_db() override {return _fork_db;}
+         virtual fork_database& fork_db() override {return _fork_db;}
 
          /**
           *  This method is used to track applied operations during the evaluation of a block, these
