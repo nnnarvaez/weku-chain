@@ -428,32 +428,6 @@ const escrow_object* database::find_escrow( const account_name_type& name, uint3
    return find< escrow_object, by_from_id >( boost::make_tuple( name, escrow_id ) );
 }
 
-const limit_order_object& database::get_limit_order( const account_name_type& name, uint32_t orderid )const
-{ try {
-   if( !has_hardfork( STEEMIT_HARDFORK_0_6 ) )
-      orderid = orderid & 0x0000FFFF;
-
-   return get< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
-} FC_CAPTURE_AND_RETHROW( (name)(orderid) ) }
-
-const limit_order_object* database::find_limit_order( const account_name_type& name, uint32_t orderid )const
-{
-   if( !has_hardfork( STEEMIT_HARDFORK_0_6 ) )
-      orderid = orderid & 0x0000FFFF;
-
-   return find< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
-}
-
-const savings_withdraw_object& database::get_savings_withdraw( const account_name_type& owner, uint32_t request_id )const
-{ try {
-   return get< savings_withdraw_object, by_from_rid >( boost::make_tuple( owner, request_id ) );
-} FC_CAPTURE_AND_RETHROW( (owner)(request_id) ) }
-
-const savings_withdraw_object* database::find_savings_withdraw( const account_name_type& owner, uint32_t request_id )const
-{
-   return find< savings_withdraw_object, by_from_rid >( boost::make_tuple( owner, request_id ) );
-}
-
 const node_property_object& database::get_node_properties() const
 {
    return _node_property_object;
@@ -985,30 +959,6 @@ asset database::create_vesting( const account_object& to_account, asset steem, b
    return fp.create_vesting(to_account, steem, to_reward_balance);
 }
 
-fc::sha256 database::get_pow_target()const
-{
-   const auto& dgp = get_dynamic_global_properties();
-   fc::sha256 target;
-   target._hash[0] = -1;
-   target._hash[1] = -1;
-   target._hash[2] = -1;
-   target._hash[3] = -1;
-   target = target >> ((dgp.num_pow_witnesses/4)+4);
-   return target;
-}
-
-uint32_t database::get_pow_summary_target()const
-{
-   const dynamic_global_property_object& dgp = get_dynamic_global_properties();
-   if( dgp.num_pow_witnesses >= 1004 )
-      return 0;
-
-   if( has_hardfork( STEEMIT_HARDFORK_0_19 ) )
-      return (0xFE00 - 0x0040 * dgp.num_pow_witnesses ) << 0x10;
-   else
-      return (0xFC00 - 0x0040 * dgp.num_pow_witnesses) << 0x10;
-}
-
 // TODO: need to figure out the exact logic of adjust proxied witness votes function groups.
 void database::adjust_proxied_witness_votes( const account_object& a,
                                    const std::array< share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
@@ -1137,36 +1087,7 @@ void database::adjust_rshares2( const comment_object& c, fc::uint128_t old_rshar
    } );
 }
 
-void database::update_owner_authority( const account_object& account, const authority& owner_authority )
-{
-   if( head_block_num() >= STEEMIT_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
-   {
-      create< owner_authority_history_object >( [&]( owner_authority_history_object& hist )
-      {
-         hist.account = account.name;
-         hist.previous_owner_authority = get< account_authority_object, by_account >( account.name ).owner;
-         hist.last_valid_time = head_block_time();
-      });
-   }
 
-   modify( get< account_authority_object, by_account >( account.name ), [&]( account_authority_object& auth )
-   {
-      auth.owner = owner_authority;
-      auth.last_owner_update = head_block_time();
-   });
-}
-
-void database::adjust_total_payout( const comment_object& cur, const asset& sbd_created, const asset& curator_sbd_value, const asset& beneficiary_value )
-{
-   modify( cur, [&]( comment_object& c )
-   {
-      if( c.total_payout_value.symbol == sbd_created.symbol )
-         c.total_payout_value += sbd_created;
-         c.curator_payout_value += curator_sbd_value;
-         c.beneficiary_payout_value += beneficiary_value;
-   } );
-   /// TODO: potentially modify author's total payout numbers as well
-}
 
 /**
  *  This method will iterate through all comment_vote_objects and give them
@@ -1902,32 +1823,6 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
 {
    balance_processor bp(*this);
    bp.adjust_supply(delta, adjust_vesting);   
-}
-
-asset database::get_balance( const account_object& a, asset_symbol_type symbol )const
-{
-   switch( symbol )
-   {
-      case STEEM_SYMBOL:
-         return a.balance;
-      case SBD_SYMBOL:
-         return a.sbd_balance;
-      default:
-         FC_ASSERT( false, "invalid symbol" );
-   }
-}
-
-asset database::get_savings_balance( const account_object& a, asset_symbol_type symbol )const
-{
-   switch( symbol )
-   {
-      case STEEM_SYMBOL:
-         return a.savings_balance;
-      case SBD_SYMBOL:
-         return a.savings_sbd_balance;
-      default:
-         FC_ASSERT( !"invalid symbol" );
-   }
 }
 
 bool database::has_hardfork( uint32_t hardfork )const

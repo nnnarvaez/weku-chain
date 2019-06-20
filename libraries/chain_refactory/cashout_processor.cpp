@@ -7,6 +7,18 @@ namespace weku{namespace chain{
 
 using fc::uint128_t;
 
+void adjust_total_payout(itemp_database& db, const comment_object& cur, const asset& sbd_created, const asset& curator_sbd_value, const asset& beneficiary_value )
+{
+   db.modify( cur, [&]( comment_object& c )
+   {
+      if( c.total_payout_value.symbol == sbd_created.symbol )
+         c.total_payout_value += sbd_created;
+         c.curator_payout_value += curator_sbd_value;
+         c.beneficiary_payout_value += beneficiary_value;
+   } );
+   /// TODO: potentially modify author's total payout numbers as well
+}
+
 void cashout_processor::fill_comment_reward_context_local_state( util::comment_reward_context& ctx, const comment_object& comment )
 {
    ctx.rshares = comment.net_rshares;
@@ -62,7 +74,7 @@ share_type cashout_processor::cashout_comment_helper( weku::chain::util::comment
             fund_processor fpr(_db);
             auto sbd_payout = fpr.create_sbd( author, sbd_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
 
-            _db.adjust_total_payout( comment, sbd_payout.first + 
+            adjust_total_payout(_db, comment, sbd_payout.first + 
                 _db.to_sbd( sbd_payout.second + asset( vesting_steem, STEEM_SYMBOL ) ), 
                 _db.to_sbd( asset( curation_tokens, STEEM_SYMBOL ) ), 
                 _db.to_sbd( asset( total_beneficiary, STEEM_SYMBOL ) ) );

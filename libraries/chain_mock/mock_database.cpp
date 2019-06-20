@@ -1,5 +1,5 @@
 
-#include <wk/chain_new/mock_database.hpp>
+#include <weku/chain/mock_database.hpp>
 
 namespace weku{namespace chain{
 

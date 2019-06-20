@@ -31,6 +31,77 @@ std::string wstring_to_utf8(const std::wstring& str)
 namespace weku { namespace chain {
 using fc::uint128_t;
 
+asset get_balance( const account_object& a, asset_symbol_type symbol )
+{
+   switch( symbol )
+   {
+      case STEEM_SYMBOL:
+         return a.balance;
+      case SBD_SYMBOL:
+         return a.sbd_balance;
+      default:
+         FC_ASSERT( false, "invalid symbol" );
+   }
+}
+
+asset get_savings_balance( const account_object& a, asset_symbol_type symbol )
+{
+   switch( symbol )
+   {
+      case STEEM_SYMBOL:
+         return a.savings_balance;
+      case SBD_SYMBOL:
+         return a.savings_sbd_balance;
+      default:
+         FC_ASSERT( !"invalid symbol" );
+   }
+}
+
+fc::sha256 database::get_pow_target(const itemp_database& db)
+{
+   const auto& dgp = db.get_dynamic_global_properties();
+   fc::sha256 target;
+   target._hash[0] = -1;
+   target._hash[1] = -1;
+   target._hash[2] = -1;
+   target._hash[3] = -1;
+   target = target >> ((dgp.num_pow_witnesses/4)+4);
+   return target;
+}
+
+uint32_t get_pow_summary_target(const itemp_database& db)
+{
+   const dynamic_global_property_object& dgp = db.get_dynamic_global_properties();
+   if( dgp.num_pow_witnesses >= 1004 )
+      return 0;
+
+   if( db.has_hardfork( STEEMIT_HARDFORK_0_19 ) )
+      return (0xFE00 - 0x0040 * dgp.num_pow_witnesses ) << 0x10;
+   else
+      return (0xFC00 - 0x0040 * dgp.num_pow_witnesses) << 0x10;
+}
+
+const limit_order_object& get_limit_order(const itemp_database& db, const account_name_type& name, uint32_t orderid )
+{ try {
+   if( !db.has_hardfork( STEEMIT_HARDFORK_0_6 ) )
+      orderid = orderid & 0x0000FFFF;
+
+   return db.get< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
+} FC_CAPTURE_AND_RETHROW( (name)(orderid) ) }
+
+// const limit_order_object* database::find_limit_order( itemp_database& db, const account_name_type& name, uint32_t orderid )
+// {
+//    if( !db.has_hardfork( STEEMIT_HARDFORK_0_6 ) )
+//       orderid = orderid & 0x0000FFFF;
+
+//    return db.find< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
+// }
+
+const savings_withdraw_object& get_savings_withdraw(const itemp_database& db, const account_name_type& owner, uint32_t request_id )
+{ try {
+   return db.get< savings_withdraw_object, by_from_rid >( boost::make_tuple( owner, request_id ) );
+} FC_CAPTURE_AND_RETHROW( (owner)(request_id) ) }
+
 inline void validate_permlink_0_1( const string& permlink )
 {
    FC_ASSERT( permlink.size() > STEEMIT_MIN_PERMLINK_LENGTH && permlink.size() < STEEMIT_MAX_PERMLINK_LENGTH, "Permlink is not a valid size." );
@@ -49,6 +120,25 @@ inline void validate_permlink_0_1( const string& permlink )
             FC_ASSERT( false, "Invalid permlink character: ${s}", ("s", std::string() + c ) );
       }
    }
+}
+
+void update_owner_authority(itemp_database& db, const account_object& account, const authority& owner_authority )
+{
+   if( db.head_block_num() >= STEEMIT_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
+   {
+      db.create< owner_authority_history_object >( [&]( owner_authority_history_object& hist )
+      {
+         hist.account = account.name;
+         hist.previous_owner_authority = db.get< account_authority_object, by_account >( account.name ).owner;
+         hist.last_valid_time = db.head_block_time();
+      });
+   }
+
+   db.modify( db.get< account_authority_object, by_account >( account.name ), [&]( account_authority_object& auth )
+   {
+      auth.owner = owner_authority;
+      auth.last_owner_update = db.head_block_time();
+   });
 }
 
 struct strcmp_equal
@@ -320,7 +410,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
       }
 
 
-      _db.update_owner_authority( account, *o.owner );
+      update_owner_authority(_db, account, *o.owner );
    }
 
    if( o.active && ( _db.has_hardfork( STEEMIT_HARDFORK_0_19) ) )
@@ -895,7 +985,7 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
       });
    }
 
-   FC_ASSERT( _db.get_balance( from_account, o.amount.symbol ) >= o.amount, "Account does not have sufficient funds for transfer." );
+   FC_ASSERT( get_balance( from_account, o.amount.symbol ) >= o.amount, "Account does not have sufficient funds for transfer." );
    _db.adjust_balance( from_account, -o.amount );
    _db.adjust_balance( to_account, o.amount );
 }
@@ -905,7 +995,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
    const auto& from_account = _db.get_account(o.from);
    const auto& to_account = o.to.size() ? _db.get_account(o.to) : from_account;
 
-   FC_ASSERT( _db.get_balance( from_account, STEEM_SYMBOL) >= o.amount, "Account does not have sufficient STEEM for transfer." );
+   FC_ASSERT( get_balance( from_account, STEEM_SYMBOL) >= o.amount, "Account does not have sufficient STEEM for transfer." );
    _db.adjust_balance( from_account, -o.amount );
    _db.create_vesting( to_account, o.amount );
 }
@@ -1669,7 +1759,7 @@ void pow_apply( itemp_database& db, Operation o )
    if( db.has_hardfork( STEEMIT_HARDFORK_0_13 ) )
       FC_ASSERT( worker_account.last_account_update < db.head_block_time(), "Worker account must not have updated their account this block." );
 
-   fc::sha256 target = db.get_pow_target();
+   fc::sha256 target = get_pow_target(db);
 
    FC_ASSERT( o.work.work < target, "Work lacks sufficient difficulty." );
 
@@ -1724,7 +1814,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
    FC_ASSERT( !db.has_hardfork( STEEMIT_HARDFORK_0_17 ), "mining is now disabled" );
 
    const auto& dgp = db.get_dynamic_global_properties();
-   uint32_t target_pow = db.get_pow_summary_target();
+   uint32_t target_pow = get_pow_summary_target(db);
    account_name_type worker_account;
 
    if( db.has_hardfork( STEEMIT_HARDFORK_0_16 ) )
@@ -1819,7 +1909,7 @@ void feed_publish_evaluator::do_apply( const feed_publish_operation& o )
 void convert_evaluator::do_apply( const convert_operation& o )
 {
   const auto& owner = _db.get_account( o.owner );
-  FC_ASSERT( _db.get_balance( owner, o.amount.symbol ) >= o.amount, "Account does not have sufficient balance for conversion." );
+  FC_ASSERT( get_balance( owner, o.amount.symbol ) >= o.amount, "Account does not have sufficient balance for conversion." );
 
   _db.adjust_balance( owner, -o.amount );
 
@@ -1846,7 +1936,7 @@ void limit_order_create_evaluator::do_apply( const limit_order_create_operation&
 
    const auto& owner = _db.get_account( o.owner );
 
-   FC_ASSERT( _db.get_balance( owner, o.amount_to_sell.symbol ) >= o.amount_to_sell, "Account does not have sufficient funds for limit order." );
+   FC_ASSERT( get_balance( owner, o.amount_to_sell.symbol ) >= o.amount_to_sell, "Account does not have sufficient funds for limit order." );
 
    _db.adjust_balance( owner, -o.amount_to_sell );
 
@@ -1871,7 +1961,7 @@ void limit_order_create2_evaluator::do_apply( const limit_order_create2_operatio
 
    const auto& owner = _db.get_account( o.owner );
 
-   FC_ASSERT( _db.get_balance( owner, o.amount_to_sell.symbol ) >= o.amount_to_sell, "Account does not have sufficient funds for limit order." );
+   FC_ASSERT( get_balance( owner, o.amount_to_sell.symbol ) >= o.amount_to_sell, "Account does not have sufficient funds for limit order." );
 
    _db.adjust_balance( owner, -o.amount_to_sell );
 
@@ -1892,7 +1982,7 @@ void limit_order_create2_evaluator::do_apply( const limit_order_create2_operatio
 
 void limit_order_cancel_evaluator::do_apply( const limit_order_cancel_operation& o )
 {
-   _db.cancel_order( _db.get_limit_order( o.owner, o.orderid ) );
+   _db.cancel_order( get_limit_order(_db, o.owner, o.orderid ) );
 }
 
 void report_over_production_evaluator::do_apply( const report_over_production_operation& o )
@@ -2039,7 +2129,7 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
    FC_ASSERT( found, "Recent authority not found in authority history." );
 
    _db.remove( *request ); // Remove first, update_owner_authority may invalidate iterator
-   _db.update_owner_authority( account, o.new_owner_authority );
+   update_owner_authority(_db, account, o.new_owner_authority );
    _db.modify( account, [&]( account_object& a )
    {
       a.last_account_recovery = _db.head_block_time();
@@ -2081,7 +2171,7 @@ void transfer_to_savings_evaluator::do_apply( const transfer_to_savings_operatio
 {
    const auto& from = _db.get_account( op.from );
    const auto& to   = _db.get_account(op.to);
-   FC_ASSERT( _db.get_balance( from, op.amount.symbol ) >= op.amount, "Account does not have sufficient funds to transfer to savings." );
+   FC_ASSERT( get_balance( from, op.amount.symbol ) >= op.amount, "Account does not have sufficient funds to transfer to savings." );
 
    _db.adjust_balance( from, -op.amount );
    _db.adjust_savings_balance( to, op.amount );
@@ -2097,15 +2187,15 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 
    FC_ASSERT( from.savings_withdraw_requests < STEEMIT_SAVINGS_WITHDRAW_REQUEST_LIMIT, "Account has reached limit for pending withdraw requests." );
 
-   FC_ASSERT( _db.get_savings_balance( from, op.amount.symbol ) >= op.amount );
+   FC_ASSERT( get_savings_balance( from, op.amount.symbol ) >= op.amount );
    _db.adjust_savings_balance( from, -op.amount );
    _db.create<savings_withdraw_object>( [&]( savings_withdraw_object& s ) {
       s.from   = op.from;
       s.to     = op.to;
       s.amount = op.amount;
-#ifndef IS_LOW_MEM
+      #ifndef IS_LOW_MEM
       from_string( s.memo, op.memo );
-#endif
+      #endif
       s.request_id = op.request_id;
       s.complete = _db.head_block_time() + STEEMIT_SAVINGS_WITHDRAW_TIME;
    });
@@ -2118,7 +2208,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 
 void cancel_transfer_from_savings_evaluator::do_apply( const cancel_transfer_from_savings_operation& op )
 {
-   const auto& swo = _db.get_savings_withdraw( op.from, op.request_id );
+   const auto& swo = get_savings_withdraw(_db, op.from, op.request_id );
    _db.adjust_savings_balance( _db.get_account( swo.from ), swo.amount );
    _db.remove( swo );
 
@@ -2164,7 +2254,7 @@ void reset_account_evaluator::do_apply( const reset_account_operation& op )
       FC_ASSERT( ( _db.head_block_time() - band->last_bandwidth_update ) > fc::days(60), "Account must be inactive for 60 days to be eligible for reset" );
    FC_ASSERT( acnt.reset_account == op.reset_account, "Reset account does not match reset account on account." );
 
-   _db.update_owner_authority( acnt, op.new_owner_authority );
+   update_owner_authority(_db, acnt, op.new_owner_authority );
 */
 }
 

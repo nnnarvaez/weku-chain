@@ -67,7 +67,7 @@ class itemp_database: public chainbase::database
     virtual hardfork_votes_type next_hardfork_votes();
     virtual void next_hardfork_votes(hardfork_votes_type next_hardfork_votes);
 
-    virtual signed_block generate_block_before_apply(); // TODO:
+    //virtual signed_block generate_block_before_apply(); 
 
     virtual const dynamic_global_property_object&  get_dynamic_global_properties()const;
     virtual const witness_schedule_object&         get_witness_schedule_object()const;
@@ -106,7 +106,6 @@ class itemp_database: public chainbase::database
     virtual share_type pay_curators( const comment_object& c, share_type& max_rewards );
     virtual asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false );
     
-    virtual void adjust_total_payout( const comment_object& a, const asset& sbd, const asset& curator_sbd_value, const asset& beneficiary_value );
     virtual void validate_invariants()const;
     virtual const fc::time_point_sec calculate_discussion_payout_time( const comment_object& comment )const;
     virtual asset to_sbd( const asset& steem )const;
@@ -125,10 +124,10 @@ class itemp_database: public chainbase::database
     virtual fork_database& fork_db();
 
     virtual void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 );
+    // TODO: move 
     virtual void clear_witness_votes( const account_object& a );
     virtual bool is_producing() const;
-    virtual void update_owner_authority( const account_object& account, const authority& owner_authority );
-
+   
     virtual const comment_object&  get_comment(  const account_name_type& author, const shared_string& permlink )const;
     virtual const comment_object*  find_comment( const account_name_type& author, const shared_string& permlink )const;
 
@@ -137,20 +136,11 @@ class itemp_database: public chainbase::database
 
     virtual const escrow_object&   get_escrow(  const account_name_type& name, uint32_t escrow_id )const;
     virtual const escrow_object*   find_escrow( const account_name_type& name, uint32_t escrow_id )const;
-    virtual asset       get_balance( const account_object& a, asset_symbol_type symbol )const;
-    virtual asset       get_savings_balance( const account_object& a, asset_symbol_type symbol )const;
-    virtual asset       get_balance( const string& aname, asset_symbol_type symbol )const { return get_balance( get_account(aname), symbol ); }
+    
     virtual std::shared_ptr< custom_operation_interpreter > get_custom_json_evaluator( const std::string& id );
-    virtual fc::sha256                 get_pow_target()const;
-    virtual uint32_t                   get_pow_summary_target()const;
+    
+    
     virtual bool apply_order( const limit_order_object& new_order_object );
-    virtual const limit_order_object& get_limit_order(  const account_name_type& owner, uint32_t id )const;
-    virtual const limit_order_object* find_limit_order( const account_name_type& owner, uint32_t id )const;
-    virtual const savings_withdraw_object& get_savings_withdraw(  const account_name_type& owner, uint32_t request_id )const;
-    virtual const savings_withdraw_object* find_savings_withdraw( const account_name_type& owner, uint32_t request_id )const;
-
-
-
 };
 
 }}
