@@ -1,11 +1,10 @@
 #include <weku/chain/witness_schedule.hpp>
 #include <weku/protocol/config.hpp>
-#include <weku/chain/database.hpp>
 #include <weku/chain/witness_objects.hpp>
 
 namespace weku { namespace chain {
 
-        void reset_virtual_schedule_time(database &db) {
+        void reset_virtual_schedule_time(itemp_database &db) {
             const witness_schedule_object &wso = db.get_witness_schedule_object();
             db.modify(wso, [&](witness_schedule_object &o) {
                 o.current_virtual_time = fc::uint128(); // reset it 0
@@ -21,7 +20,7 @@ namespace weku { namespace chain {
             }
         }
 
-        void update_median_witness_props(database &db) {
+        void update_median_witness_props(itemp_database &db) {
             const witness_schedule_object &wso = db.get_witness_schedule_object();
 
             /// fetch all witness objects
@@ -61,7 +60,7 @@ namespace weku { namespace chain {
             });
         }
 
-        void update_witness_schedule(database &db) {
+        void update_witness_schedule(itemp_database &db) {
             if ((db.head_block_num() % STEEMIT_MAX_WITNESSES) != 0) return;
 
             const witness_schedule_object &wso = db.get_witness_schedule_object();

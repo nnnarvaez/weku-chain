@@ -26,6 +26,7 @@
 #include <weku/chain/i_hardforker.hpp>
 #include <weku/chain/block_log.hpp>
 #include <weku/chain/fork_database.hpp>
+#include <weku/chain/hardfork_constants.hpp>
 
 using namespace weku::protocol;
 
@@ -115,7 +116,7 @@ class itemp_database: public chainbase::database
     virtual node_property_object& node_properties();
 
     virtual block_log& get_block_log(); 
-    virtual fork_database& get_fork_db();
+    virtual fork_database& fork_db();
 
     virtual void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 );
     virtual void clear_witness_votes( const account_object& a );
