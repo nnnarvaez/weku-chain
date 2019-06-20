@@ -51,7 +51,7 @@ namespace weku { namespace chain {
          virtual hardfork_votes_type next_hardfork_votes() override;
          virtual void next_hardfork_votes(hardfork_votes_type next_hardfork_votes) override;
 
-         bool is_producing()const { return _is_producing; }
+         virtual bool is_producing()const override { return _is_producing; }
          void set_producing( bool p ) { _is_producing = p;  }
          bool _is_producing = false;
 
@@ -112,8 +112,8 @@ namespace weku { namespace chain {
           */
          bool                       is_known_block( const block_id_type& id )const;
          bool                       is_known_transaction( const transaction_id_type& id )const;
-         fc::sha256                 get_pow_target()const;
-         uint32_t                   get_pow_summary_target()const;
+         virtual fc::sha256                 get_pow_target()const override;
+         virtual uint32_t                   get_pow_summary_target()const override;
          block_id_type              find_block_id_for_num( uint32_t block_num )const;
          block_id_type              get_block_id_for_num( uint32_t block_num )const;
          optional<signed_block>     fetch_block_by_id( const block_id_type& id )const;
@@ -130,20 +130,20 @@ namespace weku { namespace chain {
          virtual const account_object&  get_account(  const account_name_type& name )const override;
          virtual const account_object*  find_account( const account_name_type& name )const override;
 
-         const comment_object&  get_comment(  const account_name_type& author, const shared_string& permlink )const;
-         const comment_object*  find_comment( const account_name_type& author, const shared_string& permlink )const;
+         virtual const comment_object&  get_comment(  const account_name_type& author, const shared_string& permlink )const override;
+         virtual const comment_object*  find_comment( const account_name_type& author, const shared_string& permlink )const override;
 
-         const comment_object&  get_comment(  const account_name_type& author, const string& permlink )const;
-         const comment_object*  find_comment( const account_name_type& author, const string& permlink )const;
+         virtual const comment_object&  get_comment(  const account_name_type& author, const string& permlink )const override;
+         virtual const comment_object*  find_comment( const account_name_type& author, const string& permlink )const override;
 
-         const escrow_object&   get_escrow(  const account_name_type& name, uint32_t escrow_id )const;
-         const escrow_object*   find_escrow( const account_name_type& name, uint32_t escrow_id )const;
+         virtual const escrow_object&   get_escrow(  const account_name_type& name, uint32_t escrow_id )const override;
+         virtual const escrow_object*   find_escrow( const account_name_type& name, uint32_t escrow_id )const override;
 
-         const limit_order_object& get_limit_order(  const account_name_type& owner, uint32_t id )const;
-         const limit_order_object* find_limit_order( const account_name_type& owner, uint32_t id )const;
+         virtual const limit_order_object& get_limit_order(  const account_name_type& owner, uint32_t id )const override;
+         virtual const limit_order_object* find_limit_order( const account_name_type& owner, uint32_t id )const override;
 
-         const savings_withdraw_object& get_savings_withdraw(  const account_name_type& owner, uint32_t request_id )const;
-         const savings_withdraw_object* find_savings_withdraw( const account_name_type& owner, uint32_t request_id )const;
+         virtual const savings_withdraw_object& get_savings_withdraw(  const account_name_type& owner, uint32_t request_id )const override;
+         virtual const savings_withdraw_object* find_savings_withdraw( const account_name_type& owner, uint32_t request_id )const override;
 
          virtual const dynamic_global_property_object&  get_dynamic_global_properties()const override;
          virtual const node_property_object&            get_node_properties()const override;
@@ -299,11 +299,11 @@ namespace weku { namespace chain {
          virtual void        adjust_reward_balance( const account_object& a, const asset& delta ) override;
          virtual void        adjust_supply( const asset& delta, bool adjust_vesting = false ) override;
          virtual void        adjust_rshares2( const comment_object& comment, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 ) override;
-         void        update_owner_authority( const account_object& account, const authority& owner_authority );
+         virtual void update_owner_authority( const account_object& account, const authority& owner_authority ) override;
 
-         asset       get_balance( const account_object& a, asset_symbol_type symbol )const;
-         asset       get_savings_balance( const account_object& a, asset_symbol_type symbol )const;
-         asset       get_balance( const string& aname, asset_symbol_type symbol )const { return get_balance( get_account(aname), symbol ); }
+         virtual asset       get_balance( const account_object& a, asset_symbol_type symbol )const override;
+         virtual asset       get_savings_balance( const account_object& a, asset_symbol_type symbol )const override;
+         virtual asset       get_balance( const string& aname, asset_symbol_type symbol )const override{ return get_balance( get_account(aname), symbol ); }
 
          /** this updates the votes for witnesses as a result of account voting proxy changing */
          virtual void adjust_proxied_witness_votes( const account_object& a,
@@ -356,7 +356,7 @@ namespace weku { namespace chain {
 
          void initialize_evaluators();
          void set_custom_operation_interpreter( const std::string& id, std::shared_ptr< custom_operation_interpreter > registry );
-         std::shared_ptr< custom_operation_interpreter > get_custom_json_evaluator( const std::string& id );
+         virtual std::shared_ptr< custom_operation_interpreter > get_custom_json_evaluator( const std::string& id ) override;
 
          /// Reset the object graph in-memory
          void initialize_indexes();
@@ -373,7 +373,7 @@ namespace weku { namespace chain {
          std::deque< signed_transaction >       _popped_tx;
          vector< signed_transaction >           _pending_tx;
 
-         bool apply_order( const limit_order_object& new_order_object );
+         virtual bool apply_order( const limit_order_object& new_order_object ) override;
          bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
          virtual void cancel_order( const limit_order_object& obj ) override;
          int  match( const limit_order_object& bid, const limit_order_object& ask, const price& trade_price );

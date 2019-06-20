@@ -306,10 +306,10 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 
    if( o.owner )
    {
-#ifndef IS_TEST_NET
+      #ifndef IS_TEST_NET
       if( _db.has_hardfork( STEEMIT_HARDFORK_0_11 ) )
          FC_ASSERT( _db.head_block_time() - account_auth.last_owner_update > STEEMIT_OWNER_UPDATE_LIMIT, "Owner authority can only be updated once an hour." );
-#endif
+      #endif
 
       if( ( _db.has_hardfork( STEEMIT_HARDFORK_0_19 ) ) )
       {

@@ -11,14 +11,12 @@
 
 namespace weku { namespace chain {
 
-class database;
-
 template< typename CustomOperationType >
 class generic_custom_operation_interpreter
    : public custom_operation_interpreter, public evaluator_registry< CustomOperationType >
 {
    public:
-      generic_custom_operation_interpreter( database& db ) : evaluator_registry< CustomOperationType >(db) {}
+      generic_custom_operation_interpreter( itemp_database& db ) : evaluator_registry< CustomOperationType >(db) {}
 
       void apply_operations( const vector< CustomOperationType >& custom_operations, const operation& outer_o )
       {
