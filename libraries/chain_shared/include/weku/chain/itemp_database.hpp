@@ -26,6 +26,7 @@
 #include <weku/chain/transaction_object.hpp>
 #include <weku/chain/witness_objects.hpp>
 #include <weku/chain/compound.hpp>
+#include <weku/chain/i_hardforker.hpp>
 
 using namespace weku::protocol;
 
@@ -36,7 +37,7 @@ namespace weku{ namespace chain{
 #define HARDFORK_21_BLOCK_NUM 200
 #define HARDFORK_22_BLOCK_NUM_FROM 15000000u
 
-typedef std::vector<std::pair<uint32_t, uint32_t> > hardfork_votes_type;
+
 
 enum validation_steps
     {
