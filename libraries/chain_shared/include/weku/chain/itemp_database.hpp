@@ -10,8 +10,6 @@
 #include <weku/chain/util/asset.hpp>
 #include <weku/chain/util/reward.hpp>
 #include <weku/chain/util/uint256.hpp>
-
-#include <weku/chain/hardfork_constants.hpp>
 #include <weku/chain/weku_object_types.hpp>
 #include <weku/chain/account_objects.hpp>
 #include <weku/chain/global_property_object.hpp>
@@ -21,23 +19,17 @@
 #include <weku/chain/node_property_object.hpp>
 #include <weku/chain/block_summary_object.hpp>
 #include <weku/chain/database_exceptions.hpp>
-#include <weku/chain/block_log.hpp>
 #include <weku/chain/fork_database.hpp>
 #include <weku/chain/transaction_object.hpp>
 #include <weku/chain/witness_objects.hpp>
 #include <weku/chain/compound.hpp>
 #include <weku/chain/i_hardforker.hpp>
+#include <weku/chain/block_log.hpp>
+#include <weku/chain/fork_database.hpp>
 
 using namespace weku::protocol;
 
 namespace weku{ namespace chain{
-
-// TODO: need to find hardfork numbers
-#define HARDFORK_20_BLOCK_NUM 100
-#define HARDFORK_21_BLOCK_NUM 200
-#define HARDFORK_22_BLOCK_NUM_FROM 15000000u
-
-
 
 enum validation_steps
     {
@@ -123,7 +115,7 @@ class itemp_database: public chainbase::database
     virtual node_property_object& node_properties();
 
     virtual block_log& get_block_log(); 
-    virtual fork_database& fork_db();
+    virtual fork_database& get_fork_db();
 
     virtual void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 );
     virtual void clear_witness_votes( const account_object& a );

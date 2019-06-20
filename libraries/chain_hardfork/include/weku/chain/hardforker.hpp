@@ -10,7 +10,7 @@ namespace weku{namespace chain{
         
         virtual bool has_enough_hardfork_votes(
             const hardfork_votes_type& next_hardfork_votes, 
-            uint32_t hardfork, uint32_t block_num) const;
+            uint32_t hardfork, uint32_t block_num) const override;
         virtual void process() override;
 
         virtual void perform_vesting_share_split( uint32_t magnitude ) override;

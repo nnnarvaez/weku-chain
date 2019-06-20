@@ -1,4 +1,5 @@
 #include<weku/chain/hardforker.hpp>
+#include<weku/chain/hardfork_constants.hpp>
 
 namespace weku{namespace chain {
 

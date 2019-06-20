@@ -141,4 +141,10 @@ namespace weku { namespace chain {
 #define STEEMIT_HARDFORK_0_9_TIME 1468454400 // 2016-07-14T00:00:00 UTC
 #endif
 
+// TODO: need to find hardfork numbers
+#define HARDFORK_19_BLOCK_NUM 1u
+#define HARDFORK_20_BLOCK_NUM 100u
+#define HARDFORK_21_BLOCK_NUM 200u
+#define HARDFORK_22_BLOCK_NUM_FROM 15000000u
+
 }}

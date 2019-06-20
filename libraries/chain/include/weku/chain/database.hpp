@@ -11,6 +11,7 @@
 #include <weku/chain/block_log.hpp>
 #include <weku/chain/operation_notification.hpp>
 #include <weku/chain/itemp_database.hpp>
+#include <weku/chain/i_fork_database.hpp>
 
 namespace weku { namespace chain {
 
@@ -187,7 +188,7 @@ namespace weku { namespace chain {
          void clear_pending();
 
          virtual block_log& get_block_log() override {return _block_log;}
-         virtual fork_database& fork_db() override {return _fork_db;}
+         virtual fork_database& get_fork_db() override {return _fork_db;}
 
          /**
           *  This method is used to track applied operations during the evaluation of a block, these
@@ -422,10 +423,10 @@ namespace weku { namespace chain {
          std::unique_ptr< database_impl > _my;
 
          fork_database                 _fork_db;
+         block_log                     _block_log;  
+
          fc::time_point_sec            _hardfork_times[ STEEMIT_NUM_HARDFORKS + 1 ];
          protocol::hardfork_version    _hardfork_versions[ STEEMIT_NUM_HARDFORKS + 1 ];
-
-         block_log                     _block_log;         
 
          // this function needs access to _plugin_index_signal
          template< typename MultiIndexType >
