@@ -24,9 +24,13 @@ include_directories(/usr/local/Cellar/boost@1.60/1.60.0/include)
 #add_executable( weku_test ${WEKU_TESTS} ${COMMON_SOURCES} )
 #target_link_libraries( weku_test chain_mock ${PLATFORM_SPECIFIC_LIBS} )
 
-file(GLOB NEW_TESTS "new_tests/*.cpp")
-add_executable( new_tests ${NEW_TESTS})
-target_link_libraries( new_tests chain ${PLATFORM_SPECIFIC_LIBS} )
+#file(GLOB NEW_TESTS "new_tests/*.cpp")
+#add_executable( new_tests ${NEW_TESTS})
+#target_link_libraries( new_tests chain ${PLATFORM_SPECIFIC_LIBS} )
+
+file(GLOB INTEGRATION_TESTS "integration/*.cpp")
+add_executable( integration_tests ${INTEGRATION_TESTS})
+target_link_libraries( integration_tests gtest gmock chain chain_shared ${PLATFORM_SPECIFIC_LIBS} )
 
 #if(MSVC)
 #  set_source_files_properties( tests/serialization_tests.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )

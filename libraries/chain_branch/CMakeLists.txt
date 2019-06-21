@@ -2,8 +2,8 @@ file(GLOB HEADERS "include/weku/chain/*.hpp")
 file(GLOB SRCS "*.cpp")
 add_library( chain_branch ${SRCS} ${HEADERS} )
 
-add_dependencies(chain_branch chain_objects protocol chainbase)
-target_link_libraries(chain_branch chain_objects protocol chainbase fc ${PATCH_MERGE_LIB} )
+add_dependencies(chain_branch chain_objects)
+target_link_libraries(chain_branch chain_objects ${PATCH_MERGE_LIB} )
 target_include_directories(chain_branch PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include" )
 
 INSTALL( TARGETS

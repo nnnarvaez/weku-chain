@@ -2,7 +2,7 @@
 
 namespace weku {namespace chain{
 
-void adjust_liquidity_reward(itemp_database& db, const account_object& owner, const asset& volume, bool is_sdb )
+static void adjust_liquidity_reward(itemp_database& db, const account_object& owner, const asset& volume, bool is_sdb )
 {
    const auto& ridx = db.get_index< liquidity_reward_balance_index >().indices().get< by_owner >();
    auto itr = ridx.find( owner.id );
@@ -42,7 +42,7 @@ void adjust_liquidity_reward(itemp_database& db, const account_object& owner, co
    }
 }
 
-share_type pay_reward_funds(itemp_database& db, share_type reward )
+static share_type pay_reward_funds(itemp_database& db, share_type reward )
 {
    const auto& reward_idx = db.get_index< reward_fund_index, by_id >();
    share_type used_rewards = 0;
@@ -70,7 +70,7 @@ share_type pay_reward_funds(itemp_database& db, share_type reward )
  * witness vote totals.  Vote totals should be updated first via a call to
  * adjust_proxied_witness_votes( a, -a.witness_vote_weight() )
  */
-void clear_witness_votes(itemp_database& db, const account_object& a )
+static void clear_witness_votes(itemp_database& db, const account_object& a )
 {
    const auto& vidx = db.get_index< witness_vote_index >().indices().get<by_account_witness>();
    auto itr = vidx.lower_bound( boost::make_tuple( a.id, witness_id_type() ) );
@@ -88,7 +88,7 @@ void clear_witness_votes(itemp_database& db, const account_object& a )
       });
 }
 
-asset get_curation_reward(const itemp_database& db)
+static asset get_curation_reward(const itemp_database& db)
 {
    const auto& props = db.get_dynamic_global_properties();
    static_assert( STEEMIT_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
@@ -96,7 +96,7 @@ asset get_curation_reward(const itemp_database& db)
    return std::max( percent, STEEMIT_MIN_CURATE_REWARD );
 }
 
-uint16_t get_curation_rewards_percent(const itemp_database& db, const comment_object& c )
+static uint16_t get_curation_rewards_percent(const itemp_database& db, const comment_object& c )
 {
    if( db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
       return db.get_reward_fund( c ).percent_curation_rewards;
@@ -107,7 +107,7 @@ uint16_t get_curation_rewards_percent(const itemp_database& db, const comment_ob
 }
 
 // TODO: REFACTORY: it's a get, should not update data inside
-asset get_producer_reward(itemp_database& db)
+static asset get_producer_reward(itemp_database& db)
 {
    const auto& props = db.get_dynamic_global_properties();
    static_assert( STEEMIT_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );

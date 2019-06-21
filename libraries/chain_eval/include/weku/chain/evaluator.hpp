@@ -9,6 +9,7 @@ template< typename OperationType=weku::protocol::operation >
 class evaluator
 {
    public:
+      virtual ~evaluator() = default;
       virtual void apply(const OperationType& op) = 0;
       virtual int get_type()const = 0;
 };

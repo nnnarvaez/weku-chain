@@ -229,7 +229,7 @@ void database::close(bool rewind)
    FC_CAPTURE_AND_RETHROW()
 }
 
-uint32_t database::last_hardfork()
+uint32_t database::last_hardfork() const
 {
    return get_hardfork_property_object().last_hardfork;
 }
@@ -242,7 +242,7 @@ void database::last_hardfork(uint32_t hardfork)
    });
 }
 
-hardfork_votes_type database::next_hardfork_votes(){
+hardfork_votes_type database::next_hardfork_votes() const{
    return _next_hardfork_votes;
 }
 

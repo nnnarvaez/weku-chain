@@ -44,11 +44,11 @@ namespace weku { namespace chain {
    {
       public:
          database();
-         ~database();
+         virtual ~database();
 
-         virtual uint32_t last_hardfork() override;
+         virtual uint32_t last_hardfork() const override;
          virtual void last_hardfork(uint32_t hardfork) override;
-         virtual hardfork_votes_type next_hardfork_votes() override;
+         virtual hardfork_votes_type next_hardfork_votes() const override;
          virtual void next_hardfork_votes(hardfork_votes_type next_hardfork_votes) override;
 
          virtual bool is_producing()const override { return _is_producing; }
