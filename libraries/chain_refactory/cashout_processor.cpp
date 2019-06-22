@@ -127,14 +127,14 @@ share_type cashout_processor::cashout_comment_helper( weku::chain::util::comment
             auto sbd_payout = fpr.create_sbd( author, sbd_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
 
             adjust_total_payout(_db, comment, sbd_payout.first + 
-                to_sbd(_db, sbd_payout.second + asset( vesting_steem, STEEM_SYMBOL ) ), 
-                to_sbd(_db, asset( curation_tokens, STEEM_SYMBOL ) ), 
-                to_sbd(_db, asset( total_beneficiary, STEEM_SYMBOL ) ) );
+                to_sbd(_db.get_feed_history().current_median_history, sbd_payout.second + asset( vesting_steem, STEEM_SYMBOL ) ), 
+                to_sbd(_db.get_feed_history().current_median_history, asset( curation_tokens, STEEM_SYMBOL ) ), 
+                to_sbd(_db.get_feed_history().current_median_history, asset( total_beneficiary, STEEM_SYMBOL ) ) );
 
             _db.push_virtual_operation( author_reward_operation( comment.author, to_string( comment.permlink ), 
                 sbd_payout.first, sbd_payout.second, vest_created ) );
             _db.push_virtual_operation( comment_reward_operation( comment.author, to_string( comment.permlink ), 
-                to_sbd(_db, asset( claimed_reward, STEEM_SYMBOL ) ) ) );
+                to_sbd(_db.get_feed_history().current_median_history, asset( claimed_reward, STEEM_SYMBOL ) ) ) );
 
             #ifndef IS_LOW_MEM
             _db.modify( comment, [&]( comment_object& c )
