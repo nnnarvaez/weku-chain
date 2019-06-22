@@ -1,4 +1,4 @@
-#include <steemit/chain/block_log.hpp>
+#include <weku/chain/block_log.hpp>
 #include <fstream>
 #include <iostream>
 #include <fc/io/raw.hpp>
@@ -8,7 +8,7 @@
 
 using namespace std;
 using namespace boost::program_options;
-using namespace steemit::chain;
+using namespace weku::chain;
 
 void read_head_block(string path){
 
@@ -30,7 +30,7 @@ void read_head_block(string path){
     std::cout << "head block position: " << pos << std::endl;
 
     // read block at position
-    std::pair<steemit::protocol::signed_block, uint64_t> result;
+    std::pair<weku::protocol::signed_block, uint64_t> result;
     block_stream.seekg( pos, std::ios::beg);
     fc::raw::unpack( block_stream, result.first );
     result.second = uint64_t(block_stream.tellg()) + 8;

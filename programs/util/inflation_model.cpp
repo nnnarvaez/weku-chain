@@ -1,7 +1,7 @@
 
-#include <steemit/chain/compound.hpp>
-#include <steemit/protocol/asset.hpp>
-#include <steemit/protocol/types.hpp>
+#include <weku/chain/compound.hpp>
+#include <weku/protocol/asset.hpp>
+#include <weku/protocol/types.hpp>
 
 #include <fc/io/json.hpp>
 #include <fc/variant_object.hpp>
@@ -21,11 +21,11 @@
 #define VPOW_OFF        9
 #define REWARD_TYPES   10
 
-using steemit::protocol::asset;
-using steemit::protocol::share_type;
-using steemit::protocol::calc_percent_reward_per_block;
-using steemit::protocol::calc_percent_reward_per_round;
-using steemit::protocol::calc_percent_reward_per_hour;
+using weku::protocol::asset;
+using weku::protocol::share_type;
+using weku::protocol::calc_percent_reward_per_block;
+using weku::protocol::calc_percent_reward_per_round;
+using weku::protocol::calc_percent_reward_per_hour;
 
 /*
 Explanation of output

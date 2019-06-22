@@ -1,24 +1,24 @@
 #pragma once
 
-#include <steemit/app/api.hpp>
-#include <steemit/private_message/private_message_plugin.hpp>
-#include <steemit/follow/follow_plugin.hpp>
-#include <steemit/app/steem_api_objects.hpp>
+#include <weku/app/api.hpp>
+#include <weku/private_message/private_message_plugin.hpp>
+#include <weku/follow/follow_plugin.hpp>
+#include <weku/app/steem_api_objects.hpp>
 
 #include <graphene/utilities/key_conversion.hpp>
 
 #include <fc/real128.hpp>
 #include <fc/crypto/base58.hpp>
 
-using namespace steemit::app;
-using namespace steemit::chain;
+using namespace weku::app;
+using namespace weku::chain;
 using namespace graphene::utilities;
 using namespace std;
 
-namespace steemit { namespace wallet {
+namespace weku { namespace wallet {
 
-using steemit::app::discussion;
-using namespace steemit::private_message;
+using weku::app::discussion;
+using namespace weku::private_message;
 
 typedef uint16_t transaction_handle_type;
 
@@ -801,7 +801,7 @@ class wallet_api
        * you can fill in.  It's better than nothing.
        *
        * @param operation_type the type of operation to return, must be one of the
-       *                       operations defined in `steemit/chain/operations.hpp`
+       *                       operations defined in `weku/chain/operations.hpp`
        *                       (e.g., "global_parameters_update_operation")
        * @return a default-constructed operation of the given type
        */
@@ -983,20 +983,20 @@ struct plain_keys {
 
 } }
 
-FC_REFLECT( steemit::wallet::wallet_data,
+FC_REFLECT( weku::wallet::wallet_data,
             (cipher_keys)
             (ws_server)
             (ws_user)
             (ws_password)
           )
 
-FC_REFLECT( steemit::wallet::brain_key_info, (brain_priv_key)(wif_priv_key) (pub_key))
+FC_REFLECT( weku::wallet::brain_key_info, (brain_priv_key)(wif_priv_key) (pub_key))
 
-FC_REFLECT( steemit::wallet::plain_keys, (checksum)(keys) )
+FC_REFLECT( weku::wallet::plain_keys, (checksum)(keys) )
 
-FC_REFLECT_ENUM( steemit::wallet::authority_type, (owner)(active)(posting) )
+FC_REFLECT_ENUM( weku::wallet::authority_type, (owner)(active)(posting) )
 
-FC_API( steemit::wallet::wallet_api,
+FC_API( weku::wallet::wallet_api,
         /// wallet api
         (help)(gethelp)
         (about)(is_new)(is_locked)(lock)(unlock)(set_password)
@@ -1090,4 +1090,4 @@ FC_API( steemit::wallet::wallet_api,
         (get_transaction)
       )
 
-FC_REFLECT( steemit::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )
+FC_REFLECT( weku::wallet::memo_data, (from)(to)(nonce)(check)(encrypted) )

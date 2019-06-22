@@ -23,10 +23,10 @@
  */
 #include <iomanip>
 #include <boost/algorithm/string/join.hpp>
-#include <steemit/wallet/wallet.hpp>
-#include <steemit/wallet/api_documentation.hpp>
+#include <weku/wallet/wallet.hpp>
+#include <weku/wallet/api_documentation.hpp>
 
-namespace steemit { namespace wallet {
+namespace weku { namespace wallet {
    namespace detail {
       namespace
       {
@@ -88,4 +88,4 @@ namespace steemit { namespace wallet {
                 std::inserter(method_descriptions, method_descriptions.end()));
    }
 
-} } // end namespace steemit::wallet
+} } // end namespace weku::wallet

@@ -1,7 +1,7 @@
-#include <steemit/app/application.hpp>
+#include <weku/app/application.hpp>
 
-#include <steemit/witness/witness_plugin.hpp>
-#include <steemit/manifest/plugins.hpp>
+#include <weku/witness/witness_plugin.hpp>
+#include <weku/manifest/plugins.hpp>
 
 #include <fc/exception/exception.hpp>
 #include <fc/thread/thread.hpp>
@@ -11,7 +11,7 @@
 #include <fc/log/logger.hpp>
 #include <fc/log/logger_config.hpp>
 
-#include <steemit/protocol/version.hpp>
+#include <weku/protocol/version.hpp>
 #include <graphene/utilities/git_revision.hpp>
 #include <fc/git_revision.hpp>
 
@@ -33,15 +33,15 @@
 #endif
 #include <graphene/utilities/key_conversion.hpp>
 
-using namespace steemit;
-using steemit::protocol::version;
+using namespace weku;
+using weku::protocol::version;
 namespace bpo = boost::program_options;
 
 void write_default_logging_config_to_stream(std::ostream& out);
 fc::optional<fc::logging_config> load_logging_config_from_ini_file(const fc::path& config_ini_filename);
 
 int main(int argc, char** argv) {
-   steemit::plugin::initialize_plugin_factories();
+   weku::plugin::initialize_plugin_factories();
    app::application* node = new app::application();
    fc::oexception unhandled_exception;
    try {
@@ -55,10 +55,10 @@ int main(int argc, char** argv) {
       std::cerr << "initminer private key: " << initminer_private_key << "\n";
       std::cerr << "chain id: " << std::string(STEEMIT_CHAIN_ID) << "\n";
       std::cerr << "blockchain version: " << fc::string( STEEMIT_BLOCKCHAIN_VERSION ) << "\n";
-      std::cerr << "witness remove key: " << std::string(steemit::protocol::public_key_type()) << "\n";
+      std::cerr << "witness remove key: " << std::string(weku::protocol::public_key_type()) << "\n";
       std::cerr << "------------------------------------------------------\n";
 
-      // auto new_steem = ( steemit::protocol::share_type(STEEMIT_INIT_SUPPLY) * int64_t(STEEMIT_INFLATION_RATE_PERCENT_0_20) ) / ( int64_t( STEEMIT_100_PERCENT ) * int64_t( STEEMIT_BLOCKS_PER_YEAR ) );
+      // auto new_steem = ( weku::protocol::share_type(STEEMIT_INIT_SUPPLY) * int64_t(STEEMIT_INFLATION_RATE_PERCENT_0_20) ) / ( int64_t( STEEMIT_100_PERCENT ) * int64_t( STEEMIT_BLOCKS_PER_YEAR ) );
       //std::cout<<"new steem per block:"<<new_steem.value<<"\n";
 #else
       std::cerr << "------------------------------------------------------\n\n";
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
       std::cerr << "initminer public key: " << STEEMIT_INIT_PUBLIC_KEY_STR << "\n";
       std::cerr << "chain id: " << std::string(STEEMIT_CHAIN_ID) << "\n";
       std::cerr << "blockchain version: " << fc::string( STEEMIT_BLOCKCHAIN_VERSION ) << "\n";
-      std::cerr << "witness remove key: " << std::string(steemit::protocol::public_key_type()) << "\n";
+      std::cerr << "witness remove key: " << std::string(weku::protocol::public_key_type()) << "\n";
       std::cerr << "------------------------------------------------------\n";
 
 #endif
@@ -82,8 +82,8 @@ int main(int argc, char** argv) {
 
       bpo::variables_map options;
 
-      for( const std::string& plugin_name : steemit::plugin::get_available_plugins() )
-         node->register_abstract_plugin( steemit::plugin::create_plugin( plugin_name, node ) );
+      for( const std::string& plugin_name : weku::plugin::get_available_plugins() )
+         node->register_abstract_plugin( weku::plugin::create_plugin( plugin_name, node ) );
 
       try
       {
