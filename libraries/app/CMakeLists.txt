@@ -1,6 +1,6 @@
-file(GLOB HEADERS "include/steemit/app/*.hpp")
+file(GLOB HEADERS "include/weku/app/*.hpp")
 
-add_library( steemit_app
+add_library( weku_app
              database_api.cpp
              api.cpp
              application.cpp
@@ -9,8 +9,8 @@ add_library( steemit_app
              ${HEADERS}
            )
 
-target_link_libraries( steemit_app steemit_chain steemit_protocol steemit_tags steemit_follow steemit_witness steemit_mf_plugins fc graphene_net graphene_utilities )
-target_include_directories( steemit_app
+target_link_libraries( weku_app chain weku_tags weku_follow weku_witness weku_mf_plugins fc graphene_net graphene_utilities )
+target_include_directories( weku_app
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
 if(MSVC)
@@ -18,10 +18,10 @@ if(MSVC)
 endif(MSVC)
 
 INSTALL( TARGETS
-   steemit_app
+   weku_app
 
    RUNTIME DESTINATION bin
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
-INSTALL( FILES ${HEADERS} DESTINATION "include/steemit/app" )
+INSTALL( FILES ${HEADERS} DESTINATION "include/weku/app" )

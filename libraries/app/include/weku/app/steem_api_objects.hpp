@@ -1,22 +1,22 @@
 #pragma once
 
-#include <steemit/chain/account_object.hpp>
-#include <steemit/chain/block_summary_object.hpp>
-#include <steemit/chain/comment_object.hpp>
-#include <steemit/chain/global_property_object.hpp>
-#include <steemit/chain/history_object.hpp>
-#include <steemit/chain/steem_objects.hpp>
-#include <steemit/chain/transaction_object.hpp>
-#include <steemit/chain/witness_objects.hpp>
+#include <weku/chain/account_object.hpp>
+#include <weku/chain/block_summary_object.hpp>
+#include <weku/chain/comment_object.hpp>
+#include <weku/chain/global_property_object.hpp>
+#include <weku/chain/history_object.hpp>
+#include <weku/chain/weku_objects.hpp>
+#include <weku/chain/transaction_object.hpp>
+#include <weku/chain/witness_objects.hpp>
 
-#include <steemit/tags/tags_plugin.hpp>
+#include <weku/tags/tags_plugin.hpp>
 
-#include <steemit/witness/witness_objects.hpp>
+#include <weku/witness/witness_objects.hpp>
 
-namespace steemit {
+namespace weku {
     namespace app {
 
-        using namespace steemit::chain;
+        using namespace weku::chain;
 
 /*struct limit_order
 {
@@ -485,9 +485,9 @@ namespace steemit {
         };
 
     }
-} // steemit::app
+} // weku::app
 
-FC_REFLECT(steemit::app::comment_api_obj,
+FC_REFLECT(weku::app::comment_api_obj,
            (id)(author)(permlink)
                    (category)(parent_author)(parent_permlink)
                    (title)(body)(json_metadata)(last_update)(created)(active)(last_payout)
@@ -500,7 +500,7 @@ FC_REFLECT(steemit::app::comment_api_obj,
                    (beneficiaries)
 )
 
-FC_REFLECT(steemit::app::account_api_obj,
+FC_REFLECT(weku::app::account_api_obj,
            (id)(name)(owner)(active)(posting)(memo_key)(json_metadata)(proxy)(last_owner_update)(last_account_update)
                    (created)(mined)
                    (owner_challenged)(active_challenged)(last_owner_proved)(last_active_proved)(recovery_account)(
@@ -522,21 +522,21 @@ FC_REFLECT(steemit::app::account_api_obj,
                    (last_post)(last_root_post)
 )
 
-FC_REFLECT(steemit::app::owner_authority_history_api_obj,
+FC_REFLECT(weku::app::owner_authority_history_api_obj,
            (id)
                    (account)
                    (previous_owner_authority)
                    (last_valid_time)
 )
 
-FC_REFLECT(steemit::app::account_recovery_request_api_obj,
+FC_REFLECT(weku::app::account_recovery_request_api_obj,
            (id)
                    (account_to_recover)
                    (new_owner_authority)
                    (expires)
 )
 
-FC_REFLECT(steemit::app::savings_withdraw_api_obj,
+FC_REFLECT(weku::app::savings_withdraw_api_obj,
            (id)
                    (from)
                    (to)
@@ -546,13 +546,13 @@ FC_REFLECT(steemit::app::savings_withdraw_api_obj,
                    (complete)
 )
 
-FC_REFLECT(steemit::app::feed_history_api_obj,
+FC_REFLECT(weku::app::feed_history_api_obj,
            (id)
                    (current_median_history)
                    (price_history)
 )
 
-FC_REFLECT(steemit::app::tag_api_obj,
+FC_REFLECT(weku::app::tag_api_obj,
            (name)
            (total_payouts)
            (net_votes)
@@ -561,7 +561,7 @@ FC_REFLECT(steemit::app::tag_api_obj,
            (trending)
 )
 
-FC_REFLECT(steemit::app::witness_api_obj,
+FC_REFLECT(weku::app::witness_api_obj,
            (id)
            (owner)
            (created)
@@ -574,13 +574,13 @@ FC_REFLECT(steemit::app::witness_api_obj,
            (hardfork_version_vote)(hardfork_time_vote)
 )
 
-FC_REFLECT_DERIVED(steemit::app::signed_block_api_obj, (steemit::protocol::signed_block),
+FC_REFLECT_DERIVED(weku::app::signed_block_api_obj, (weku::protocol::signed_block),
                    (block_id)
                            (signing_key)
                            (transaction_ids)
 )
 
-FC_REFLECT_DERIVED(steemit::app::dynamic_global_property_api_obj, (steemit::chain::dynamic_global_property_object),
+FC_REFLECT_DERIVED(weku::app::dynamic_global_property_api_obj, (weku::chain::dynamic_global_property_object),
                    (current_reserve_ratio)
                            (average_block_size)
                            (max_virtual_bandwidth)

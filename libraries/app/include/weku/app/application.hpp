@@ -23,9 +23,9 @@
  */
 #pragma once
 
-#include <steemit/app/api_access.hpp>
-#include <steemit/app/api_context.hpp>
-#include <steemit/chain/database.hpp>
+#include <weku/app/api_access.hpp>
+#include <weku/app/api_context.hpp>
+#include <weku/chain/database.hpp>
 
 #include <graphene/net/node.hpp>
 
@@ -35,7 +35,7 @@
 
 #include <boost/program_options.hpp>
 
-namespace steemit { namespace app {
+namespace weku { namespace app {
    namespace detail { class application_impl; }
    using std::string;
 
@@ -155,4 +155,4 @@ namespace steemit { namespace app {
       } );
    }
 
-} } // steemit::app
+} } // weku::app

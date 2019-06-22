@@ -23,36 +23,24 @@
  */
 #pragma once
 
-#include <fc/reflect/reflect.hpp>
+#include <fc/container/flat.hpp>
+#include <weku/protocol/operations.hpp>
+#include <weku/protocol/transaction.hpp>
+#include <weku/chain/weku_object_types.hpp>
 
-#include <map>
-#include <string>
-#include <vector>
+#include <fc/string.hpp>
 
-namespace steemit { namespace app {
+namespace weku { namespace app {
 
-struct api_access_info
-{
-   std::string username;
-   std::string password_hash_b64;
-   std::string password_salt_b64;
-   std::vector< std::string > allowed_apis;
-};
+using namespace fc;
 
-struct api_access
-{
-   std::map< std::string, api_access_info > permission_map;
-};
+void operation_get_impacted_accounts(
+   const weku::protocol::operation& op,
+   fc::flat_set<protocol::account_name_type>& result );
 
-} } // steemit::app
+void transaction_get_impacted_accounts(
+   const weku::protocol::transaction& tx,
+   fc::flat_set<protocol::account_name_type>& result
+   );
 
-FC_REFLECT( steemit::app::api_access_info,
-    (username)
-    (password_hash_b64)
-    (password_salt_b64)
-    (allowed_apis)
-   )
-
-FC_REFLECT( steemit::app::api_access,
-    (permission_map)
-   )
+} } // weku::app

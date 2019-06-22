@@ -50,6 +50,9 @@
 #include <weku/chain/vest_withdraw_processor.hpp>
 #include <weku/chain/conversion_processor.hpp>
 #include <weku/chain/hardforker.hpp>
+#include <weku/chain/indexes_initializer.hpp>
+#include <weku/chain/evaluators_initializer.hpp>
+#include <weku/chain/helpers.hpp>
 
 
 namespace weku { namespace chain {
@@ -92,8 +95,8 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
       in_init.initialize_indexes();
       _plugin_index_signal();
       // register evaluators
-      evaluators_registry registry(_my->_evaluator_registry);
-      registry.initialize_evaluators();
+      evaluators_initializer ev_init(_my->_evaluator_registry);
+      ev_init.initialize_evaluators();
 
       if( chainbase_flags & chainbase::database::read_write )
       {

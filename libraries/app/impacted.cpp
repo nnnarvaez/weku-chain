@@ -22,16 +22,16 @@
  * THE SOFTWARE.
  */
 
-#include <steemit/protocol/authority.hpp>
+#include <weku/protocol/authority.hpp>
 
-#include <steemit/app/impacted.hpp>
+#include <weku/app/impacted.hpp>
 
 #include <fc/utility.hpp>
 
-namespace steemit { namespace app {
+namespace weku { namespace app {
 
 using namespace fc;
-using namespace steemit::protocol;
+using namespace weku::protocol;
 
 // TODO:  Review all of these, especially no-ops
 struct get_impacted_account_visitor

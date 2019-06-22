@@ -1,4 +1,4 @@
-#include <weku/chain/evaluator_initializer.hpp>
+#include <weku/chain/evaluators_initializer.hpp>
 
 namespace weku{namespace chain{
 

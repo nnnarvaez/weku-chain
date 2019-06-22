@@ -3,7 +3,7 @@
 namespace weku {namespace chain{
 
 // This happens when two witness nodes are using same account
-static void maybe_warn_multiple_production(itemp_database& db, uint32_t height )const
+static void maybe_warn_multiple_production(itemp_database& db, uint32_t height )
 {
    auto blocks = db.fork_db().fetch_block_by_number( height );
    if( blocks.size() > 1 )

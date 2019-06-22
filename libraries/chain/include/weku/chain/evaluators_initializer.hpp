@@ -1,6 +1,6 @@
 #pragma once
 
-#include <weku/chainevaluator_registry.hpp>
+#include <weku/chain/evaluator_registry.hpp>
 
 namespace weku{namespace chain{
     class evaluators_initializer{
