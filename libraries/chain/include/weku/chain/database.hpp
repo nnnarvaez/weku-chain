@@ -242,7 +242,6 @@ namespace weku { namespace chain {
          
          
          virtual void        adjust_balance( const account_object& a, const asset& delta ) override;
-         virtual void        adjust_savings_balance( const account_object& a, const asset& delta ) override;
          
          /** this updates the votes for witnesses as a result of account voting proxy changing */
          virtual void adjust_proxied_witness_votes( const account_object& a,
@@ -252,14 +251,7 @@ namespace weku { namespace chain {
          /** this updates the votes for all witnesses as a result of account VESTS changing */
          virtual void adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth = 0 ) override;
 
-         /** this is called by `adjust_proxied_witness_votes` when account proxy to self */
-         virtual void adjust_witness_votes( const account_object& a, share_type delta ) override;
-
-         /** this updates the vote of a single witness as a result of a vote being added or removed*/
-         virtual void adjust_witness_vote( const witness_object& obj, share_type delta ) override; 
-         
-         
-         
+          
          //asset to_steem( const asset& sbd )const;
 
          virtual time_point_sec   head_block_time()const override;
@@ -301,8 +293,7 @@ namespace weku { namespace chain {
          const std::string& get_json_schema() const; // move
 
          void set_flush_interval( uint32_t flush_blocks );
-         void show_free_memory( bool force );
-
+         
          #ifdef IS_TEST_NET
          bool liquidity_rewards_enabled = true;
          bool skip_price_feed_limit_check = true;

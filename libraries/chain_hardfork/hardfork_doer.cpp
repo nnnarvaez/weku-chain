@@ -93,7 +93,7 @@ void hardfork_doer::retally_witness_votes()
       auto wit_itr = vidx.lower_bound( boost::make_tuple( a.id, witness_id_type() ) );
       while( wit_itr != vidx.end() && wit_itr->account == a.id )
       {
-         _db.adjust_witness_vote( _db.get(wit_itr->witness), a.witness_vote_weight() );
+         adjust_witness_vote(_db, _db.get(wit_itr->witness), a.witness_vote_weight() );
          ++wit_itr;
       }
    }

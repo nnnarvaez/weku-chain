@@ -6,7 +6,7 @@
 #include <weku/protocol/config.hpp>
 #include <weku/protocol/types.hpp>
 #include <weku/chain/common_objects.hpp>
-#include <weku/chain/util/asset.hpp>
+#include <weku/chain/asset.hpp>
 
 namespace weku { namespace chain { namespace util {
 

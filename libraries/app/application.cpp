@@ -370,7 +370,8 @@ namespace detail {
                }
             }
          }
-         _chain_db->show_free_memory( true );
+         // TODO:
+         //show_free_memory(*_chain_db, true );
 
          _next_rebroadcast = _chain_db->head_block_num() + REBROADCAST_RAND_INTERVAL();
          _rebroadcast_con = _chain_db->applied_block.connect( [this]( const signed_block& b ){ rebroadcast_pending_tx(); } );

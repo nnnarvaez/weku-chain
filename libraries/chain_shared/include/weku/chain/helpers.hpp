@@ -1,6 +1,73 @@
 #include <weku/chain/itemp_database.hpp>
+#include <weku/chain/invariant_validator.hpp>
+#include <weku/chain/fund_processor.hpp>
+#include <weku/chain/slot.hpp>
 
 namespace weku {namespace chain{
+
+static void show_free_memory(itemp_database& db, uint32_t last_free_gb_printed, bool force )
+{
+   uint32_t free_gb = uint32_t( db.get_free_memory() / (1024*1024*1024) );
+   if( force || (free_gb < last_free_gb_printed) || (free_gb > last_free_gb_printed+1) )
+   {
+      ilog( "Free memory is now ${n}G", ("n", free_gb) );
+      last_free_gb_printed = free_gb;
+   }
+
+   if( free_gb == 0 )
+   {
+      uint32_t free_mb = uint32_t( db.get_free_memory() / (1024*1024) );
+
+      if( free_mb <= 100 && db.head_block_num() % 10 == 0 )
+         elog( "Free memory is now ${n}M. Increase shared file size immediately!" , ("n", free_mb) );
+   }
+}
+
+static void adjust_savings_balance(itemp_database& db, const account_object& a, const asset& delta )
+{
+   balance_processor bp(db);
+   bp.adjust_savings_balance(a, delta);
+}
+
+// this is called by `adjust_proxied_witness_votes` when account proxy to self 
+void adjust_witness_votes(itemp_database& db, const account_object& a, share_type delta )
+{
+   const auto& vidx = db.get_index< witness_vote_index >().indices().get< by_account_witness >();
+   auto itr = vidx.lower_bound( boost::make_tuple( a.id, witness_id_type() ) );
+   while( itr != vidx.end() && itr->account == a.id )
+   {
+      adjust_witness_vote(*this, db.get(itr->witness), delta );
+      ++itr;
+   }
+}
+
+// this updates the vote of a single witness as a result of a vote being added or removed         
+static void adjust_witness_vote(itemp_database& db, const witness_object& witness, share_type delta )
+{
+   const witness_schedule_object& wso = db.get_witness_schedule_object();
+   db.modify( witness, [&]( witness_object& w )
+   {
+      auto delta_pos = w.votes.value * (wso.current_virtual_time - w.virtual_last_update);
+      w.virtual_position += delta_pos;
+
+      w.virtual_last_update = wso.current_virtual_time;
+      w.votes += delta;
+      // TODO: need update votes type to match total_vesting_shares type
+      FC_ASSERT( w.votes <= db.get_dynamic_global_properties().total_vesting_shares.amount, "", ("w.votes", w.votes)("props",get_dynamic_global_properties().total_vesting_shares) );
+
+      if( db.has_hardfork( STEEMIT_HARDFORK_0_19 ) )
+         w.virtual_scheduled_time = w.virtual_last_update + (VIRTUAL_SCHEDULE_LAP_LENGTH2 - w.virtual_position)/(w.votes.value+1);
+      else
+         w.virtual_scheduled_time = w.virtual_last_update + (VIRTUAL_SCHEDULE_LAP_LENGTH - w.virtual_position)/(w.votes.value+1);
+
+      /** witnesses with a low number of votes could overflow the time field and end up with a scheduled time in the past */
+      if( db.has_hardfork( STEEMIT_HARDFORK_0_19 ) )
+      {
+         if( w.virtual_scheduled_time < wso.current_virtual_time )
+            w.virtual_scheduled_time = fc::uint128::max_value();
+      }
+   } );
+}
 
 static void adjust_reward_balance(itemp_database& db, const account_object& a, const asset& delta )
 {
@@ -21,8 +88,7 @@ static void adjust_supply(itemp_database& db, const asset& delta, bool adjust_ve
  */
 static void adjust_rshares2(itemp_database& db, const comment_object& c, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 )
 {
-
-   const auto& dgpo = db,get_dynamic_global_properties();
+   const auto& dgpo = db.get_dynamic_global_properties();
    db.modify( dgpo, [&]( dynamic_global_property_object& p )
    {
       p.total_reward_shares2 -= old_rshares2;

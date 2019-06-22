@@ -20,7 +20,7 @@ void null_account_cleaner::clear_null_account_balance()
    if( null_account.savings_balance.amount > 0 )
    {
       total_steem += null_account.savings_balance;
-      _db.adjust_savings_balance( null_account, -null_account.savings_balance );
+      adjust_savings_balance(_db, null_account, -null_account.savings_balance );
    }
 
    if( null_account.sbd_balance.amount > 0 )
@@ -32,7 +32,7 @@ void null_account_cleaner::clear_null_account_balance()
    if( null_account.savings_sbd_balance.amount > 0 )
    {
       total_sbd += null_account.savings_sbd_balance;
-      _db.adjust_savings_balance( null_account, -null_account.savings_sbd_balance );
+      adjust_savings_balance(_db, null_account, -null_account.savings_sbd_balance );
    }
 
    if( null_account.vesting_shares.amount > 0 )

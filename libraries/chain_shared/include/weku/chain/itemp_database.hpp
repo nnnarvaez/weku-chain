@@ -8,9 +8,9 @@
 #include <weku/protocol/weku_operations.hpp>
 #include <weku/protocol/config.hpp>
 
-#include <weku/chain/util/asset.hpp>
-#include <weku/chain/util/reward.hpp>
-#include <weku/chain/util/uint256.hpp>
+#include <weku/chain/asset.hpp>
+#include <weku/chain/reward.hpp>
+#include <weku/chain/uint256.hpp>
 #include <weku/chain/weku_object_types.hpp>
 #include <weku/chain/account_objects.hpp>
 #include <weku/chain/global_property_object.hpp>
@@ -76,11 +76,7 @@ class itemp_database: public chainbase::database
     virtual void apply_block( const signed_block& next_block, uint32_t skip ) = 0;
     virtual const void push_virtual_operation( const operation& op, bool force = false ) = 0; 
     
-    virtual void adjust_savings_balance( const account_object& a, const asset& delta ) = 0; // move
-    virtual void adjust_reward_balance( const account_object& a, const asset& delta ) = 0; // move
     virtual void adjust_balance( const account_object& a, const asset& delta ) = 0;
-    virtual void adjust_witness_votes( const account_object& a, share_type delta ) = 0;
-    virtual void adjust_witness_vote( const witness_object& obj, share_type delta ) = 0;
     virtual void adjust_proxied_witness_votes( const account_object& a,
                                             const std::array< share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                                             int depth = 0) = 0;

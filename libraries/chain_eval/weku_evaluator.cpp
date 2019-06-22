@@ -1219,7 +1219,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
          });
 
          if( _db.has_hardfork( STEEMIT_HARDFORK_0_3 ) ) {
-            _db.adjust_witness_vote( witness, voter.witness_vote_weight() );
+            adjust_witness_vote(_db, witness, voter.witness_vote_weight() );
          }
          else {
             _db.adjust_proxied_witness_votes( voter, voter.witness_vote_weight() );
@@ -1245,7 +1245,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
       if (  _db.has_hardfork( STEEMIT_HARDFORK_0_2 ) ) {
          if( _db.has_hardfork( STEEMIT_HARDFORK_0_3 ) )
-            _db.adjust_witness_vote( witness, -voter.witness_vote_weight() );
+            adjust_witness_vote(_db, witness, -voter.witness_vote_weight() );
          else
             _db.adjust_proxied_witness_votes( voter, -voter.witness_vote_weight() );
       } else  {
@@ -2195,7 +2195,7 @@ void transfer_to_savings_evaluator::do_apply( const transfer_to_savings_operatio
    FC_ASSERT( get_balance( from, op.amount.symbol ) >= op.amount, "Account does not have sufficient funds to transfer to savings." );
 
    _db.adjust_balance( from, -op.amount );
-   _db.adjust_savings_balance( to, op.amount );
+   adjust_savings_balance(db, to, op.amount );
 }
 
 // QUSTION: only minus the amount from account
@@ -2209,7 +2209,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
    FC_ASSERT( from.savings_withdraw_requests < STEEMIT_SAVINGS_WITHDRAW_REQUEST_LIMIT, "Account has reached limit for pending withdraw requests." );
 
    FC_ASSERT( get_savings_balance( from, op.amount.symbol ) >= op.amount );
-   _db.adjust_savings_balance( from, -op.amount );
+   adjust_savings_balance(_db, from, -op.amount );
    _db.create<savings_withdraw_object>( [&]( savings_withdraw_object& s ) {
       s.from   = op.from;
       s.to     = op.to;
@@ -2230,7 +2230,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 void cancel_transfer_from_savings_evaluator::do_apply( const cancel_transfer_from_savings_operation& op )
 {
    const auto& swo = get_savings_withdraw(_db, op.from, op.request_id );
-   _db.adjust_savings_balance( _db.get_account( swo.from ), swo.amount );
+   adjust_savings_balance(_db, _db.get_account( swo.from ), swo.amount );
    _db.remove( swo );
 
    const auto& from = _db.get_account( op.from );

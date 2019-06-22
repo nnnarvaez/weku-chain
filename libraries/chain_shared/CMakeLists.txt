@@ -1,4 +1,4 @@
-file(GLOB HEADERS "include/weku/chain/*.hpp" "include/weku/chain/util/*.hpp")
+file(GLOB HEADERS "include/weku/chain/*.hpp")
 file(GLOB SRCS "*.cpp")
 add_library( chain_shared ${SRCS} ${HEADERS} )
 
