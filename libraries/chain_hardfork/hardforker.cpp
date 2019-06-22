@@ -1,6 +1,6 @@
 #include<weku/chain/hardforker.hpp>
-#include<weku/chain/hardfork_doer.hpp>
 #include<weku/chain/hardfork_constants.hpp>
+#include<weku/chain/i_hardfork_doer.hpp>
 
 namespace weku{namespace chain {
 
@@ -19,7 +19,7 @@ bool hardforker::has_enough_hardfork_votes(
 
 void hardforker::process()
 {
-   hardfork_doer doer(_db);
+   uint32_t hardfork = _db.last_hardfork();
     
    switch(_db.head_block_num())
    {        
@@ -30,16 +30,16 @@ void hardforker::process()
       // that's why we can pinpoint it to happen on specific block num
       // but hardfork 22 is not happend yet, so we allow it to be triggered at a future block.
       case 1: 
-         doer.do_hardforks_to_19();
-         _db.last_hardfork(19);
+         _doer.do_hardforks_to_19();
+         hardfork = STEEMIT_HARDFORK_0_19;
          break;
       case HARDFORK_20_BLOCK_NUM:
          // NOTHING NEED TO BE DONE HERE
-         _db.last_hardfork(20);
+         hardfork = STEEMIT_HARDFORK_0_20;
          break;
       case HARDFORK_21_BLOCK_NUM:
-         doer.do_hardfork_21();
-         _db.last_hardfork(21);
+         _doer.do_hardfork_21();
+         hardfork = STEEMIT_HARDFORK_0_21;
          break;        
    }
 
@@ -47,12 +47,13 @@ void hardforker::process()
    if(_db.last_hardfork() == 21 && _db.head_block_num() >= HARDFORK_22_BLOCK_NUM_FROM) 
    {            
       if(has_enough_hardfork_votes(_db.next_hardfork_votes(), 22, HARDFORK_22_BLOCK_NUM_FROM)){
-         doer.do_hardfork_22();
-         _db.last_hardfork(22);
+         _doer.do_hardfork_22();
+         hardfork = STEEMIT_HARDFORK_0_22;
       }             
    }   
 
-   _db.push_virtual_operation( hardfork_operation( _db.last_hardfork() ), true );
+   _db.last_hardfork(hardfork);
+   _db.push_virtual_operation( hardfork_operation( hardfork ), true );
 }
 
 }}

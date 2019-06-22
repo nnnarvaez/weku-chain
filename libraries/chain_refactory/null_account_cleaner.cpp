@@ -59,13 +59,13 @@ void null_account_cleaner::clear_null_account_balance()
    if( null_account.reward_steem_balance.amount > 0 )
    {
       total_steem += null_account.reward_steem_balance;
-      _db.adjust_reward_balance( null_account, -null_account.reward_steem_balance );
+      adjust_reward_balance(_db, null_account, -null_account.reward_steem_balance );
    }
 
    if( null_account.reward_sbd_balance.amount > 0 )
    {
       total_sbd += null_account.reward_sbd_balance;
-      _db.adjust_reward_balance( null_account, -null_account.reward_sbd_balance );
+      adjust_reward_balance(_db, null_account, -null_account.reward_sbd_balance );
    }
 
    if( null_account.reward_vesting_balance.amount > 0 )
@@ -88,10 +88,10 @@ void null_account_cleaner::clear_null_account_balance()
    }
 
    if( total_steem.amount > 0 )
-      _db.adjust_supply( -total_steem );
+      adjust_supply(_db, -total_steem );
 
    if( total_sbd.amount > 0 )
-      _db.adjust_supply( -total_sbd );
+      adjust_supply(_db, -total_sbd );
 }
 
 

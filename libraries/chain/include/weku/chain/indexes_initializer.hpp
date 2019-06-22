@@ -1,13 +1,13 @@
 #pragma once
 
-#include <weku/chain/itemp_database.hpp>
+#include <weku/chain/database.hpp>
 
 namespace weku{namespace chain{
     class indexes_initializer{
         public:
-            indexes_initializer(itemp_database& db):_db(db){}
+            indexes_initializer(database& db):_db(db){}
             void initialize_indexes();
         private:
-            itemp_database& _db;
+            database& _db;
     };
 }}

@@ -307,7 +307,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
    });
 
    if( o.fee.amount > 0 )
-      _db.create_vesting( new_account, o.fee );
+      create_vesting(_db, new_account, o.fee );
 }
 
 void account_create_with_delegation_evaluator::do_apply( const account_create_with_delegation_operation& o )
@@ -401,7 +401,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
    }
 
    if( o.fee.amount > 0 )
-      _db.create_vesting( new_account, o.fee );
+      create_vesting(db, new_account, o.fee );
 }
 
 
@@ -632,7 +632,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
       {
          FC_ASSERT( _db.get( parent->root_comment ).allow_replies, "The parent comment has disabled replies." );
          if( _db.has_hardfork( STEEMIT_HARDFORK_0_19 ) && !_db.has_hardfork( STEEMIT_HARDFORK_0_19 ) )
-            FC_ASSERT( _db.calculate_discussion_payout_time( *parent ) != fc::time_point_sec::maximum(), "Discussion is frozen." );
+            FC_ASSERT( calculate_discussion_payout_time(_db, *parent ) != fc::time_point_sec::maximum(), "Discussion is frozen." );
       }
 
       if( _db.has_hardfork( STEEMIT_HARDFORK_0_19 ) )
@@ -756,7 +756,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
       if( !_db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
       {
          if( _db.has_hardfork( STEEMIT_HARDFORK_0_14 ) )
-            FC_ASSERT( _db.calculate_discussion_payout_time( comment ) != fc::time_point_sec::maximum(), "The comment is archived." );
+            FC_ASSERT( calculate_discussion_payout_time(_db, comment ) != fc::time_point_sec::maximum(), "The comment is archived." );
          else if( _db.has_hardfork( STEEMIT_HARDFORK_0_10 ) )
             FC_ASSERT( comment.last_payout == fc::time_point_sec::min(), "Can only edit during the first 24 hours." );
       }
@@ -1018,7 +1018,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 
    FC_ASSERT( get_balance( from_account, STEEM_SYMBOL) >= o.amount, "Account does not have sufficient STEEM for transfer." );
    _db.adjust_balance( from_account, -o.amount );
-   _db.create_vesting( to_account, o.amount );
+   create_vesting(db, to_account, o.amount );
 }
 
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
@@ -1304,7 +1304,7 @@ void vote_evaluator::do_apply( const vote_operation& o )
 
    if( o.weight > 0 ) FC_ASSERT( comment.allow_votes, "Votes are not allowed on the comment." );
 
-   if( _db.has_hardfork( STEEMIT_HARDFORK_0_12 ) && _db.calculate_discussion_payout_time( comment ) == fc::time_point_sec::maximum() )
+   if( _db.has_hardfork( STEEMIT_HARDFORK_0_12 ) && calculate_discussion_payout_time(_db, comment ) == fc::time_point_sec::maximum() )
    {
 #ifndef CLEAR_VOTES
       const auto& comment_vote_idx = _db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
@@ -1396,7 +1396,7 @@ void vote_evaluator::do_apply( const vote_operation& o )
          if( _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
             FC_ASSERT( _db.head_block_time() < comment.cashout_time - STEEMIT_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
          else if( _db.has_hardfork( STEEMIT_HARDFORK_0_7 ) )
-            FC_ASSERT( _db.head_block_time() < _db.calculate_discussion_payout_time( comment ) - STEEMIT_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
+            FC_ASSERT( _db.head_block_time() < calculate_discussion_payout_time(_db, comment ) - STEEMIT_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
       }
 
       //used_power /= (50*7); /// a 100% vote means use .28% of voting power which should force users to spread their votes around over 50+ posts day for a week
@@ -1416,7 +1416,7 @@ void vote_evaluator::do_apply( const vote_operation& o )
 
       if( !_db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
       {
-         fc::uint128_t cur_cashout_time_sec = _db.calculate_discussion_payout_time( comment ).sec_since_epoch();
+         fc::uint128_t cur_cashout_time_sec = calculate_discussion_payout_time(_db, comment ).sec_since_epoch();
          fc::uint128_t new_cashout_time_sec;
 
          if( _db.has_hardfork( STEEMIT_HARDFORK_0_12 ) && !_db.has_hardfork( STEEMIT_HARDFORK_0_13)  )
@@ -1567,7 +1567,7 @@ void vote_evaluator::do_apply( const vote_operation& o )
          });
       }
       if( !_db.has_hardfork( STEEMIT_HARDFORK_0_17) )
-         _db.adjust_rshares2( comment, old_rshares, new_rshares );
+         adjust_rshares2(_db, comment, old_rshares, new_rshares );
    }
    else
    {
@@ -1584,7 +1584,7 @@ void vote_evaluator::do_apply( const vote_operation& o )
          if( _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
             FC_ASSERT( _db.head_block_time() < comment.cashout_time - STEEMIT_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
          else if( _db.has_hardfork( STEEMIT_HARDFORK_0_7 ) )
-            FC_ASSERT( _db.head_block_time() < _db.calculate_discussion_payout_time( comment ) - STEEMIT_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
+            FC_ASSERT( _db.head_block_time() < calculate_discussion_payout_time(_db, comment ) - STEEMIT_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
       }
 
       _db.modify( voter, [&]( account_object& a ){
@@ -1601,7 +1601,7 @@ void vote_evaluator::do_apply( const vote_operation& o )
 
       if( !_db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
       {
-         fc::uint128_t cur_cashout_time_sec = _db.calculate_discussion_payout_time( comment ).sec_since_epoch();
+         fc::uint128_t cur_cashout_time_sec = calculate_discussion_payout_time(_db, comment ).sec_since_epoch();
          fc::uint128_t new_cashout_time_sec;
 
          if( _db.has_hardfork( STEEMIT_HARDFORK_0_12 ) && ! _db.has_hardfork( STEEMIT_HARDFORK_0_13 )  )
@@ -1674,7 +1674,7 @@ void vote_evaluator::do_apply( const vote_operation& o )
       });
 
       if( !_db.has_hardfork( STEEMIT_HARDFORK_0_17) )
-         _db.adjust_rshares2( comment, old_rshares, new_rshares );
+         adjust_rshares2(_db, comment, old_rshares, new_rshares );
    }
 
 } FC_CAPTURE_AND_RETHROW( (o)) }
@@ -1813,14 +1813,14 @@ void pow_apply( itemp_database& db, Operation o )
    asset pow_reward = get_pow_reward(db);
    if( db.head_block_num() < STEEMIT_START_MINER_VOTING_BLOCK )
       pow_reward.amount *= STEEMIT_MAX_WITNESSES;
-   db.adjust_supply( pow_reward, true );
+   adjust_supply(db, pow_reward, true );
 
    /// pay the witness that includes this POW
    const auto& inc_witness = db.get_account( dgp.current_witness );
    if( db.head_block_num() < STEEMIT_START_MINER_VOTING_BLOCK )
       db.adjust_balance( inc_witness, pow_reward );
    else
-      db.create_vesting( inc_witness, pow_reward );
+      create_vesting(db, inc_witness, pow_reward );
 }
 
 void pow_evaluator::do_apply( const pow_operation& o ) {
@@ -1911,10 +1911,10 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
    {
       /// pay the witness that includes this POW
       asset inc_reward = get_pow_reward(db);
-      db.adjust_supply( inc_reward, true );
+      adjust_supply(db, inc_reward, true );
 
       const auto& inc_witness = db.get_account( dgp.current_witness );
-      db.create_vesting( inc_witness, inc_reward );
+      create_vesting(db, inc_witness, inc_reward );
    }
 }
 
@@ -1971,7 +1971,7 @@ void limit_order_create_evaluator::do_apply( const limit_order_create_operation&
        obj.expiration = o.expiration;
    });
 
-   bool filled = _db.apply_order( order );
+   bool filled = apply_order(_db, order );
 
    if( o.fill_or_kill ) FC_ASSERT( filled, "Cancelling order because it was not filled." );
 }
@@ -1996,14 +1996,14 @@ void limit_order_create2_evaluator::do_apply( const limit_order_create2_operatio
        obj.expiration = o.expiration;
    });
 
-   bool filled = _db.apply_order( order );
+   bool filled = apply_order(_db, order );
 
    if( o.fill_or_kill ) FC_ASSERT( filled, "Cancelling order because it was not filled." );
 }
 
 void limit_order_cancel_evaluator::do_apply( const limit_order_cancel_operation& o )
 {
-   _db.cancel_order( get_limit_order(_db, o.owner, o.orderid ) );
+   cancel_order(_db, get_limit_order(_db, o.owner, o.orderid ) );
 }
 
 void report_over_production_evaluator::do_apply( const report_over_production_operation& o )
@@ -2025,7 +2025,7 @@ void challenge_authority_evaluator::do_apply( const challenge_authority_operatio
       FC_ASSERT( _db.head_block_time() - challenged.last_owner_proved > STEEMIT_OWNER_CHALLENGE_COOLDOWN );
 
       _db.adjust_balance( challenger, - STEEMIT_OWNER_CHALLENGE_FEE );
-      _db.create_vesting( _db.get_account( o.challenged ), STEEMIT_OWNER_CHALLENGE_FEE );
+      create_vesting(_db, _db.get_account( o.challenged ), STEEMIT_OWNER_CHALLENGE_FEE );
 
       _db.modify( challenged, [&]( account_object& a )
       {
@@ -2039,7 +2039,7 @@ void challenge_authority_evaluator::do_apply( const challenge_authority_operatio
       FC_ASSERT( _db.head_block_time() - challenged.last_active_proved > STEEMIT_ACTIVE_CHALLENGE_COOLDOWN, "Account cannot be challenged because it was recently challenged." );
 
       _db.adjust_balance( challenger, - STEEMIT_ACTIVE_CHALLENGE_FEE );
-      _db.create_vesting( _db.get_account( o.challenged ), STEEMIT_ACTIVE_CHALLENGE_FEE );
+      create_vesting(_db, _db.get_account( o.challenged ), STEEMIT_ACTIVE_CHALLENGE_FEE );
 
       _db.modify( challenged, [&]( account_object& a )
       {
@@ -2314,8 +2314,8 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
       reward_vesting_steem_to_move = asset( ( ( uint128_t( op.reward_vests.amount.value ) * uint128_t( acnt.reward_vesting_steem.amount.value ) )
          / uint128_t( acnt.reward_vesting_balance.amount.value ) ).to_uint64(), STEEM_SYMBOL );
 
-   _db.adjust_reward_balance( acnt, -op.reward_steem );
-   _db.adjust_reward_balance( acnt, -op.reward_sbd );
+   adjust_reward_balance(_db, acnt, -op.reward_steem );
+   adjust_reward_balance(_db, acnt, -op.reward_sbd );
    _db.adjust_balance( acnt, op.reward_steem );
    _db.adjust_balance( acnt, op.reward_sbd );
 

@@ -100,8 +100,8 @@ std::pair< asset, asset > fund_processor::create_sbd( const account_object& to_a
 
          if( to_reward_balance )
          {
-            _db.adjust_reward_balance( to_account, sbd );
-            _db.adjust_reward_balance( to_account, asset( to_steem, STEEM_SYMBOL ) );
+            adjust_reward_balance(_db, to_account, sbd );
+            adjust_reward_balance(_db, to_account, asset( to_steem, STEEM_SYMBOL ) );
          }
          else
          {
@@ -109,8 +109,8 @@ std::pair< asset, asset > fund_processor::create_sbd( const account_object& to_a
             _db.adjust_balance( to_account, asset( to_steem, STEEM_SYMBOL ) );
          }
 
-         _db.adjust_supply( asset( -to_sbd, STEEM_SYMBOL ) );
-         _db.adjust_supply( sbd );
+         adjust_supply(_db, asset( -to_sbd, STEEM_SYMBOL ) );
+         adjust_supply(_db, sbd );
          assets.first = sbd;
          assets.second = to_steem;
       }
@@ -198,7 +198,7 @@ void fund_processor::process_funds()
          p.virtual_supply           += asset( new_steem, STEEM_SYMBOL );
       });
 
-      const auto& producer_reward = _db.create_vesting( _db.get_account( cwit.owner ), asset( witness_reward, STEEM_SYMBOL ) );
+      const auto& producer_reward = create_vesting(_db, _db.get_account( cwit.owner ), asset( witness_reward, STEEM_SYMBOL ) );
       _db.push_virtual_operation( producer_reward_operation( cwit.owner, producer_reward ) );
 
    }

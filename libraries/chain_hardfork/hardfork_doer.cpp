@@ -191,6 +191,17 @@ void hardfork_doer::do_hardfork_19()
    });
 }
 
+void hardfork_doer::do_hardforks_to_19(){
+   perform_vesting_share_split( 1000000 );         
+   retally_witness_votes();
+   reset_virtual_schedule_time();
+   retally_witness_vote_counts();
+   retally_witness_vote_counts(true);
+   do_hardfork_12();
+   do_hardfork_17();
+   do_hardfork_19();
+}
+
 void hardfork_doer::do_hardfork_21()
 {
    #ifdef IS_TEST_NET
@@ -404,19 +415,8 @@ void hardfork_doer::do_hardfork_22()
    
    //HF22 Validate Retally of balances and Vesting on HF21    
    ilog( "Validating Retally of balances and Vesting on HF21");             
-   _db.validate_invariants();    
+   validate_invariants(_db);    
    
 } 
-
-void hardfork_doer::do_hardforks_to_19(){
-   perform_vesting_share_split( 1000000 );         
-   retally_witness_votes();
-   reset_virtual_schedule_time();
-   retally_witness_vote_counts();
-   retally_witness_vote_counts(true);
-   do_hardfork_12();
-   do_hardfork_17();
-   do_hardfork_19();
-}
 
 }}

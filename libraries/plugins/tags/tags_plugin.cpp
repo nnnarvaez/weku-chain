@@ -164,7 +164,7 @@ namespace weku {
                     if (comment.cashout_time != fc::time_point_sec::maximum()) {
                         _db.modify(current, [&](tag_object &obj) {
                             obj.active = comment.active;
-                            obj.cashout = _db.calculate_discussion_payout_time(comment);
+                            obj.cashout = calculate_discussion_payout_time(_db,comment);
                             obj.children = comment.children;
                             obj.net_rshares = comment.net_rshares.value;
                             obj.net_votes = comment.net_votes;

@@ -53,6 +53,7 @@
 #include <weku/chain/indexes_initializer.hpp>
 #include <weku/chain/evaluators_initializer.hpp>
 #include <weku/chain/helpers.hpp>
+#include <weku/chain/hardfork_doer.hpp>
 
 
 namespace weku { namespace chain {
@@ -108,7 +109,8 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
                // since gpo's head_block_number is not set, so it's using default 0.
                // init_genesis will not trigger apply_block()
                // will also push the genesis time into processed_hardforks as hardfork 0
-               init_genesis( initial_supply );
+               genesis_processor gpr(*this);
+               gpr.init_genesis(init_supply);
             });
 
          // if just after init_genesis, at this point, the block_log file will be empty.
@@ -120,7 +122,7 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
             undo_all(); // which will clean all undo_state in all indices/tables inside database.
             FC_ASSERT( revision() == head_block_num(), "Chainbase revision does not match head block num",
                ("rev", revision())("head_block", head_block_num()) );
-            validate_invariants();
+            validate_invariants(*this);
          });
 
          // if it's first time open, means the init_genesis is just ran,
@@ -138,70 +140,6 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
       }      
    }
    FC_CAPTURE_LOG_AND_RETHROW( (data_dir)(shared_mem_dir)(shared_file_size) )
-}
-
-// TODO: need to improve the performance of this function, since it's quite slow now.
-// it's been called when user run: wekud --replay
-void database::reindex( const fc::path& data_dir, const fc::path& shared_mem_dir, uint64_t shared_file_size )
-{
-   try
-   {
-      ilog( "Reindexing Blockchain" );
-      // wipe here is delete two files: shared_memory.bin and shared_memory.meta
-      // but keep block_log and block_log.index file.
-      wipe( data_dir, shared_mem_dir, false );
-      // fix reindex bug here
-      //open( data_dir, shared_mem_dir, 0, shared_file_size, chainbase::database::read_write );
-      open( data_dir, shared_mem_dir, STEEMIT_INIT_SUPPLY, shared_file_size, chainbase::database::read_write );
-      _fork_db.reset();    // override effect of _fork_db.start_block() call in open()
-
-      auto start = fc::time_point::now();
-      STEEMIT_ASSERT( _block_log.head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
-
-      ilog( "Replaying blocks..." );
-
-      uint64_t skip_flags =
-         skip_witness_signature |
-         skip_transaction_signatures |
-         skip_transaction_dupe_check |
-         skip_tapos_check |
-         skip_merkle_check |
-         skip_witness_schedule_check |
-         skip_authority_check |
-         skip_validate | /// no need to validate operations
-         skip_validate_invariants |
-         skip_block_log;
-
-      with_write_lock( [&]()
-      {
-          // here 0 is file position, not block number, so itr will point to first block: block #1
-         auto itr = _block_log.read_block( 0 );
-         auto last_block_num = _block_log.head()->block_num();
-
-         while( itr.first.block_num() != last_block_num )
-         {
-            auto cur_block_num = itr.first.block_num();
-            if( cur_block_num % 100000 == 0 ) // the free memory here means free disk space of mapping file, not physical memory.
-               std::cerr << "   " << double( cur_block_num * 100 ) / last_block_num << "%   " << cur_block_num << " of " << last_block_num <<
-               "   (" << (get_free_memory() / (1024*1024)) << "M free)\n";
-            apply_block( itr.first, skip_flags );
-            itr = _block_log.read_block( itr.second ); // itr.second points to the position of next block.
-         }
-
-         apply_block( itr.first, skip_flags ); // apply last_block_num/head block number
-          // set revision to head block number,
-          // which in turn set all revisions to head_block_num of indices/tables contained in current database.
-         set_revision( head_block_num() );
-      });
-
-      if( _block_log.head()->block_num() )
-         _fork_db.start_block( *_block_log.head() );
-
-      auto end = fc::time_point::now();
-      ilog( "Done reindexing, elapsed time: ${t} sec", ("t",double((end-start).count())/1000000.0 ) );
-   }
-   FC_CAPTURE_AND_RETHROW( (data_dir)(shared_mem_dir) )
-
 }
 
 void database::wipe( const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks)
@@ -455,15 +393,6 @@ const hardfork_property_object& database::get_hardfork_property_object()const
    return get< hardfork_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
-// not doing actual calc, just get data, should be renamed to get_discussion_payout_time
-const time_point_sec database::calculate_discussion_payout_time( const comment_object& comment )const
-{
-   if( has_hardfork( STEEMIT_HARDFORK_0_17 ) || comment.parent_author == STEEMIT_ROOT_POST_PARENT )
-      return comment.cashout_time;
-   else
-      return get< comment_object >( comment.root_comment ).cashout_time;
-}
-
 const reward_fund_object& database::get_reward_fund( const comment_object& c ) const
 {
    return get< reward_fund_object, by_name >( STEEMIT_POST_REWARD_FUND_NAME );
@@ -699,9 +628,9 @@ signed_block database::_generate_block(
    )
 {
    uint32_t skip = get_node_properties().skip_flags;
-   uint32_t slot_num = get_slot_at_time( when );
+   uint32_t slot_num = get_slot_at_time(*this, when );
    FC_ASSERT( slot_num > 0 );
-   string scheduled_witness = get_scheduled_witness( slot_num );
+   string scheduled_witness = get_scheduled_witness(*this, slot_num );
    FC_ASSERT( scheduled_witness == witness_owner );
 
    const auto& witness_obj = get_witness( witness_owner );
@@ -906,38 +835,6 @@ void database::notify_on_applied_transaction( const signed_transaction& tx )
    STEEMIT_TRY_NOTIFY( on_applied_transaction, tx )
 }
 
-account_name_type database::get_scheduled_witness( uint32_t slot_num )const
-{
-   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-   const witness_schedule_object& wso = get_witness_schedule_object();
-   uint64_t current_aslot = dpo.current_aslot + slot_num;
-   return wso.current_shuffled_witnesses[ current_aslot % wso.num_scheduled_witnesses ];
-}
-
-fc::time_point_sec database::get_slot_time(uint32_t slot_num)const
-{
-   slot s(*this);
-   return s.get_slot_time(slot_num);
-}
-
-uint32_t database::get_slot_at_time(fc::time_point_sec when)const
-{
-   slot s(*this);
-   return s.get_slot_at_time(when);
-}
-
-
-
-/**
- * @param to_account - the account to receive the new vesting shares
- * @param STEEM - STEEM to be converted to vesting shares
- */
-asset database::create_vesting( const account_object& to_account, asset steem, bool to_reward_balance )
-{
-   fund_processor fp(*this);
-   return fp.create_vesting(to_account, steem, to_reward_balance);
-}
-
 // TODO: need to figure out the exact logic of adjust proxied witness votes function groups.
 void database::adjust_proxied_witness_votes( const account_object& a,
                                    const std::array< share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
@@ -1031,25 +928,6 @@ void database::adjust_witness_vote( const witness_object& witness, share_type de
    } );
 }
 
-
-
-
-/**
- * This method updates total_reward_shares2 on DGPO, and children_rshares2 on comments, when a comment's rshares2 changes
- * from old_rshares2 to new_rshares2.  Maintaining invariants that children_rshares2 is the sum of all descendants' rshares2,
- * and dgpo.total_reward_shares2 is the total number of rshares2 outstanding.
- */
-void database::adjust_rshares2( const comment_object& c, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 )
-{
-
-   const auto& dgpo = get_dynamic_global_properties();
-   modify( dgpo, [&]( dynamic_global_property_object& p )
-   {
-      p.total_reward_shares2 -= old_rshares2;
-      p.total_reward_shares2 += new_rshares2;
-   } );
-}
-
 void process_savings_withdraws(itemp_database& db)
 {
   const auto& idx = db.get_index< savings_withdraw_index >().indices().get< by_complete_from_rid >();
@@ -1071,15 +949,12 @@ void process_savings_withdraws(itemp_database& db)
   }
 }
 
-asset database::to_sbd( const asset& steem )const
-{
-   return util::to_sbd( get_feed_history().current_median_history, steem );
-}
 
-asset database::to_steem( const asset& sbd )const
-{
-   return util::to_steem( get_feed_history().current_median_history, sbd );
-}
+
+// asset database::to_steem( const asset& sbd )const
+// {
+//    return util::to_steem( get_feed_history().current_median_history, sbd );
+// }
 
 time_point_sec database::head_block_time()const
 {
@@ -1094,11 +969,6 @@ uint32_t database::head_block_num()const
 block_id_type database::head_block_id()const
 {
    return get_dynamic_global_properties().head_block_id;
-}
-
-node_property_object& database::node_properties()
-{
-   return _node_property_object;
 }
 
 uint32_t database::last_non_undoable_block_num() const
@@ -1125,13 +995,6 @@ const std::string& database::get_json_schema()const
 {
    return _json_schema;
 }
-
-void database::init_genesis( uint64_t init_supply )
-{
-   genesis_processor gp(*this);
-   gp.init_genesis(init_supply);
-}
-
 
 // void database::validate_transaction( const signed_transaction& trx )
 // {
@@ -1362,8 +1225,9 @@ void database::_apply_block( const signed_block& next_block )
    // For WEKU, all hardforks before hardfork_20 are applied just after block 1 is saved to dish
    // this hardfork process is almost at the end of the process,
    // which also means during process of block #1, there is only harfork 0.
-   hardforker hfk(*this);
-   hfk.process();  
+   hardfork_doer doer(*this);
+   hardforker hfkr(*this, doer);
+   hfkr.process();  
 
    // notify observers that the block has been applied
    notify_applied_block( next_block );
@@ -1518,16 +1382,6 @@ void database::apply_operation(const operation& op)
    notify_post_apply_operation( note );
 }
 
-
-
-
-
-bool database::apply_order( const limit_order_object& new_order_object )
-{
-   order_processor op(*this);
-   return op.apply_order(new_order_object);   
-}
-
 int database::match( const limit_order_object& new_order, const limit_order_object& old_order, const price& match_price )
 {
    order_processor op(*this);
@@ -1540,11 +1394,7 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, c
    return op.fill_order(order, pays, receives);
 }
 
-void database::cancel_order( const limit_order_object& order )
-{
-   adjust_balance( get_account(order.seller), order.amount_for_sale() );
-   remove(order);
-}
+
 
 void database::adjust_balance( const account_object& a, const asset& delta )
 {
@@ -1559,18 +1409,6 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
    bp.adjust_savings_balance(a, delta);
 }
 
-void database::adjust_reward_balance( const account_object& a, const asset& delta )
-{
-   balance_processor bp(*this);
-   bp.adjust_reward_balance(a, delta);
-}
-
-void database::adjust_supply( const asset& delta, bool adjust_vesting )
-{
-   balance_processor bp(*this);
-   bp.adjust_supply(delta, adjust_vesting);   
-}
-
 bool database::has_hardfork( uint32_t hardfork )const
 {
    return get_hardfork_property_object().last_hardfork >= hardfork;
@@ -1579,10 +1417,6 @@ bool database::has_hardfork( uint32_t hardfork )const
 // TODO: should be removed, for testing only, no production code should use this function.
 void database::set_hardfork( uint32_t hardfork, bool apply_now ){}
 
-void database::validate_invariants()const
-{
-   invariant_validator validator(*this);
-   validator.validate();
-}
+
 
 } } 

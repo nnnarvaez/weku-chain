@@ -110,7 +110,7 @@ void with_skip_flags(
    uint32_t skip_flags,
    Lambda callback )
 {
-   node_property_object& npo = db.node_properties();
+   node_property_object& npo = db.get_node_properties();
    skip_flags_restorer restorer( npo, npo.skip_flags );
    npo.skip_flags = skip_flags;
    callback();

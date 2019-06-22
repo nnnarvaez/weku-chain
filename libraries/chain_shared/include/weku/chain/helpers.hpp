@@ -2,8 +2,109 @@
 
 namespace weku {namespace chain{
 
+static void adjust_reward_balance(itemp_database& db, const account_object& a, const asset& delta )
+{
+   balance_processor bp(db);
+   bp.adjust_reward_balance(a, delta);
+}
+
+static void adjust_supply(itemp_database& db, const asset& delta, bool adjust_vesting = false )
+{
+   balance_processor bp(db);
+   bp.adjust_supply(delta, adjust_vesting);   
+}
+
+/**
+ * This method updates total_reward_shares2 on DGPO, and children_rshares2 on comments, when a comment's rshares2 changes
+ * from old_rshares2 to new_rshares2.  Maintaining invariants that children_rshares2 is the sum of all descendants' rshares2,
+ * and dgpo.total_reward_shares2 is the total number of rshares2 outstanding.
+ */
+static void adjust_rshares2(itemp_database& db, const comment_object& c, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 )
+{
+
+   const auto& dgpo = db,get_dynamic_global_properties();
+   db.modify( dgpo, [&]( dynamic_global_property_object& p )
+   {
+      p.total_reward_shares2 -= old_rshares2;
+      p.total_reward_shares2 += new_rshares2;
+   } );
+}
+
+static void validate_invariants(const itemp_database& db)
+{
+   invariant_validator validator(db);
+   validator.validate();
+}
+
+
+/**
+ * @brief Get the witness scheduled for block production in a slot.
+ *
+ * slot_num always corresponds to a time in the future.
+ *
+ * If slot_num == 1, returns the next scheduled witness.
+ * If slot_num == 2, returns the next scheduled witness after
+ * 1 block gap.
+ *
+ * Use the get_slot_time() and get_slot_at_time() functions
+ * to convert between slot_num and timestamp.
+ *
+ * Passing slot_num == 0 returns STEEMIT_NULL_WITNESS
+ */
+
+static account_name_type get_scheduled_witness(const itemp_database& db, uint32_t slot_num )
+{
+   const dynamic_global_property_object& dpo = db.get_dynamic_global_properties();
+   const witness_schedule_object& wso = db.get_witness_schedule_object();
+   uint64_t current_aslot = dpo.current_aslot + slot_num;
+   return wso.current_shuffled_witnesses[ current_aslot % wso.num_scheduled_witnesses ];
+}
+
+/**
+ * @param to_account - the account to receive the new vesting shares
+ * @param STEEM - STEEM to be converted to vesting shares
+ */
+static asset create_vesting(itemp_database& db, const account_object& to_account, asset steem, bool to_reward_balance )
+{
+   fund_processor fp(db);
+   return fp.create_vesting(to_account, steem, to_reward_balance);
+}
+
+// not doing actual calc, just get data, should be renamed to get_discussion_payout_time
+static const time_point_sec calculate_discussion_payout_time(const itemp_database& db, const comment_object& comment )
+{
+   if( db.has_hardfork( STEEMIT_HARDFORK_0_17 ) || comment.parent_author == STEEMIT_ROOT_POST_PARENT )
+      return comment.cashout_time;
+   else
+      return db.get< comment_object >( comment.root_comment ).cashout_time;
+}
+
+static void cancel_order(item_database& db, const limit_order_object& order )
+{
+   db.adjust_balance( db.get_account(order.seller), order.amount_for_sale() );
+   db.remove(order);
+}
+
+static bool apply_order(itemp_database& db, const limit_order_object& new_order_object )
+{
+   order_processor op(db);
+   return op.apply_order(new_order_object);   
+}
+
+static fc::time_point_sec get_slot_time(const item_database& db, uint32_t slot_num)
+{
+   slot s(db);
+   return s.get_slot_time(slot_num);
+}
+
+static uint32_t get_slot_at_time(const item_database& db,fc::time_point_sec when)
+{
+   slot s(db);
+   return s.get_slot_at_time(when);
+}
+
 // This happens when two witness nodes are using same account
-static void maybe_warn_multiple_production(itemp_database& db, uint32_t height )
+static void maybe_warn_multiple_production(const itemp_database& db, uint32_t height )
 {
    auto blocks = db.fork_db().fetch_block_by_number( height );
    if( blocks.size() > 1 )
@@ -135,7 +236,7 @@ static asset get_producer_reward(itemp_database& db)
    /// pay witness in vesting shares
    if( props.head_block_number >= STEEMIT_START_MINER_VOTING_BLOCK || (witness_account.vesting_shares.amount.value == 0) ) {
       // const auto& witness_obj = get_witness( props.current_witness );
-      const auto& producer_reward = db.create_vesting( witness_account, pay );
+      const auto& producer_reward = create_vesting(db, witness_account, pay );
       db.push_virtual_operation( producer_reward_operation( witness_account.name, producer_reward ) );
    }
    else

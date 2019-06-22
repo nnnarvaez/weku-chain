@@ -318,10 +318,12 @@ namespace detail {
             }
             _chain_db->add_checkpoints( loaded_checkpoints );
 
+            replayer rpr(*_chain_db); 
             if( _options->count("replay-blockchain") )
             {
                ilog("Replaying blockchain on user request.");
-               _chain_db->reindex( _data_dir / "blockchain", _shared_dir, _shared_file_size );
+                             
+               rpr.reindex( _data_dir / "blockchain", _shared_dir, _shared_file_size );
             }
             else
             {
@@ -335,7 +337,7 @@ namespace detail {
 
                   try
                   {
-                     _chain_db->reindex( _data_dir / "blockchain", _shared_dir, _shared_file_size );
+                     rpr.reindex( _data_dir / "blockchain", _shared_dir, _shared_file_size );
                   }
                   catch( chain::block_log_exception& )
                   {

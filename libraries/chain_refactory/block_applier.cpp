@@ -56,7 +56,7 @@ void block_applier::clear_expired_orders()
    auto itr = orders_by_exp.begin();
    while( itr != orders_by_exp.end() && itr->expiration < now )
    {
-      _db.cancel_order( *itr );
+      cancel_order(_db, *itr );
       itr = orders_by_exp.begin();
    }
 }
@@ -236,7 +236,7 @@ void block_applier::update_signing_witness(const witness_object& signing_witness
 { 
     try {
         const dynamic_global_property_object& dpo = _db.get_dynamic_global_properties();
-        uint64_t new_block_aslot = dpo.current_aslot + _db.get_slot_at_time( new_block.timestamp );
+        uint64_t new_block_aslot = dpo.current_aslot + get_slot_at_time(_db, new_block.timestamp );
 
         _db.modify( signing_witness, [&]( witness_object& _wit )
         {

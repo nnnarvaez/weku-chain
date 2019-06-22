@@ -9,10 +9,10 @@ void genesis_processor::init_genesis( uint64_t init_supply )
         struct auth_inhibitor
         {
             public:
-                auth_inhibitor(itemp_database& db) : xdb(db), old_flags(db.node_properties().skip_flags)
-                    { xdb.node_properties().skip_flags |= skip_authority_check; }
+                auth_inhibitor(itemp_database& db) : xdb(db), old_flags(db.get_node_properties().skip_flags)
+                    { xdb.get_node_properties().skip_flags |= skip_authority_check; }
                 ~auth_inhibitor()
-                    { xdb.node_properties().skip_flags = old_flags; }
+                    { xdb.get_node_properties().skip_flags = old_flags; }
             private:
                 itemp_database& xdb;
                 uint32_t old_flags;

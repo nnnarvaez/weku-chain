@@ -15,7 +15,7 @@
     
 //     virtual bool apply_block(const signed_block& b, uint32_t skip = 0) override;
     
-//     virtual void reindex( const fc::path& data_dir, const fc::path& shared_mem_dir, uint64_t shared_file_size = (1024l*1024l*1024l*8l) ) override;
+
     
 //     virtual signed_block generate_block_before_apply() override; // TODO
 //     virtual signed_block generate_block() override; // TOTO: need refactory this interfac, maybe debug_generate_block?

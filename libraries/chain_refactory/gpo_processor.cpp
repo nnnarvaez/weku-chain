@@ -11,12 +11,12 @@ void gpo_processor::update_global_dynamic_data( const signed_block& b )
         uint32_t missed_blocks = 0;
         if( _db.head_block_time() != fc::time_point_sec() )
         {
-            missed_blocks = _db.get_slot_at_time( b.timestamp );
+            missed_blocks = get_slot_at_time(_db, b.timestamp );
             assert( missed_blocks != 0 );
             missed_blocks--;
             for( uint32_t i = 0; i < missed_blocks; ++i )
             {
-                const auto& witness_missed = _db.get_witness( _db.get_scheduled_witness( i + 1 ) );
+                const auto& witness_missed = _db.get_witness( get_scheduled_witness(_db, i + 1 ) );
                 if(  witness_missed.owner != b.witness )
                 {
                     _db.modify( witness_missed, [&]( witness_object& w )

@@ -33,7 +33,7 @@ bool order_processor::fill_order( const limit_order_object& order, const asset& 
           */
          if( order.amount_to_receive().amount == 0 )
          {
-            _db.cancel_order(order);
+            cancel_order(_db, order);
             return true;
          }
          return false;

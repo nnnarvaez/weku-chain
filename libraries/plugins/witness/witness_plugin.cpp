@@ -615,17 +615,17 @@ block_production_condition::block_production_condition_enum witness_plugin::mayb
    // If the next block production opportunity is in the present or future, we're synced.
    if( !_production_enabled )
    {
-      if( db.get_slot_time(1) >= now )
+      if( get_slot_time(db,1) >= now )
          _production_enabled = true;
       else
          return block_production_condition::not_synced;
    }
 
    // is anyone scheduled to produce now or one second in the future?
-   uint32_t slot = db.get_slot_at_time( now );
+   uint32_t slot = get_slot_at_time(db, now );
    if( slot == 0 )
    {
-      capture("next_time", db.get_slot_time(1));
+      capture("next_time", get_slot_time(db,1));
       return block_production_condition::not_time_yet;
    }
 
@@ -639,7 +639,7 @@ block_production_condition::block_production_condition_enum witness_plugin::mayb
    //
    assert( now > db.head_block_time() );
 
-   string scheduled_witness = db.get_scheduled_witness( slot );
+   string scheduled_witness = get_scheduled_witness(db, slot );
    // we must control the witness scheduled to produce the next block.
    if( _witnesses.find( scheduled_witness ) == _witnesses.end() )
    {
@@ -650,7 +650,7 @@ block_production_condition::block_production_condition_enum witness_plugin::mayb
    const auto& witness_by_name = db.get_index< chain::witness_index >().indices().get< chain::by_name >();
    auto itr = witness_by_name.find( scheduled_witness );
 
-   fc::time_point_sec scheduled_time = db.get_slot_time( slot );
+   fc::time_point_sec scheduled_time = get_slot_time(db, slot );
    weku::protocol::public_key_type scheduled_key = itr->signing_key;
    auto private_key_itr = _private_keys.find( scheduled_key );
 

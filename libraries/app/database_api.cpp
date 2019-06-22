@@ -1022,7 +1022,7 @@ namespace weku {
             }
 
             if (d.parent_author != STEEMIT_ROOT_POST_PARENT)
-                d.cashout_time = my->_db.calculate_discussion_payout_time(my->_db.get<comment_object>(d.id));
+                d.cashout_time = calculate_discussion_payout_time(*my, my->_db.get<comment_object>(d.id));
 
             if (d.body.size() > 1024 * 128)
                 d.body = "body pruned due to size";

@@ -294,8 +294,8 @@ uint32_t debug_node_plugin::debug_generate_blocks(
    while( produced < count )
    {
       uint32_t new_slot = miss_blocks+1;
-      std::string scheduled_witness_name = db.get_scheduled_witness( slot );
-      fc::time_point_sec scheduled_time = db.get_slot_time( slot );
+      std::string scheduled_witness_name = get_scheduled_witness(db, slot );
+      fc::time_point_sec scheduled_time = get_slot_time(db, slot );
       const chain::witness_object& scheduled_witness = db.get_witness( scheduled_witness_name );
       weku::chain::public_key_type scheduled_key = scheduled_witness.signing_key;
       if( debug_key != "" )
@@ -351,7 +351,7 @@ uint32_t debug_node_plugin::debug_generate_blocks_until(
    if( generate_sparsely )
    {
       new_blocks += debug_generate_blocks( debug_key, 1, skip );
-      auto slots_to_miss = db.get_slot_at_time( head_block_time );
+      auto slots_to_miss = get_slot_at_time(db, head_block_time );
       if( slots_to_miss > 1 )
       {
          slots_to_miss--;

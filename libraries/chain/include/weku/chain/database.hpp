@@ -144,7 +144,6 @@ namespace weku { namespace chain {
          virtual const witness_schedule_object&         get_witness_schedule_object()const override;
          virtual const hardfork_property_object&        get_hardfork_property_object()const override;
 
-         virtual const time_point_sec                   calculate_discussion_payout_time( const comment_object& comment )const override;
          virtual const reward_fund_object&              get_reward_fund( const comment_object& c )const override;
 
          
@@ -240,52 +239,11 @@ namespace weku { namespace chain {
 
          //////////////////// db_witness_schedule.cpp ////////////////////
 
-         /**
-          * @brief Get the witness scheduled for block production in a slot.
-          *
-          * slot_num always corresponds to a time in the future.
-          *
-          * If slot_num == 1, returns the next scheduled witness.
-          * If slot_num == 2, returns the next scheduled witness after
-          * 1 block gap.
-          *
-          * Use the get_slot_time() and get_slot_at_time() functions
-          * to convert between slot_num and timestamp.
-          *
-          * Passing slot_num == 0 returns STEEMIT_NULL_WITNESS
-          */
-         virtual account_name_type get_scheduled_witness(uint32_t slot_num)const override;
-
-         /**
-          * Get the time at which the given slot occurs.
-          *
-          * If slot_num == 0, return time_point_sec().
-          *
-          * If slot_num == N for N > 0, return the Nth next
-          * block-interval-aligned time greater than head_block_time().
-          */
-         fc::time_point_sec get_slot_time(uint32_t slot_num)const; // move
-
-         /**
-          * Get the last slot which occurs AT or BEFORE the given time.
-          *
-          * The return value is the greatest value N such that
-          * get_slot_time( N ) <= when.
-          *
-          * If no such N exists, return 0.
-          */
-         virtual uint32_t get_slot_at_time(fc::time_point_sec when)const override; // move
-
          
-         //move
-         virtual asset create_vesting( const account_object& to_account, asset steem, bool to_reward_balance=false ) override;
          
          virtual void        adjust_balance( const account_object& a, const asset& delta ) override;
          virtual void        adjust_savings_balance( const account_object& a, const asset& delta ) override;
-         virtual void        adjust_reward_balance( const account_object& a, const asset& delta ) override;
-         virtual void        adjust_supply( const asset& delta, bool adjust_vesting = false ) override;
-         virtual void        adjust_rshares2( const comment_object& comment, fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 ) override;
-        
+         
          /** this updates the votes for witnesses as a result of account voting proxy changing */
          virtual void adjust_proxied_witness_votes( const account_object& a,
                                             const std::array< share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
@@ -300,27 +258,19 @@ namespace weku { namespace chain {
          /** this updates the vote of a single witness as a result of a vote being added or removed*/
          virtual void adjust_witness_vote( const witness_object& obj, share_type delta ) override; 
          
-         /**
-          * Helper method to return the current sbd value of a given amount of
-          * STEEM.  Return 0 SBD if there isn't a current_median_history
-          */
-         virtual asset to_sbd( const asset& steem )const override;
-         asset to_steem( const asset& sbd )const;
+         
+         
+         //asset to_steem( const asset& sbd )const;
 
          virtual time_point_sec   head_block_time()const override;
          virtual uint32_t head_block_num()const override;
          virtual block_id_type    head_block_id()const override;
-
-         virtual node_property_object& node_properties() override;
 
          uint32_t last_non_undoable_block_num() const;
          //////////////////// db_init.cpp ////////////////////
 
          void set_custom_operation_interpreter( const std::string& id, std::shared_ptr< custom_operation_interpreter > registry );
          virtual std::shared_ptr< custom_operation_interpreter > get_custom_json_evaluator( const std::string& id ) override;
-
-         
-         virtual void init_genesis(uint64_t initial_supply = STEEMIT_INIT_SUPPLY ) override;
 
          /**
           *  This method validates transactions without adding it to the pending state.
@@ -333,9 +283,9 @@ namespace weku { namespace chain {
          std::deque< signed_transaction >       _popped_tx;
          vector< signed_transaction >           _pending_tx;
 
-         virtual bool apply_order( const limit_order_object& new_order_object ) override; // remove
+         
          bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
-         virtual void cancel_order( const limit_order_object& obj ) override;
+         
          int  match( const limit_order_object& bid, const limit_order_object& ask, const price& trade_price );
               
          virtual bool has_hardfork( uint32_t hardfork )const override;
@@ -344,7 +294,6 @@ namespace weku { namespace chain {
             with id N, applies all hardforks with id <= N */
          void set_hardfork( uint32_t hardfork, bool process_now = true );
 
-         virtual void validate_invariants()const override;
          /**
           * @}
           */

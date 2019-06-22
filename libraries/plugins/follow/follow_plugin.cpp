@@ -79,7 +79,7 @@ struct pre_operation_visitor
          auto& db = _plugin.database();
          const auto& c = db.get_comment( op.author, op.permlink );
 
-         if( db.calculate_discussion_payout_time( c ) == fc::time_point_sec::maximum() ) return;
+         if( calculate_discussion_payout_time(db, c ) == fc::time_point_sec::maximum() ) return;
 
          const auto& cv_idx = db.get_index< comment_vote_index >().indices().get< by_comment_voter >();
          auto cv = cv_idx.find( std::make_tuple( c.id, db.get_account( op.voter ).id ) );
@@ -271,7 +271,7 @@ struct post_operation_visitor
          auto& db = _plugin.database();
          const auto& comment = db.get_comment( op.author, op.permlink );
 
-         if( db.calculate_discussion_payout_time( comment ) == fc::time_point_sec::maximum() )
+         if( calculate_discussion_payout_time(db, comment ) == fc::time_point_sec::maximum() )
             return;
 
          const auto& cv_idx = db.get_index< comment_vote_index >().indices().get< by_comment_voter >();

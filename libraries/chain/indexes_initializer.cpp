@@ -1,6 +1,8 @@
 
 #include <weku/chain/indexes_initializer.hpp>
 #include <weku/chain/index.hpp>
+#include <weku/chain/operation_object.hpp>
+#include <weku/chain/blacklist_objects.hpp>
 
 namespace weku{namespace chain{
 void indexes_initializer::initialize_indexes()

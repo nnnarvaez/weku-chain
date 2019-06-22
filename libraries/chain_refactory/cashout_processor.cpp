@@ -39,7 +39,7 @@ share_type pay_curators(itemp_database& db, const comment_object& c, share_type&
             {
                unclaimed_rewards -= claim;
                const auto& voter = db.get(itr->voter);
-               auto reward = db.create_vesting( voter, asset( claim, STEEM_SYMBOL ), db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
+               auto reward = create_vesting(_db, voter, asset( claim, STEEM_SYMBOL ), db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
 
                db.push_virtual_operation( curation_reward_operation( voter.name, reward, c.author, to_string( c.permlink ) ) );
 
@@ -110,7 +110,7 @@ share_type cashout_processor::cashout_comment_helper( weku::chain::util::comment
             for( auto& b : comment.beneficiaries )
             {
                auto benefactor_tokens = ( author_tokens * b.weight ) / STEEMIT_100_PERCENT;
-               auto vest_created = _db.create_vesting( _db.get_account( b.account ), benefactor_tokens, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
+               auto vest_created = create_vesting(_db, _db.get_account( b.account ), benefactor_tokens, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
                _db.push_virtual_operation( comment_benefactor_reward_operation( b.account, comment.author, to_string( comment.permlink ), vest_created ) );
                total_beneficiary += benefactor_tokens;
             }
@@ -121,20 +121,20 @@ share_type cashout_processor::cashout_comment_helper( weku::chain::util::comment
             auto vesting_steem = author_tokens - sbd_steem;
 
             const auto& author = _db.get_account( comment.author );
-            auto vest_created = _db.create_vesting( author, vesting_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
+            auto vest_created = create_vesting(_db, author, vesting_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
             
             fund_processor fpr(_db);
             auto sbd_payout = fpr.create_sbd( author, sbd_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
 
             adjust_total_payout(_db, comment, sbd_payout.first + 
-                _db.to_sbd( sbd_payout.second + asset( vesting_steem, STEEM_SYMBOL ) ), 
-                _db.to_sbd( asset( curation_tokens, STEEM_SYMBOL ) ), 
-                _db.to_sbd( asset( total_beneficiary, STEEM_SYMBOL ) ) );
+                to_sbd(_db, sbd_payout.second + asset( vesting_steem, STEEM_SYMBOL ) ), 
+                to_sbd(_db, asset( curation_tokens, STEEM_SYMBOL ) ), 
+                to_sbd(_db, asset( total_beneficiary, STEEM_SYMBOL ) ) );
 
             _db.push_virtual_operation( author_reward_operation( comment.author, to_string( comment.permlink ), 
                 sbd_payout.first, sbd_payout.second, vest_created ) );
             _db.push_virtual_operation( comment_reward_operation( comment.author, to_string( comment.permlink ), 
-                _db.to_sbd( asset( claimed_reward, STEEM_SYMBOL ) ) ) );
+                to_sbd(_db, asset( claimed_reward, STEEM_SYMBOL ) ) ) );
 
             #ifndef IS_LOW_MEM
             _db.modify( comment, [&]( comment_object& c )
@@ -151,7 +151,7 @@ share_type cashout_processor::cashout_comment_helper( weku::chain::util::comment
          }
 
          if( !_db.has_hardfork( STEEMIT_HARDFORK_0_17 ) )
-            _db.adjust_rshares2( comment, util::evaluate_reward_curve( comment.net_rshares.value ), 0 );
+            adjust_rshares2(_db, comment, util::evaluate_reward_curve( comment.net_rshares.value ), 0 );
       }
 
       _db.modify( comment, [&]( comment_object& c )
@@ -191,7 +191,7 @@ share_type cashout_processor::cashout_comment_helper( weku::chain::util::comment
       {
          const auto& cur_vote = *vote_itr;
          ++vote_itr;
-         if( !_db.has_hardfork( STEEMIT_HARDFORK_0_12 ) || _db.calculate_discussion_payout_time( comment ) != fc::time_point_sec::maximum() )
+         if( !_db.has_hardfork( STEEMIT_HARDFORK_0_12 ) || calculate_discussion_payout_time(_db, comment ) != fc::time_point_sec::maximum() )
          {
             _db.modify( cur_vote, [&]( comment_vote_object& cvo )
             {

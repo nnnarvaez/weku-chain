@@ -33,7 +33,7 @@ void reward_processor::pay_liquidity_reward()
       auto itr = ridx.begin();
       if( itr != ridx.end() && itr->volume_weight() > 0 )
       {
-         _db.adjust_supply( reward, true );
+         adjust_supply(_db, reward, true );
          _db.adjust_balance( _db.get(itr->owner), reward );
          _db.modify( *itr, [&]( liquidity_reward_balance_object& obj )
          {
