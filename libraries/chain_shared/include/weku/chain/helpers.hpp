@@ -36,7 +36,7 @@ void adjust_witness_votes(itemp_database& db, const account_object& a, share_typ
    auto itr = vidx.lower_bound( boost::make_tuple( a.id, witness_id_type() ) );
    while( itr != vidx.end() && itr->account == a.id )
    {
-      adjust_witness_vote(*this, db.get(itr->witness), delta );
+      adjust_witness_vote(db, db.get(itr->witness), delta );
       ++itr;
    }
 }
@@ -53,7 +53,8 @@ static void adjust_witness_vote(itemp_database& db, const witness_object& witnes
       w.virtual_last_update = wso.current_virtual_time;
       w.votes += delta;
       // TODO: need update votes type to match total_vesting_shares type
-      FC_ASSERT( w.votes <= db.get_dynamic_global_properties().total_vesting_shares.amount, "", ("w.votes", w.votes)("props",get_dynamic_global_properties().total_vesting_shares) );
+      FC_ASSERT( w.votes <= db.get_dynamic_global_properties().total_vesting_shares.amount, "", 
+         ("w.votes", w.votes)("props",db.get_dynamic_global_properties().total_vesting_shares) );
 
       if( db.has_hardfork( STEEMIT_HARDFORK_0_19 ) )
          w.virtual_scheduled_time = w.virtual_last_update + (VIRTUAL_SCHEDULE_LAP_LENGTH2 - w.virtual_position)/(w.votes.value+1);
@@ -145,7 +146,7 @@ static const time_point_sec calculate_discussion_payout_time(const itemp_databas
       return db.get< comment_object >( comment.root_comment ).cashout_time;
 }
 
-static void cancel_order(item_database& db, const limit_order_object& order )
+static void cancel_order(itemp_database& db, const limit_order_object& order )
 {
    db.adjust_balance( db.get_account(order.seller), order.amount_for_sale() );
    db.remove(order);
@@ -157,13 +158,13 @@ static bool apply_order(itemp_database& db, const limit_order_object& new_order_
    return op.apply_order(new_order_object);   
 }
 
-static fc::time_point_sec get_slot_time(const item_database& db, uint32_t slot_num)
+static fc::time_point_sec get_slot_time(const itemp_database& db, uint32_t slot_num)
 {
    slot s(db);
    return s.get_slot_time(slot_num);
 }
 
-static uint32_t get_slot_at_time(const item_database& db,fc::time_point_sec when)
+static uint32_t get_slot_at_time(const itemp_database& db,fc::time_point_sec when)
 {
    slot s(db);
    return s.get_slot_at_time(when);
