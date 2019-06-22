@@ -157,7 +157,6 @@ namespace weku { namespace chain {
 
          bool push_block( const signed_block& b, uint32_t skip = skip_nothing );
          void push_transaction( const signed_transaction& trx, uint32_t skip = skip_nothing );
-         void _maybe_warn_multiple_production( uint32_t height )const;
          bool _push_block( const signed_block& b );
          void _push_transaction( const signed_transaction& trx );
          
@@ -317,12 +316,10 @@ namespace weku { namespace chain {
          uint32_t last_non_undoable_block_num() const;
          //////////////////// db_init.cpp ////////////////////
 
-         void initialize_evaluators(); // move
          void set_custom_operation_interpreter( const std::string& id, std::shared_ptr< custom_operation_interpreter > registry );
          virtual std::shared_ptr< custom_operation_interpreter > get_custom_json_evaluator( const std::string& id ) override;
 
-         /// Reset the object graph in-memory
-         void initialize_indexes();
+         
          virtual void init_genesis(uint64_t initial_supply = STEEMIT_INIT_SUPPLY ) override;
 
          /**

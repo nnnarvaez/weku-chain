@@ -2,6 +2,23 @@
 
 namespace weku {namespace chain{
 
+// This happens when two witness nodes are using same account
+static void maybe_warn_multiple_production(itemp_database& db, uint32_t height )const
+{
+   auto blocks = db.fork_db().fetch_block_by_number( height );
+   if( blocks.size() > 1 )
+   {
+      vector< std::pair< account_name_type, fc::time_point_sec > > witness_time_pairs;
+      for( const auto& b : blocks )
+      {
+         witness_time_pairs.push_back( std::make_pair( b->data.witness, b->data.timestamp ) );
+      }
+
+      ilog( "Encountered block num collision at block ${n} due to a fork, witnesses are: ${w}", ("n", height)("w", witness_time_pairs) );
+   }
+   return;
+}
+
 static void adjust_liquidity_reward(itemp_database& db, const account_object& owner, const asset& volume, bool is_sdb )
 {
    const auto& ridx = db.get_index< liquidity_reward_balance_index >().indices().get< by_owner >();

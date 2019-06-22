@@ -9,15 +9,17 @@ namespace chainbase {
       environment_check() {
          memset( &compiler_version, 0, sizeof( compiler_version ) );
          memcpy( &compiler_version, __VERSION__, std::min<size_t>( strlen(__VERSION__), 256 ) );
-#ifndef NDEBUG
+         
+         #ifndef NDEBUG
          debug = true;
-#endif
-#ifdef __APPLE__
+         #endif
+
+         #ifdef __APPLE__
          apple = true;
-#endif
-#ifdef WIN32
+         #endif
+         #ifdef WIN32
          windows = true;
-#endif
+         #endif
       }
       friend bool operator == ( const environment_check& a, const environment_check& b ) {
          return std::make_tuple( a.compiler_version, a.debug, a.apple, a.windows )
@@ -132,19 +134,19 @@ namespace chainbase {
 
    void database::set_require_locking( bool enable_require_locking )
    {
-#ifdef CHAINBASE_CHECK_LOCKING
+      #ifdef CHAINBASE_CHECK_LOCKING
       _enable_require_locking = enable_require_locking;
-#endif
+      #endif
    }
 
-#ifdef CHAINBASE_CHECK_LOCKING
+   #ifdef CHAINBASE_CHECK_LOCKING
    void database::require_lock_fail( const char* method, const char* lock_type, const char* tname )const
    {
       std::string err_msg = "database::" + std::string( method ) + " require_" + std::string( lock_type ) + "_lock() failed on type " + std::string( tname );
       std::cerr << err_msg << std::endl;
       BOOST_THROW_EXCEPTION( std::runtime_error( err_msg ) );
    }
-#endif
+   #endif
 
    void database::undo()
    {

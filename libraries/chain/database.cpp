@@ -88,9 +88,12 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
       chainbase::database::open( shared_mem_dir, chainbase_flags, shared_file_size );
 
       // create/read indices/tables to memory database
-      initialize_indexes();
+      indexes_initializer in_init(*this);
+      in_init.initialize_indexes();
+      _plugin_index_signal();
       // register evaluators
-      initialize_evaluators();
+      evaluators_registry registry(_my->_evaluator_registry);
+      registry.initialize_evaluators();
 
       if( chainbase_flags & chainbase::database::read_write )
       {
@@ -507,23 +510,6 @@ bool database::push_block(const signed_block& new_block, uint32_t skip)
    return result;
 }
 
-// This happens when two witness nodes are using same account
-void database::_maybe_warn_multiple_production( uint32_t height )const
-{
-   auto blocks = _fork_db.fetch_block_by_number( height );
-   if( blocks.size() > 1 )
-   {
-      vector< std::pair< account_name_type, fc::time_point_sec > > witness_time_pairs;
-      for( const auto& b : blocks )
-      {
-         witness_time_pairs.push_back( std::make_pair( b->data.witness, b->data.timestamp ) );
-      }
-
-      ilog( "Encountered block num collision at block ${n} due to a fork, witnesses are: ${w}", ("n", height)("w", witness_time_pairs) );
-   }
-   return;
-}
-
 // TODO: very important code related to consensus, need to refactory to improve readability
 bool database::_push_block(const signed_block& new_block)
 { try {
@@ -534,7 +520,7 @@ bool database::_push_block(const signed_block& new_block)
    {
       // _fork_db.push_block will return the head block of current longest chain in fork_db.
       shared_ptr<fork_item> new_head = _fork_db.push_block(new_block);
-      _maybe_warn_multiple_production( new_head->num );
+      maybe_warn_multiple_production(*this, new_head->num );
 
       //If the head block from the longest chain does not build off of the current head, we need to switch forks.
       if( new_head->data.previous != head_block_id() )
@@ -1117,54 +1103,6 @@ uint32_t database::last_non_undoable_block_num() const
    return get_dynamic_global_properties().last_irreversible_block_num;
 }
 
-// add evaluators into evaluator_registory's internal list
-void database::initialize_evaluators()
-{
-   _my->_evaluator_registry.register_evaluator< vote_evaluator                           >();
-   _my->_evaluator_registry.register_evaluator< comment_evaluator                        >();
-   _my->_evaluator_registry.register_evaluator< comment_options_evaluator                >();
-   _my->_evaluator_registry.register_evaluator< delete_comment_evaluator                 >();
-   _my->_evaluator_registry.register_evaluator< transfer_evaluator                       >();
-   _my->_evaluator_registry.register_evaluator< transfer_to_vesting_evaluator            >();
-   _my->_evaluator_registry.register_evaluator< withdraw_vesting_evaluator               >();
-   _my->_evaluator_registry.register_evaluator< set_withdraw_vesting_route_evaluator     >();
-   _my->_evaluator_registry.register_evaluator< account_create_evaluator                 >();
-   _my->_evaluator_registry.register_evaluator< account_update_evaluator                 >();
-   _my->_evaluator_registry.register_evaluator< witness_update_evaluator                 >();
-   _my->_evaluator_registry.register_evaluator< account_witness_vote_evaluator           >();
-   _my->_evaluator_registry.register_evaluator< account_witness_proxy_evaluator          >();
-   _my->_evaluator_registry.register_evaluator< custom_evaluator                         >();
-   _my->_evaluator_registry.register_evaluator< custom_binary_evaluator                  >();
-   _my->_evaluator_registry.register_evaluator< custom_json_evaluator                    >();
-   _my->_evaluator_registry.register_evaluator< pow_evaluator                            >();
-   _my->_evaluator_registry.register_evaluator< pow2_evaluator                           >();
-   _my->_evaluator_registry.register_evaluator< report_over_production_evaluator         >();
-   _my->_evaluator_registry.register_evaluator< feed_publish_evaluator                   >();
-   _my->_evaluator_registry.register_evaluator< convert_evaluator                        >();
-   _my->_evaluator_registry.register_evaluator< limit_order_create_evaluator             >();
-   _my->_evaluator_registry.register_evaluator< limit_order_create2_evaluator            >();
-   _my->_evaluator_registry.register_evaluator< limit_order_cancel_evaluator             >();
-   _my->_evaluator_registry.register_evaluator< challenge_authority_evaluator            >();
-   _my->_evaluator_registry.register_evaluator< prove_authority_evaluator                >();
-   _my->_evaluator_registry.register_evaluator< request_account_recovery_evaluator       >();
-   _my->_evaluator_registry.register_evaluator< recover_account_evaluator                >();
-   _my->_evaluator_registry.register_evaluator< change_recovery_account_evaluator        >();
-   _my->_evaluator_registry.register_evaluator< escrow_transfer_evaluator                >();
-   _my->_evaluator_registry.register_evaluator< escrow_approve_evaluator                 >();
-   _my->_evaluator_registry.register_evaluator< escrow_dispute_evaluator                 >();
-   _my->_evaluator_registry.register_evaluator< escrow_release_evaluator                 >();
-   _my->_evaluator_registry.register_evaluator< transfer_to_savings_evaluator            >();
-   _my->_evaluator_registry.register_evaluator< transfer_from_savings_evaluator          >();
-   _my->_evaluator_registry.register_evaluator< cancel_transfer_from_savings_evaluator   >();
-   _my->_evaluator_registry.register_evaluator< decline_voting_rights_evaluator          >();
-   _my->_evaluator_registry.register_evaluator< reset_account_evaluator                  >();
-   _my->_evaluator_registry.register_evaluator< set_reset_account_evaluator              >();
-   _my->_evaluator_registry.register_evaluator< claim_reward_balance_evaluator           >();
-   _my->_evaluator_registry.register_evaluator< account_create_with_delegation_evaluator >();
-   _my->_evaluator_registry.register_evaluator< delegate_vesting_shares_evaluator        >();
-   _my->_evaluator_registry.register_evaluator< blacklist_vote_evaluator                 >();
-}
-
 void database::set_custom_operation_interpreter( const std::string& id, std::shared_ptr< custom_operation_interpreter > registry )
 {
    bool inserted = _custom_operation_interpreters.emplace( id, registry ).second;
@@ -1178,40 +1116,6 @@ std::shared_ptr< custom_operation_interpreter > database::get_custom_json_evalua
    if( it != _custom_operation_interpreters.end() )
       return it->second;
    return std::shared_ptr< custom_operation_interpreter >();
-}
-
-void database::initialize_indexes()
-{
-   add_core_index< dynamic_global_property_index           >(*this);
-   add_core_index< account_index                           >(*this);
-   add_core_index< account_authority_index                 >(*this);
-   add_core_index< witness_index                           >(*this);
-   add_core_index< transaction_index                       >(*this);
-   add_core_index< block_summary_index                     >(*this);
-   add_core_index< witness_schedule_index                  >(*this);
-   add_core_index< comment_index                           >(*this);
-   add_core_index< comment_vote_index                      >(*this);
-   add_core_index< witness_vote_index                      >(*this);
-   add_core_index< limit_order_index                       >(*this);
-   add_core_index< feed_history_index                      >(*this);
-   add_core_index< convert_request_index                   >(*this);
-   add_core_index< liquidity_reward_balance_index          >(*this);
-   add_core_index< operation_index                         >(*this);
-   add_core_index< account_history_index                   >(*this);
-   add_core_index< hardfork_property_index                 >(*this);
-   add_core_index< withdraw_vesting_route_index            >(*this);
-   add_core_index< owner_authority_history_index           >(*this);
-   add_core_index< account_recovery_request_index          >(*this);
-   add_core_index< change_recovery_account_request_index   >(*this);
-   add_core_index< escrow_index                            >(*this);
-   add_core_index< savings_withdraw_index                  >(*this);
-   add_core_index< decline_voting_rights_request_index     >(*this);
-   add_core_index< reward_fund_index                       >(*this);
-   add_core_index< vesting_delegation_index                >(*this);
-   add_core_index< vesting_delegation_expiration_index     >(*this);
-   add_core_index< blacklist_vote_index                    >(*this);
-
-   _plugin_index_signal();
 }
 
 const std::string& database::get_json_schema()const
