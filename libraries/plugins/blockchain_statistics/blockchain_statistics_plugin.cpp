@@ -1,20 +1,20 @@
-#include <steemit/blockchain_statistics/blockchain_statistics_api.hpp>
+#include <weku/blockchain_statistics/blockchain_statistics_api.hpp>
 
-#include <steemit/app/impacted.hpp>
-#include <steemit/chain/account_object.hpp>
-#include <steemit/chain/comment_object.hpp>
-#include <steemit/chain/history_object.hpp>
+#include <weku/app/impacted.hpp>
+#include <weku/chain/account_object.hpp>
+#include <weku/chain/comment_object.hpp>
+#include <weku/chain/history_object.hpp>
 
-#include <steemit/chain/database.hpp>
-#include <steemit/chain/index.hpp>
-#include <steemit/chain/operation_notification.hpp>
+#include <weku/chain/database.hpp>
+#include <weku/chain/index.hpp>
+#include <weku/chain/operation_notification.hpp>
 
-namespace steemit { namespace blockchain_statistics {
+namespace weku { namespace blockchain_statistics {
 
 namespace detail
 {
 
-using namespace steemit::protocol;
+using namespace weku::protocol;
 
 class blockchain_statistics_plugin_impl
 {
@@ -468,6 +468,6 @@ uint32_t blockchain_statistics_plugin::get_max_history_per_bucket() const
    return _my->_maximum_history_per_bucket_size;
 }
 
-} } // steemit::blockchain_statistics
+} } // weku::blockchain_statistics
 
-STEEMIT_DEFINE_PLUGIN( blockchain_statistics, steemit::blockchain_statistics::blockchain_statistics_plugin );
+STEEMIT_DEFINE_PLUGIN( blockchain_statistics, weku::blockchain_statistics::blockchain_statistics_plugin );

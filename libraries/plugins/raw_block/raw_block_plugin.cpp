@@ -1,11 +1,11 @@
 
 
-#include <steemit/plugins/raw_block/raw_block_api.hpp>
-#include <steemit/plugins/raw_block/raw_block_plugin.hpp>
+#include <weku/plugins/raw_block/raw_block_api.hpp>
+#include <weku/plugins/raw_block/raw_block_plugin.hpp>
 
 #include <string>
 
-namespace steemit { namespace plugin { namespace raw_block {
+namespace weku { namespace plugin { namespace raw_block {
 
 raw_block_plugin::raw_block_plugin( application* app ) : plugin( app ) {}
 raw_block_plugin::~raw_block_plugin() {}
@@ -28,6 +28,6 @@ void raw_block_plugin::plugin_shutdown()
 {
 }
 
-} } } // steemit::plugin::raw_block
+} } } // weku::plugin::raw_block
 
-STEEMIT_DEFINE_PLUGIN( raw_block, steemit::plugin::raw_block::raw_block_plugin )
+STEEMIT_DEFINE_PLUGIN( raw_block, weku::plugin::raw_block::raw_block_plugin )

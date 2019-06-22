@@ -1,14 +1,14 @@
-#include <steemit/market_history/market_history_api.hpp>
+#include <weku/market_history/market_history_api.hpp>
 
-#include <steemit/chain/database.hpp>
-#include <steemit/chain/index.hpp>
-#include <steemit/chain/operation_notification.hpp>
+#include <weku/chain/database.hpp>
+#include <weku/chain/index.hpp>
+#include <weku/chain/operation_notification.hpp>
 
-namespace steemit { namespace market_history {
+namespace weku { namespace market_history {
 
 namespace detail {
 
-using steemit::protocol::fill_order_operation;
+using weku::protocol::fill_order_operation;
 
 class market_history_plugin_impl
 {
@@ -215,6 +215,6 @@ uint32_t market_history_plugin::get_max_history_per_bucket() const
    return _my->_maximum_history_per_bucket_size;
 }
 
-} } // steemit::market_history
+} } // weku::market_history
 
-STEEMIT_DEFINE_PLUGIN( market_history, steemit::market_history::market_history_plugin )
+STEEMIT_DEFINE_PLUGIN( market_history, weku::market_history::market_history_plugin )

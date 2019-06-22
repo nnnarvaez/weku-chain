@@ -6,7 +6,7 @@ add_library( weku_witness
              witness_operations.cpp
            )
 
-target_link_libraries( weku_witness chain weku_app )
+target_link_libraries( weku_witness weku_app )
 target_include_directories( weku_witness
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
