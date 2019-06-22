@@ -1,14 +1,14 @@
-file(GLOB HEADERS "include/steemit/tags/*.hpp")
+file(GLOB HEADERS "include/weku/tags/*.hpp")
 
-add_library( steemit_tags
+add_library( weku_tags
              tags_plugin.cpp )
 
-target_link_libraries( steemit_tags steemit_chain steemit_protocol steemit_app )
-target_include_directories( steemit_tags
+target_link_libraries( weku_tags chain weku_app )
+target_include_directories( weku_tags
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
 install( TARGETS
-   steemit_tags
+   weku_tags
 
    RUNTIME DESTINATION bin
    LIBRARY DESTINATION lib

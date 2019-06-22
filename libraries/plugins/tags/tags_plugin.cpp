@@ -1,15 +1,15 @@
-#include <steemit/tags/tags_plugin.hpp>
+#include <weku/tags/tags_plugin.hpp>
 
-#include <steemit/app/impacted.hpp>
+#include <weku/app/impacted.hpp>
 
-#include <steemit/protocol/config.hpp>
+#include <weku/protocol/config.hpp>
 
-#include <steemit/chain/database.hpp>
-#include <steemit/chain/hardfork.hpp>
-#include <steemit/chain/index.hpp>
-#include <steemit/chain/operation_notification.hpp>
-#include <steemit/chain/account_object.hpp>
-#include <steemit/chain/comment_object.hpp>
+#include <weku/chain/database.hpp>
+#include <weku/chain/hardfork.hpp>
+#include <weku/chain/index.hpp>
+#include <weku/chain/operation_notification.hpp>
+#include <weku/chain/account_object.hpp>
+#include <weku/chain/comment_object.hpp>
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>
@@ -19,12 +19,12 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/algorithm/string.hpp>
 
-namespace steemit {
+namespace weku {
     namespace tags {
 
         namespace detail {
 
-            using namespace steemit::protocol;
+            using namespace weku::protocol;
 
             class tags_plugin_impl {
             public:
@@ -33,7 +33,7 @@ namespace steemit {
 
                 virtual ~tags_plugin_impl();
 
-                steemit::chain::database &database() {
+                weku::chain::database &database() {
                     return _self.database();
                 }
 
@@ -476,6 +476,6 @@ namespace steemit {
         }
 
     }
-} /// steemit::tags
+} /// weku::tags
 
-STEEMIT_DEFINE_PLUGIN(tags, steemit::tags::tags_plugin)
+STEEMIT_DEFINE_PLUGIN(tags, weku::tags::tags_plugin)

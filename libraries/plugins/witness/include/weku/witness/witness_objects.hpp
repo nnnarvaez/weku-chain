@@ -1,13 +1,13 @@
 #pragma once
 
-#include <steemit/chain/steem_object_types.hpp>
+#include <weku/chain/weku_object_types.hpp>
 
 #include <boost/multi_index/composite_key.hpp>
 
-namespace steemit { namespace witness {
+namespace weku { namespace witness {
 
 using namespace std;
-using namespace steemit::chain;
+using namespace weku::chain;
 
 #ifndef WITNESS_SPACE_ID
 #define WITNESS_SPACE_ID 12
@@ -154,18 +154,18 @@ typedef multi_index_container <
    allocator< reserve_ratio_object >
 > reserve_ratio_index;
 
-} } // steemit::witness
+} } // weku::witness
 
-FC_REFLECT_ENUM( steemit::witness::bandwidth_type, (post)(forum)(market) )
+FC_REFLECT_ENUM( weku::witness::bandwidth_type, (post)(forum)(market) )
 
-FC_REFLECT( steemit::witness::account_bandwidth_object,
+FC_REFLECT( weku::witness::account_bandwidth_object,
             (id)(account)(type)(average_bandwidth)(lifetime_bandwidth)(last_bandwidth_update) )
-CHAINBASE_SET_INDEX_TYPE( steemit::witness::account_bandwidth_object, steemit::witness::account_bandwidth_index )
+CHAINBASE_SET_INDEX_TYPE( weku::witness::account_bandwidth_object, weku::witness::account_bandwidth_index )
 
-FC_REFLECT( steemit::witness::content_edit_lock_object,
+FC_REFLECT( weku::witness::content_edit_lock_object,
             (id)(account)(lock_time) )
-CHAINBASE_SET_INDEX_TYPE( steemit::witness::content_edit_lock_object, steemit::witness::content_edit_lock_index )
+CHAINBASE_SET_INDEX_TYPE( weku::witness::content_edit_lock_object, weku::witness::content_edit_lock_index )
 
-FC_REFLECT( steemit::witness::reserve_ratio_object,
+FC_REFLECT( weku::witness::reserve_ratio_object,
             (id)(average_block_size)(current_reserve_ratio)(max_virtual_bandwidth) )
-CHAINBASE_SET_INDEX_TYPE( steemit::witness::reserve_ratio_object, steemit::witness::reserve_ratio_index )
+CHAINBASE_SET_INDEX_TYPE( weku::witness::reserve_ratio_object, weku::witness::reserve_ratio_index )

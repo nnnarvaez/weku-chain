@@ -1,15 +1,15 @@
 #pragma once
 
-#include <steemit/protocol/base.hpp>
-#include <steemit/protocol/operation_util.hpp>
+#include <weku/protocol/base.hpp>
+#include <weku/protocol/operation_util.hpp>
 
-#include <steemit/app/plugin.hpp>
+#include <weku/app/plugin.hpp>
 
-namespace steemit { namespace witness {
+namespace weku { namespace witness {
 
 using namespace std;
-using steemit::protocol::base_operation;
-using steemit::chain::database;
+using weku::protocol::base_operation;
+using weku::chain::database;
 
 class witness_plugin;
 
@@ -29,10 +29,10 @@ typedef fc::static_variant<
 
 DEFINE_PLUGIN_EVALUATOR( witness_plugin, witness_plugin_operation, enable_content_editing );
 
-} } // steemit::witness
+} } // weku::witness
 
-FC_REFLECT( steemit::witness::enable_content_editing_operation, (account)(relock_time) )
+FC_REFLECT( weku::witness::enable_content_editing_operation, (account)(relock_time) )
 
-FC_REFLECT_TYPENAME( steemit::witness::witness_plugin_operation )
+FC_REFLECT_TYPENAME( weku::witness::witness_plugin_operation )
 
-DECLARE_OPERATION_TYPE( steemit::witness::witness_plugin_operation )
+DECLARE_OPERATION_TYPE( weku::witness::witness_plugin_operation )
