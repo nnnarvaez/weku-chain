@@ -7,6 +7,7 @@
 namespace weku{namespace chain{
 
 using fc::uint128_t;
+using weku::chain::util::to_sbd;
 
 /**
  *  This method will iterate through all comment_vote_objects and give them
@@ -39,7 +40,8 @@ share_type pay_curators(itemp_database& db, const comment_object& c, share_type&
             {
                unclaimed_rewards -= claim;
                const auto& voter = db.get(itr->voter);
-               auto reward = create_vesting(_db, voter, asset( claim, STEEM_SYMBOL ), db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
+               vest_creator vc(db);
+               auto reward = vc.create_vesting(voter, asset( claim, STEEM_SYMBOL ), db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
 
                db.push_virtual_operation( curation_reward_operation( voter.name, reward, c.author, to_string( c.permlink ) ) );
 
@@ -110,7 +112,8 @@ share_type cashout_processor::cashout_comment_helper( weku::chain::util::comment
             for( auto& b : comment.beneficiaries )
             {
                auto benefactor_tokens = ( author_tokens * b.weight ) / STEEMIT_100_PERCENT;
-               auto vest_created = create_vesting(_db, _db.get_account( b.account ), benefactor_tokens, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
+               vest_creator vc(_db);
+               auto vest_created = vc.create_vesting(_db.get_account( b.account ), benefactor_tokens, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
                _db.push_virtual_operation( comment_benefactor_reward_operation( b.account, comment.author, to_string( comment.permlink ), vest_created ) );
                total_beneficiary += benefactor_tokens;
             }
@@ -121,7 +124,8 @@ share_type cashout_processor::cashout_comment_helper( weku::chain::util::comment
             auto vesting_steem = author_tokens - sbd_steem;
 
             const auto& author = _db.get_account( comment.author );
-            auto vest_created = create_vesting(_db, author, vesting_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
+            vest_creator vc(_db);
+            auto vest_created = vc.create_vesting(author, vesting_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );
             
             fund_processor fpr(_db);
             auto sbd_payout = fpr.create_sbd( author, sbd_steem, _db.has_hardfork( STEEMIT_HARDFORK_0_17 ) );

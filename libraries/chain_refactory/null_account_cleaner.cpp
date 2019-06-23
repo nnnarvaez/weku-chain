@@ -1,4 +1,5 @@
 #include <weku/chain/null_account_cleaner.hpp>
+#include <weku/chain/helpers.hpp>
 
 namespace weku{namespace chain{
 

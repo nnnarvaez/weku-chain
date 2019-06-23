@@ -4,7 +4,7 @@
 #include <fc/uint128.hpp>
 #include <fc/utf8.hpp>
 
-#include <weku/chain/util/reward.hpp>
+#include <weku/chain/reward.hpp>
 #include <weku/chain/custom_operation_interpreter.hpp>
 #include <weku/chain/common_objects.hpp>
 #include <weku/chain/witness_objects.hpp>
@@ -306,8 +306,11 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
       auth.last_owner_update = fc::time_point_sec::min();
    });
 
-   if( o.fee.amount > 0 )
-      create_vesting(_db, new_account, o.fee );
+   if( o.fee.amount > 0 ){
+      vest_creator vc(_db);
+      vc.create_vesting(new_account, o.fee );
+   }
+      
 }
 
 void account_create_with_delegation_evaluator::do_apply( const account_create_with_delegation_operation& o )
@@ -400,8 +403,11 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
       });
    }
 
-   if( o.fee.amount > 0 )
-      create_vesting(db, new_account, o.fee );
+   if( o.fee.amount > 0 ){
+      vest_creator vc(_db);
+      vc.create_vesting(new_account, o.fee );
+   }
+      
 }
 
 
@@ -1018,7 +1024,8 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 
    FC_ASSERT( get_balance( from_account, STEEM_SYMBOL) >= o.amount, "Account does not have sufficient STEEM for transfer." );
    _db.adjust_balance( from_account, -o.amount );
-   create_vesting(db, to_account, o.amount );
+   vest_creator vc(_db);
+   vc.create_vesting(to_account, o.amount );
 }
 
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
@@ -1819,8 +1826,10 @@ void pow_apply( itemp_database& db, Operation o )
    const auto& inc_witness = db.get_account( dgp.current_witness );
    if( db.head_block_num() < STEEMIT_START_MINER_VOTING_BLOCK )
       db.adjust_balance( inc_witness, pow_reward );
-   else
-      create_vesting(db, inc_witness, pow_reward );
+   else{
+      vest_creator vc(db);
+      vc.create_vesting(inc_witness, pow_reward );
+   }
 }
 
 void pow_evaluator::do_apply( const pow_operation& o ) {
@@ -1914,7 +1923,8 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
       adjust_supply(db, inc_reward, true );
 
       const auto& inc_witness = db.get_account( dgp.current_witness );
-      create_vesting(db, inc_witness, inc_reward );
+      vest_creator vc(db);
+      vc.create_vesting(inc_witness, inc_reward );
    }
 }
 
@@ -2017,6 +2027,8 @@ void challenge_authority_evaluator::do_apply( const challenge_authority_operatio
    const auto& challenged = _db.get_account( o.challenged );
    const auto& challenger = _db.get_account( o.challenger );
 
+   vest_creator vc(_db);
+
    if( o.require_owner )
    {
       FC_ASSERT( challenged.reset_account == o.challenger, "Owner authority can only be challenged by its reset account." );
@@ -2025,7 +2037,7 @@ void challenge_authority_evaluator::do_apply( const challenge_authority_operatio
       FC_ASSERT( _db.head_block_time() - challenged.last_owner_proved > STEEMIT_OWNER_CHALLENGE_COOLDOWN );
 
       _db.adjust_balance( challenger, - STEEMIT_OWNER_CHALLENGE_FEE );
-      create_vesting(_db, _db.get_account( o.challenged ), STEEMIT_OWNER_CHALLENGE_FEE );
+      vc.create_vesting(_db.get_account( o.challenged ), STEEMIT_OWNER_CHALLENGE_FEE );
 
       _db.modify( challenged, [&]( account_object& a )
       {
@@ -2039,7 +2051,7 @@ void challenge_authority_evaluator::do_apply( const challenge_authority_operatio
       FC_ASSERT( _db.head_block_time() - challenged.last_active_proved > STEEMIT_ACTIVE_CHALLENGE_COOLDOWN, "Account cannot be challenged because it was recently challenged." );
 
       _db.adjust_balance( challenger, - STEEMIT_ACTIVE_CHALLENGE_FEE );
-      create_vesting(_db, _db.get_account( o.challenged ), STEEMIT_ACTIVE_CHALLENGE_FEE );
+      vc.create_vesting(_db.get_account( o.challenged ), STEEMIT_ACTIVE_CHALLENGE_FEE );
 
       _db.modify( challenged, [&]( account_object& a )
       {
@@ -2195,7 +2207,7 @@ void transfer_to_savings_evaluator::do_apply( const transfer_to_savings_operatio
    FC_ASSERT( get_balance( from, op.amount.symbol ) >= op.amount, "Account does not have sufficient funds to transfer to savings." );
 
    _db.adjust_balance( from, -op.amount );
-   adjust_savings_balance(db, to, op.amount );
+   adjust_savings_balance(_db, to, op.amount );
 }
 
 // QUSTION: only minus the amount from account

@@ -1,6 +1,6 @@
 #include<weku/chain/hardfork_doer.hpp>
 #include<weku/chain/hardfork_constants.hpp>
-
+#include<weku/chain/helpers.hpp>
 namespace weku{namespace chain {
 
 using fc::uint128_t;

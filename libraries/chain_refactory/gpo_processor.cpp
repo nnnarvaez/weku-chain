@@ -1,5 +1,5 @@
 #include <weku/chain/gpo_processor.hpp>
-
+#include <weku/chain/helpers.hpp>
 namespace weku{namespace chain{
 
 void gpo_processor::update_global_dynamic_data( const signed_block& b )

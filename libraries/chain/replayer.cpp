@@ -1,3 +1,4 @@
+#include <weku/chain/replayer.hpp>
 
 namespace weku{namespace chain{
 
@@ -17,7 +18,7 @@ void replayer::reindex( const fc::path& data_dir, const fc::path& shared_mem_dir
       _db.fork_db().reset();    // override effect of _fork_db.start_block() call in open()
 
       auto start = fc::time_point::now();
-      STEEMIT_ASSERT( _block_log.head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
+      STEEMIT_ASSERT( _db.get_block_log().head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain." );
 
       ilog( "Replaying blocks..." );
 
@@ -36,8 +37,8 @@ void replayer::reindex( const fc::path& data_dir, const fc::path& shared_mem_dir
       _db.with_write_lock( [&]()
       {
           // here 0 is file position, not block number, so itr will point to first block: block #1
-         auto itr = _db.get_block_log.read_block( 0 );
-         auto last_block_num = _db.get_block_log.head()->block_num();
+         auto itr = _db.get_block_log().read_block( 0 );
+         auto last_block_num = _db.get_block_log().head()->block_num();
 
          while( itr.first.block_num() != last_block_num )
          {
@@ -46,17 +47,17 @@ void replayer::reindex( const fc::path& data_dir, const fc::path& shared_mem_dir
                std::cerr << "   " << double( cur_block_num * 100 ) / last_block_num << "%   " << cur_block_num << " of " << last_block_num <<
                "   (" << (_db.get_free_memory() / (1024*1024)) << "M free)\n";
             _db.apply_block( itr.first, skip_flags );
-            itr = _db.get_block_log.read_block( itr.second ); // itr.second points to the position of next block.
+            itr = _db.get_block_log().read_block( itr.second ); // itr.second points to the position of next block.
          }
 
          _db.apply_block( itr.first, skip_flags ); // apply last_block_num/head block number
           // set revision to head block number,
           // which in turn set all revisions to head_block_num of indices/tables contained in current database.
-         _db.set_revision( head_block_num() );
+         _db.set_revision( _db.head_block_num() );
       });
 
-      if( _db.get_block_log.head()->block_num() )
-         _db.fork_db().start_block( *_db.get_block_log.head() );
+      if( _db.get_block_log().head()->block_num() )
+         _db.fork_db().start_block( *_db.get_block_log().head() );
 
       auto end = fc::time_point::now();
       ilog( "Done reindexing, elapsed time: ${t} sec", ("t",double((end-start).count())/1000000.0 ) );

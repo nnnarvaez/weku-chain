@@ -1,5 +1,5 @@
 #include <weku/chain/vest_withdraw_processor.hpp>
-
+#include <weku/chain/helpers.hpp>
 namespace weku{namespace chain{
 
 void vest_withdraw_processor::process_vesting_withdrawals()

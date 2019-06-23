@@ -1,6 +1,6 @@
 
-#include <weku/chain/util/reward.hpp>
-#include <weku/chain/util/uint256.hpp>
+#include <weku/chain/reward.hpp>
+#include <weku/chain/uint256.hpp>
 
 namespace weku { namespace chain { namespace util {
 

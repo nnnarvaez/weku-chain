@@ -12,10 +12,10 @@
 
 #include <weku/protocol/weku_operations.hpp>
 
-#include <weku/chain/util/asset.hpp>
-#include <weku/chain/util/reward.hpp>
-#include <weku/chain/util/uint256.hpp>
-#include <weku/chain/util/reward.hpp>
+#include <weku/chain/asset.hpp>
+#include <weku/chain/reward.hpp>
+#include <weku/chain/uint256.hpp>
+#include <weku/chain/reward.hpp>
 
 #include <weku/chain/block_summary_object.hpp>
 #include <weku/chain/compound.hpp>
@@ -110,7 +110,7 @@ void database::open( const fc::path& data_dir, const fc::path& shared_mem_dir, u
                // init_genesis will not trigger apply_block()
                // will also push the genesis time into processed_hardforks as hardfork 0
                genesis_processor gpr(*this);
-               gpr.init_genesis(init_supply);
+               gpr.init_genesis(initial_supply);
             });
 
          // if just after init_genesis, at this point, the block_log file will be empty.
@@ -366,12 +366,6 @@ const escrow_object& database::get_escrow( const account_name_type& name, uint32
 { try {
    return get< escrow_object, by_from_id >( boost::make_tuple( name, escrow_id ) );
 } FC_CAPTURE_AND_RETHROW( (name)(escrow_id) ) }
-
-
-const node_property_object& database::get_node_properties() const
-{
-   return _node_property_object;
-}
 
 const feed_history_object& database::get_feed_history()const
 { try {

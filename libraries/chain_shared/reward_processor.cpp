@@ -1,4 +1,5 @@
 #include <weku/chain/reward_processor.hpp>
+#include <weku/chain/helpers.hpp>
 
 namespace weku{namespace chain{
 

@@ -85,7 +85,10 @@ namespace weku { namespace chain {
           *
           * @param data_dir Path to open or create database in
           */
-         void open( const fc::path& data_dir, const fc::path& shared_mem_dir, uint64_t initial_supply = STEEMIT_INIT_SUPPLY, uint64_t shared_file_size = 0, uint32_t chainbase_flags = 0 );
+         virtual void open( const fc::path& data_dir, const fc::path& shared_mem_dir, 
+            uint64_t initial_supply = STEEMIT_INIT_SUPPLY, 
+            uint64_t shared_file_size = 0, uint32_t chainbase_flags = 0 ) override;
+         virtual void close(bool rewind = true) override;
 
          /**
           * @brief Rebuild object graph from block history and open database
@@ -93,7 +96,8 @@ namespace weku { namespace chain {
           * This method may be called after or instead of @ref database::open, and will rebuild the object graph by
           * replaying block chain history. When this method exits successfully, the database will be open.
           */
-         virtual void reindex( const fc::path& data_dir, const fc::path& shared_mem_dir, uint64_t shared_file_size = (1024l*1024l*1024l*8l) ) override;
+         virtual void reindex( const fc::path& data_dir, const fc::path& shared_mem_dir, 
+            uint64_t shared_file_size = (1024l*1024l*1024l*8l) ) override;
 
          /**
           * @brief wipe Delete database from disk, and potentially the raw chain as well.
@@ -101,8 +105,8 @@ namespace weku { namespace chain {
           *
           * Will close the database before wiping. Database will be closed when this function returns.
           */
-         void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks);
-         void close(bool rewind = true);
+         virtual void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks) override;
+         
 
          //////////////////// db_block.cpp ////////////////////
 
@@ -138,15 +142,14 @@ namespace weku { namespace chain {
          virtual const escrow_object&   get_escrow(  const account_name_type& name, uint32_t escrow_id )const override;
         
       
-         virtual const dynamic_global_property_object&  get_dynamic_global_properties()const override;
-         virtual const node_property_object&            get_node_properties()const override;
-         virtual const feed_history_object&             get_feed_history()const override;
-         virtual const witness_schedule_object&         get_witness_schedule_object()const override;
+         virtual  node_property_object& get_node_properties()  override { return _node_property_object; }
+
+         virtual const  dynamic_global_property_object&  get_dynamic_global_properties() const override;         
+         virtual const  witness_schedule_object&         get_witness_schedule_object()const override;
          virtual const hardfork_property_object&        get_hardfork_property_object()const override;
 
+         virtual const feed_history_object&             get_feed_history() const override;
          virtual const reward_fund_object&              get_reward_fund( const comment_object& c )const override;
-
-         
 
          void                                   add_checkpoints( const flat_map<uint32_t,block_id_type>& checkpts );
          

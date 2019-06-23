@@ -56,11 +56,13 @@ class itemp_database: public chainbase::database
     virtual block_log& get_block_log() = 0; 
     virtual fork_database& fork_db() = 0;
 
+    virtual node_property_object& get_node_properties()  = 0;
+
     virtual const dynamic_global_property_object&  get_dynamic_global_properties()const = 0;
     virtual const witness_schedule_object&         get_witness_schedule_object()const = 0;
-    virtual const hardfork_property_object&        get_hardfork_property_object()const = 0;
+    virtual const hardfork_property_object&        get_hardfork_property_object()const = 0;    
+    
     virtual const feed_history_object&             get_feed_history()const = 0; 
-    virtual const node_property_object& get_node_properties()const = 0;
     virtual const reward_fund_object& get_reward_fund( const comment_object& c )const = 0; // move    
     
     virtual const account_object&  get_account(  const account_name_type& name )const = 0;
@@ -76,6 +78,11 @@ class itemp_database: public chainbase::database
     virtual void apply_block( const signed_block& next_block, uint32_t skip ) = 0;
     virtual const void push_virtual_operation( const operation& op, bool force = false ) = 0; 
     
+    virtual void open( const fc::path& data_dir, const fc::path& shared_mem_dir, uint64_t initial_supply = STEEMIT_INIT_SUPPLY, uint64_t shared_file_size = 0, uint32_t chainbase_flags = 0 );
+    virtual void close(bool rewind = true);
+    virtual void wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks);  
+    virtual void reindex( const fc::path& data_dir, const fc::path& shared_mem_dir, uint64_t shared_file_size = (1024l*1024l*1024l*8l) );
+
     virtual void adjust_balance( const account_object& a, const asset& delta ) = 0;
     virtual void adjust_proxied_witness_votes( const account_object& a,
                                             const std::array< share_type, STEEMIT_MAX_PROXY_RECURSION_DEPTH+1 >& delta,

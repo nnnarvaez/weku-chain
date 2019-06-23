@@ -1,5 +1,6 @@
 #include <weku/chain/block_header_validator.hpp>
 #include <weku/chain/witness_objects.hpp>
+#include <weku/chain/helpers.hpp>
 
 namespace weku{namespace chain{
 

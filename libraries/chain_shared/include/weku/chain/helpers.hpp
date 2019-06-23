@@ -1,7 +1,10 @@
 #include <weku/chain/itemp_database.hpp>
 #include <weku/chain/invariant_validator.hpp>
 #include <weku/chain/fund_processor.hpp>
+#include <weku/chain/order_processor.hpp>
 #include <weku/chain/slot.hpp>
+#include <weku/chain/balance_processor.hpp>
+#include <weku/chain/vest_creator.hpp>
 
 namespace weku {namespace chain{
 
@@ -27,18 +30,6 @@ static void adjust_savings_balance(itemp_database& db, const account_object& a, 
 {
    balance_processor bp(db);
    bp.adjust_savings_balance(a, delta);
-}
-
-// this is called by `adjust_proxied_witness_votes` when account proxy to self 
-void adjust_witness_votes(itemp_database& db, const account_object& a, share_type delta )
-{
-   const auto& vidx = db.get_index< witness_vote_index >().indices().get< by_account_witness >();
-   auto itr = vidx.lower_bound( boost::make_tuple( a.id, witness_id_type() ) );
-   while( itr != vidx.end() && itr->account == a.id )
-   {
-      adjust_witness_vote(db, db.get(itr->witness), delta );
-      ++itr;
-   }
 }
 
 // this updates the vote of a single witness as a result of a vote being added or removed         
@@ -68,6 +59,18 @@ static void adjust_witness_vote(itemp_database& db, const witness_object& witnes
             w.virtual_scheduled_time = fc::uint128::max_value();
       }
    } );
+}
+
+// this is called by `adjust_proxied_witness_votes` when account proxy to self 
+void adjust_witness_votes(itemp_database& db, const account_object& a, share_type delta )
+{
+   const auto& vidx = db.get_index< witness_vote_index >().indices().get< by_account_witness >();
+   auto itr = vidx.lower_bound( boost::make_tuple( a.id, witness_id_type() ) );
+   while( itr != vidx.end() && itr->account == a.id )
+   {
+      adjust_witness_vote(db, db.get(itr->witness), delta );
+      ++itr;
+   }
 }
 
 static void adjust_reward_balance(itemp_database& db, const account_object& a, const asset& delta )
@@ -127,16 +130,6 @@ static account_name_type get_scheduled_witness(const itemp_database& db, uint32_
    return wso.current_shuffled_witnesses[ current_aslot % wso.num_scheduled_witnesses ];
 }
 
-/**
- * @param to_account - the account to receive the new vesting shares
- * @param STEEM - STEEM to be converted to vesting shares
- */
-static asset create_vesting(itemp_database& db, const account_object& to_account, asset steem, bool to_reward_balance )
-{
-   fund_processor fp(db);
-   return fp.create_vesting(to_account, steem, to_reward_balance);
-}
-
 // not doing actual calc, just get data, should be renamed to get_discussion_payout_time
 static const time_point_sec calculate_discussion_payout_time(const itemp_database& db, const comment_object& comment )
 {
@@ -171,7 +164,7 @@ static uint32_t get_slot_at_time(const itemp_database& db,fc::time_point_sec whe
 }
 
 // This happens when two witness nodes are using same account
-static void maybe_warn_multiple_production(const itemp_database& db, uint32_t height )
+static void maybe_warn_multiple_production(itemp_database& db, uint32_t height )
 {
    auto blocks = db.fork_db().fetch_block_by_number( height );
    if( blocks.size() > 1 )
@@ -303,7 +296,8 @@ static asset get_producer_reward(itemp_database& db)
    /// pay witness in vesting shares
    if( props.head_block_number >= STEEMIT_START_MINER_VOTING_BLOCK || (witness_account.vesting_shares.amount.value == 0) ) {
       // const auto& witness_obj = get_witness( props.current_witness );
-      const auto& producer_reward = create_vesting(db, witness_account, pay );
+      vest_creator vc(db);
+      const auto& producer_reward = vc.create_vesting(witness_account, pay );
       db.push_virtual_operation( producer_reward_operation( witness_account.name, producer_reward ) );
    }
    else
