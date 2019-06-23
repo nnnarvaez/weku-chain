@@ -3,6 +3,8 @@
 #include <weku/chain/i_hardfork_doer.hpp>
 #include <weku/chain/hardforker.hpp>
 #include <weku/protocol/config.hpp>
+#include <weku/chain/hardfork_constants.hpp>
+#include <utility>
 
 namespace weku{namespace chain{
 
@@ -22,6 +24,10 @@ class mock_hardfork_voter: public i_hardfork_voter{
     }
     virtual void next_hardfork_votes(const hardfork_votes_type hardfork_votes) override{
         _hardfork_votes = hardfork_votes;
+    }
+
+    virtual void add_hardfork_vote(uint32_t hardfork, uint32_t hardfork_block_num) override{
+            _hardfork_votes.push_back(std::make_pair(hardfork, hardfork_block_num));
     }
 
     virtual void clean_hardfork_votes() override {
@@ -47,7 +53,7 @@ class mock_hardfork_doer: public i_hardfork_doer{
 using namespace weku::chain;
 using namespace ::testing;
 
-TEST(hardfork_19, should_be_triggerred_at_block_1){
+TEST(hardfork_19, is_triggerred_at_block_1){
     mock_hardfork_voter voter;
     mock_hardfork_doer doer;    
     hardforker hfkr(voter, doer);
@@ -55,10 +61,32 @@ TEST(hardfork_19, should_be_triggerred_at_block_1){
     const uint32_t head_block_num = 1;
     hfkr.process(head_block_num);
     
-    ASSERT_THAT(voter.last_hardfork(), Eq(19));
+    ASSERT_THAT(voter.last_hardfork(), Eq(STEEMIT_HARDFORK_0_19));
 }
 
-// TEST(hardfork_22, should_not_trigger_without_enough_votes){
-//     mock_database db;
-//     hardforker hfr(db);
-// }
+TEST(hardfork_22, is_not_triggerred_without_enough_votes){
+    mock_hardfork_voter voter;
+    mock_hardfork_doer doer;    
+    hardforker hfkr(voter, doer);
+    const uint32_t head_block_num = HARDFORK_22_BLOCK_NUM_FROM;
+    voter.last_hardfork(STEEMIT_HARDFORK_0_19);
+
+    hfkr.process(head_block_num);
+    
+    ASSERT_THAT(voter.last_hardfork(), Eq(STEEMIT_HARDFORK_0_19));
+}
+
+TEST(hardfork_22, is_triggerred_with_enough_votes){
+    mock_hardfork_voter voter;
+    mock_hardfork_doer doer;    
+    hardforker hfkr(voter, doer);
+    const uint32_t head_block_num = HARDFORK_22_BLOCK_NUM_FROM;
+    voter.last_hardfork(STEEMIT_HARDFORK_0_21);    
+    for(uint32_t i = 0; i < STEEMIT_HARDFORK_REQUIRED_WITNESSES; i++){
+        voter.add_hardfork_vote(STEEMIT_HARDFORK_0_22, HARDFORK_22_BLOCK_NUM_FROM);
+    }
+
+    hfkr.process(head_block_num);
+    
+    ASSERT_THAT(voter.last_hardfork(), Eq(STEEMIT_HARDFORK_0_22));
+}

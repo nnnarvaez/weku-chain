@@ -56,6 +56,9 @@ namespace weku { namespace chain {
          virtual void next_hardfork_votes(const hardfork_votes_type next_hardfork_votes) override {
             _next_hardfork_votes = next_hardfork_votes;
          }
+         virtual void add_hardfork_vote(uint32_t hardfork, uint32_t hardfork_block_num) override{
+            _next_hardfork_votes.push_back(std::make_pair(hardfork, hardfork_block_num));
+         }
          virtual void clean_hardfork_votes() override {
             _next_hardfork_votes = hardfork_votes_type();
          }
