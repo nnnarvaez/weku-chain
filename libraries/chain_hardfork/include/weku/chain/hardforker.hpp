@@ -1,8 +1,7 @@
 #pragma once
-
+#include <weku/chain/i_hardforker.hpp>
 #include <weku/chain/i_hardfork_doer.hpp>
 #include <weku/chain/i_hardfork_voter.hpp>
-
 namespace weku{namespace chain{
     class hardforker: public i_hardforker{
         public:
@@ -11,7 +10,7 @@ namespace weku{namespace chain{
         virtual bool has_enough_hardfork_votes(
             const hardfork_votes_type& next_hardfork_votes, 
             uint32_t hardfork, uint32_t block_num) const override;
-        virtual uint32_t process(const uint32_t head_block_num, const uint32_t last_hardfork) override;
+        virtual void process(uint32_t head_block_num) override;
 
         private:        
             i_hardfork_voter& _voter;    

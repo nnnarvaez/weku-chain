@@ -26,7 +26,7 @@ include_directories(/usr/local/Cellar/boost@1.60/1.60.0/include)
 
 file(GLOB NEW_TESTS "new_tests/*.cpp")
 add_executable( new_tests ${NEW_TESTS})
-target_link_libraries( new_tests chain ${PLATFORM_SPECIFIC_LIBS} )
+target_link_libraries( new_tests gtest gmock chain ${PLATFORM_SPECIFIC_LIBS} )
 
 #file(GLOB INTEGRATION_TESTS "integration/*.cpp")
 #add_executable( integration_tests ${INTEGRATION_TESTS})

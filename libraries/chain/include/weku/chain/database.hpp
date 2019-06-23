@@ -41,7 +41,7 @@ namespace weku { namespace chain {
     *   database is an object database in memory, db has multiple containers (named index here, kind of table)
     *   each container(index) has many same type objects.
     */
-   class database :pubilc i_hardfork_voter, public itemp_database //chainbase::database
+   class database :public i_hardfork_voter, public itemp_database //chainbase::database
    {
       public:
          database();

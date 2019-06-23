@@ -1,6 +1,7 @@
 #include<weku/chain/hardforker.hpp>
 #include<weku/chain/hardfork_constants.hpp>
-#include<weku/chain/i_hardfork_doer.hpp>
+#include <weku/chain/i_hardfork_doer.hpp>
+#include <weku/protocol/config.hpp>
 
 namespace weku{namespace chain {
 
@@ -17,7 +18,7 @@ bool hardforker::has_enough_hardfork_votes(
     return votes >= STEEMIT_HARDFORK_REQUIRED_WITNESSES;
 }
 
-uint32_t hardforker::process(const uint32_t head_block_num)
+void hardforker::process(uint32_t head_block_num)
 {
    const uint32_t last_hardfork = _voter.last_hardfork();
    uint32_t hardfork = last_hardfork;
@@ -58,8 +59,6 @@ uint32_t hardforker::process(const uint32_t head_block_num)
       _voter.clean_hardfork_votes();
       _voter.push_hardfork_operation(hardfork);
    }
-
-   return hardfork;
 }
 
 }}

@@ -2,6 +2,7 @@
 #include <weku/chain/i_hardfork_voter.hpp>
 #include <weku/chain/i_hardfork_doer.hpp>
 #include <weku/chain/hardforker.hpp>
+#include <weku/protocol/config.hpp>
 
 namespace weku{namespace chain{
 
@@ -54,7 +55,7 @@ TEST(hardfork_19, should_be_triggerred_at_block_1){
     const uint32_t head_block_num = 1;
     hfkr.process(head_block_num);
     
-    ASSERT_THAT(voter.last_hardfork(), Eq(STEEMIT_HARDFORK_0_19));
+    ASSERT_THAT(voter.last_hardfork(), Eq(19));
 }
 
 // TEST(hardfork_22, should_not_trigger_without_enough_votes){

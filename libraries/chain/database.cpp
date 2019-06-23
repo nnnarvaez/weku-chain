@@ -1156,7 +1156,7 @@ void database::_apply_block( const signed_block& next_block )
    // which also means during process of block #1, there is only harfork 0.
    hardfork_doer doer(*this);
    hardforker hfkr(*this, doer);
-   hfkr.process(head_block_num(), last_hardfork());  
+   hfkr.process(head_block_num());  
   
 
    // notify observers that the block has been applied

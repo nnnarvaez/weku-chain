@@ -12,6 +12,6 @@ namespace weku{namespace chain{
             const hardfork_votes_type& next_hardfork_votes, 
             uint32_t hardfork, uint32_t block_num) const = 0;
         
-        virtual void process() = 0;
+        virtual void process(uint32_t head_block_num) = 0;
     };
 }}
