@@ -178,21 +178,12 @@ uint32_t database::last_hardfork() const
    return get_hardfork_property_object().last_hardfork;
 }
 
-void database::last_hardfork(uint32_t hardfork) 
+void database::last_hardfork(const uint32_t hardfork) 
 {
    modify( get_hardfork_property_object(), [&]( hardfork_property_object& hfp )
    {
       hfp.last_hardfork = hardfork;
    });
-}
-
-hardfork_votes_type database::next_hardfork_votes() const{
-   return _next_hardfork_votes;
-}
-
-void database::next_hardfork_votes(hardfork_votes_type next_hardfork_votes)
-{
-    _next_hardfork_votes = next_hardfork_votes;
 }
 
 // if the block is in fork_db or in block_log, return true, otherwise return false.
@@ -1165,7 +1156,8 @@ void database::_apply_block( const signed_block& next_block )
    // which also means during process of block #1, there is only harfork 0.
    hardfork_doer doer(*this);
    hardforker hfkr(*this, doer);
-   hfkr.process();  
+   hfkr.process(head_block_num(), last_hardfork());  
+  
 
    // notify observers that the block has been applied
    notify_applied_block( next_block );

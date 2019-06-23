@@ -46,12 +46,7 @@ class itemp_database: public chainbase::database
     virtual fc::time_point_sec head_block_time()const = 0;
 
     virtual bool has_hardfork( uint32_t hardfork )const = 0;
-    virtual uint32_t last_hardfork() const = 0;
-    virtual void last_hardfork(uint32_t hardfork) = 0;      
-
-    virtual hardfork_votes_type next_hardfork_votes() const = 0;
-    virtual void next_hardfork_votes(hardfork_votes_type next_hardfork_votes) = 0;
-
+    
     virtual bool is_producing() const = 0;
     virtual block_log& get_block_log() = 0; 
     virtual fork_database& fork_db() = 0;

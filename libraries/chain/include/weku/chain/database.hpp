@@ -12,6 +12,7 @@
 #include <weku/chain/operation_notification.hpp>
 #include <weku/chain/itemp_database.hpp>
 #include <weku/chain/i_fork_database.hpp>
+#include <weku/chain/i_hardfork_voter.hpp>
 
 namespace weku { namespace chain {
 
@@ -40,16 +41,28 @@ namespace weku { namespace chain {
     *   database is an object database in memory, db has multiple containers (named index here, kind of table)
     *   each container(index) has many same type objects.
     */
-   class database : public itemp_database //chainbase::database
+   class database :pubilc i_hardfork_voter, public itemp_database //chainbase::database
    {
       public:
          database();
          virtual ~database();
 
+         // begin i_hardfork_voter interfaces
          virtual uint32_t last_hardfork() const override;
-         virtual void last_hardfork(uint32_t hardfork) override;
-         virtual hardfork_votes_type next_hardfork_votes() const override;
-         virtual void next_hardfork_votes(hardfork_votes_type next_hardfork_votes) override;
+         virtual void last_hardfork(const uint32_t hardfork) override;         
+         virtual hardfork_votes_type next_hardfork_votes() const override {
+             return _next_hardfork_votes;
+         }
+         virtual void next_hardfork_votes(const hardfork_votes_type next_hardfork_votes) override {
+            _next_hardfork_votes = next_hardfork_votes;
+         }
+         virtual void clean_hardfork_votes() override {
+            _next_hardfork_votes = hardfork_votes_type();
+         }
+         virtual void push_hardfork_operation(uint32_t hardfork) override {
+            push_virtual_operation( hardfork_operation( hardfork ), true );
+         }
+         // end i_hardfork_voter interfaces
 
          virtual bool is_producing()const override { return _is_producing; }
          void set_producing( bool p ) { _is_producing = p;  }

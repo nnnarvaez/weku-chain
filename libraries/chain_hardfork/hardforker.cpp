@@ -14,14 +14,15 @@ bool hardforker::has_enough_hardfork_votes(
         if(item.first == search_target.first && item.second == search_target.second)
             votes++;
             
-    return votes >= 17;
+    return votes >= STEEMIT_HARDFORK_REQUIRED_WITNESSES;
 }
 
-void hardforker::process()
+uint32_t hardforker::process(const uint32_t head_block_num)
 {
-   uint32_t hardfork = _db.last_hardfork();
+   const uint32_t last_hardfork = _voter.last_hardfork();
+   uint32_t hardfork = last_hardfork;
     
-   switch(_db.head_block_num())
+   switch(head_block_num)
    {        
       // hardfork 01 - 19 should be all processed after block #1, 
       // since we need to compatible with existing data based on previous STEEM code.      
@@ -44,16 +45,21 @@ void hardforker::process()
    }
 
    // need to vote to trigger hardfork 22, and so to future hardforks
-   if(_db.last_hardfork() == 21 && _db.head_block_num() >= HARDFORK_22_BLOCK_NUM_FROM) 
+   if(last_hardfork == STEEMIT_HARDFORK_0_21 && head_block_num >= HARDFORK_22_BLOCK_NUM_FROM) 
    {            
-      if(has_enough_hardfork_votes(_db.next_hardfork_votes(), 22, HARDFORK_22_BLOCK_NUM_FROM)){
+      if(has_enough_hardfork_votes(_voter.next_hardfork_votes(), STEEMIT_HARDFORK_0_22, HARDFORK_22_BLOCK_NUM_FROM)){
          _doer.do_hardfork_22();
          hardfork = STEEMIT_HARDFORK_0_22;
       }             
    }   
 
-   _db.last_hardfork(hardfork);
-   _db.push_virtual_operation( hardfork_operation( hardfork ), true );
+   if(hardfork != last_hardfork){
+      _voter.last_hardfork(hardfork);
+      _voter.clean_hardfork_votes();
+      _voter.push_hardfork_operation(hardfork);
+   }
+
+   return hardfork;
 }
 
 }}

@@ -1,10 +1,9 @@
 #pragma once
 #include <vector>
 #include <utility>
+#include <weku/chain/shared_types.hpp>
 
 namespace weku{namespace chain{
-    typedef std::vector<std::pair<uint32_t, uint32_t> > hardfork_votes_type;
-
     class i_hardforker{
         public:
         virtual ~i_hardforker() = default;
