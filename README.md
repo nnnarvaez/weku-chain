@@ -112,12 +112,12 @@ make -j$(sysctl -n hw.logicalcpu)
 
 Example: (full rpc node needs 128 GB server)
 ```
-# git clone https://github.com/wekuio/weku-chain
-# git submodule update --init --recursive
-# mkdir build
-# cd build
-# cmake -DCMAKE_BUILD_TYPE=Release -DLOW_MEMORY_NODE=ON ..
-# make -j$(sysctl -n hw.logicalcpu)
+git clone https://github.com/wekuio/weku-chain
+git submodule update --init --recursive
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DLOW_MEMORY_NODE=ON ..
+make -j$(sysctl -n hw.logicalcpu)
 ```
 
 Wait for 100% completion, watch for errors (there will be some warnings that can be ignored)
