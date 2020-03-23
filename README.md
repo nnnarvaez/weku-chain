@@ -49,18 +49,18 @@ It is strongly reccomended you use UBUNTU 16.04, this instructions are for this 
 
 #### Required packages
 ```
-sudo apt-get install -y 
-autoconf 
-automake 
-cmake 
-g++ 
-git 
-libssl-dev 
-libtool 
-make 
-pkg-config 
-python3 
-python3-jinja2
+sudo apt-get install -y \
+autoconf \
+automake \
+cmake \
+g++ \
+git \
+libssl-dev \
+libtool \
+make \
+pkg-config \
+python3 \
+python3-jinja2\
 ```
 
 #### Boost packages (also required)
@@ -87,7 +87,7 @@ sudo apt-get install -y \
     doxygen \
     libncurses5-dev \
     libreadline-dev \
-    perl
+    perl \
 
 ```
 
