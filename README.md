@@ -101,8 +101,9 @@ You might want to add the websocket blocking even if it is inefficient, follow [
 
 Example: (non rpc node)
 ```
-git clone https://github.com/wekuio/weku-chain
+git clone https://github.com/nnnarvaez/weku-chain-mirror.git
 cd weku-chain
+git checkout ff4daf98319ff35834132f504373a89f1220f2d7
 git submodule update --init --recursive
 mkdir build
 cd build
@@ -112,11 +113,13 @@ make -j$(sysctl -n hw.logicalcpu)
 
 Example: (full rpc node needs 128 GB server)
 ```
-git clone https://github.com/wekuio/weku-chain
+git clone https://github.com/nnnarvaez/weku-chain-mirror.git
+cd weku-chain
+git checkout ff4daf98319ff35834132f504373a89f1220f2d7
 git submodule update --init --recursive
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DLOW_MEMORY_NODE=ON ..
+cmake -DCMAKE_BUILD_TYPE=Release -DLOW_MEMORY_NODE=OFF ..
 make -j$(sysctl -n hw.logicalcpu)
 ```
 
